@@ -176,8 +176,25 @@ Odoo y la configuración de `pytest` lo tiene en cuenta).
 - Landing: `/muebles`. Tienda: `/shop`.
 - **Panel del día**: `/panel/`. Panel del módulo (requiere sesión): `/muebles/panel`.
 - Acceso local: `http://127.0.0.1:8070`.
-- Administrador: usuario `admin`; contraseña en el fichero de credenciales del
-  perfil (no versionado).
+- **Usuario de visita** (el que se publica): `visita`, con ventas, compras y
+  almacén, sin configuración de empresa. Su clave vive en
+  `~/.hermes/profiles/hermes2/clave_visita_muebles.txt` y se publica en la
+  landing. Se crea o actualiza con `/root/scripts/crear_usuario_visita.py`.
+- **Administrador**: usuario `admin`; contraseña en el fichero de credenciales
+  del perfil (no versionado). No se publica: es la sesión que autoriza el
+  reinicio del laboratorio.
+
+## Limpieza automática
+
+El laboratorio lo puede tocar cualquier visitante, así que ya no hay botón de
+reinicio en sus manos. En su lugar, un cron cada media hora comprueba los 14
+recuentos del estado inicial y **solo si alguien ha tocado algo** restaura la
+base desde la instantánea canónica:
+
+```bash
+*/30 * * * * /root/.hermes/profiles/hermes2/ODOO_CRM/panel/limpieza_automatica.sh
+tail -f /var/log/muebles-limpieza.log      # qué ha hecho cada pasada
+```
 
 ## Autor
 

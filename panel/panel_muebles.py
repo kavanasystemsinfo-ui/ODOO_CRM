@@ -362,34 +362,12 @@ footer{margin:20px 0;color:#9a8d80;font-size:12px}
 <h2>Lo que pide atención</h2><ul id="bandeja"></ul>
 <h2>Salud del dato</h2><ul id="salud"></ul>
 <div class="reinicio">
-  <h2>Devolver el laboratorio a su estado inicial</h2>
-  <p>Si has dejado la aplicación hecha un desastre experimentando, este botón la deja como estaba: se borra todo lo que se haya cambiado, incluidos usuarios y datos nuevos, y Odoo se reinicia (tarda cerca de un minuto).</p>
-  <button id="btn-reinicio">Restaurar el laboratorio</button><span class="aviso" id="aviso-reinicio"></span>
+  <h2>Este laboratorio se limpia solo</h2>
+  <p>Puedes trastear sin miedo: el servidor devuelve el laboratorio a su estado inicial <strong>cada media hora</strong>, así que lo que cambies no se queda para el siguiente que entre. Ya no hay botón de reinicio aquí a propósito: se limpia solo.</p>
 </div>
 <footer>El panel solo lee el laboratorio. Las frases son reglas deterministas; la redacción por IA se precomputa aparte y aquí se declara.</footer>
 </main>
 <script>
-document.getElementById('btn-reinicio').addEventListener('click', async ()=>{
-  const aviso = document.getElementById('aviso-reinicio');
-  if(!confirm('¿Restaurar el laboratorio a su estado inicial? Se borrará todo lo que hayas cambiado y Odoo se reiniciará (cerca de un minuto).')) return;
-  aviso.textContent=' Pidiendo el reinicio...';
-  try{
-    const r = await fetch('api/restaurar', {method:'POST'});
-    const d = await r.json();
-    aviso.textContent = ' ' + (d.mensaje || d.error || '');
-    if(d.estado === 'iniciado'){ document.getElementById('btn-reinicio').disabled = true; setTimeout(seguimiento, 8000); }
-  }catch(e){ aviso.textContent=' No se pudo pedir el reinicio: ' + e; }
-});
-async function seguimiento(){
-  const aviso = document.getElementById('aviso-reinicio');
-  try{
-    const d = await (await fetch('api/restaurar')).json();
-    if(d.estado === 'en_curso'){ aviso.textContent=' Reiniciando el laboratorio... esta página quedará lista en menos de un minuto.'; setTimeout(seguimiento, 8000); return; }
-    aviso.textContent = ' ' + (d.mensaje || d.estado);
-    if(d.estado === 'hecho'){ document.getElementById('btn-reinicio').disabled = false;
-      document.getElementById('estado').textContent = 'Laboratorio restaurado. Recarga esta página para ver las cifras del estado inicial.'; }
-  }catch(e){ setTimeout(seguimiento, 8000); }
-}
 fetch('api/dia').then(r=>r.json()).then(d=>{
   document.getElementById('estado').textContent = 'Leído de la base ' + d.fuente_lectura + ' el ' + d.fecha + '. ' + d.banner;
   const f = document.getElementById('frases');
