@@ -13,7 +13,7 @@ Incluye 80 productos de ejemplo con categorías, precios, stock y atributos.
     'data': [
         'security/ir.model.access.csv',
         'views/furniture_product_views.xml',
-        'data/furniture_products.csv',
+        'data/furniture.product.csv',
     ],
     'installable': True,
     'application': True,
