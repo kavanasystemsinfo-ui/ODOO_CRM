@@ -29,6 +29,15 @@ def _json(url: str, tiempo: int = 15) -> dict:
         return json.loads(respuesta.read().decode("utf-8"))
 
 
+def _json_post(url: str, datos: dict, tiempo: int = 60) -> dict:
+    peticion = urllib.request.Request(
+        url, data=json.dumps(datos).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(peticion, timeout=tiempo) as respuesta:
+        return json.loads(respuesta.read().decode("utf-8"))
+
+
 def test_el_verificador_del_laboratorio_pasa(configuracion):
     resultado = subprocess.run(
         [sys.executable, str(RAIZ / "panel" / "demo_restaurar_muebles.py"), "--verificar"],
@@ -48,3 +57,12 @@ def test_odoo_responde_en_su_puerto(configuracion):
     url = f"http://127.0.0.1:{configuracion.puerto_odoo_host()}/web/login"
     with urllib.request.urlopen(url, timeout=15) as respuesta:
         assert respuesta.status == 200
+
+
+def test_el_asistente_tecnico_responde(configuracion):
+    datos = _json_post(
+        f"http://127.0.0.1:{configuracion.puerto_panel()}/api/preguntar",
+        {"pregunta": "¿cuántas pruebas tiene la suite y cómo se comprueba el almacén?"},
+    )
+    assert datos.get("respuesta"), datos
+    assert datos.get("origen") in {"modelo", "sin-clave", "modelo-fallo"}

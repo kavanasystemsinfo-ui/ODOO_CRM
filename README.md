@@ -17,8 +17,9 @@ reinicio.
   en español.
 - Los tres catálogos (modelo propio, productos estándar y tienda) muestran los
   **mismos 80 productos**: precio, coste, categoría y existencias coinciden.
-- Descripciones de venta en español, con material, medidas y estilo deducidos de
-  la ficha original.
+- Descripciones de venta en español, con material y estilo deducidos de la ficha
+  original (la ficha de origen trae las medidas en pulgadas dentro del texto; el
+  laboratorio no las publica todavía).
 - **Almacén cuadrado**: las 2.190 unidades en existencias coinciden exactamente
   con la suma de los movimientos de almacén; no hay género sin justificar.
 - Almacén vivo: 33 entregas hechas y 4 listas para salir; 8 recepciones hechas y
@@ -62,7 +63,8 @@ dando error 500 aunque los datos ya sean correctos. Ver
 - `data/`: catálogo de 80 muebles (`furniture.product.csv`) y datos de origen de
   District Home (`districthome_products.json`).
 - `scripts/`: utilidades del laboratorio (ver abajo).
-- `panel/`: **panel del día**, su configuración y el motor de restauración.
+- `panel/`: **panel del día**, su configuración, el motor de restauración y el
+  asistente técnico (`asistente.py`).
 
 ## Landing del proyecto
 
@@ -95,6 +97,11 @@ dando error 500 aunque los datos ya sean correctos. Ver
 - **Botón de reinicio**: devuelve el laboratorio a su estado inicial desde la
   instantánea canónica. Exige la sesión de administrador del propio Odoo (un
   visitante anónimo recibe un 403) y hay 3 minutos de espera entre reinicios.
+- **Asistente técnico** (`POST /panel/api/preguntar`, ver `panel/asistente.py`):
+  responde preguntas sobre el proyecto buscando en los documentos reales del
+  repositorio (README, tests, panel y scripts). Con clave de modelo redacta la
+  respuesta usando esos fragmentos como único contexto y los cita; sin clave,
+  devuelve los fragmentos tal cual y lo declara.
 
 ```bash
 systemctl status muebles-panel                     # estado del servicio
@@ -131,22 +138,25 @@ docker exec -i <contenedor_odoo> odoo shell -d <base_de_datos> --no-http < scrip
 
 Suite de `pytest` que corre sin Odoo y sin PostgreSQL: comprueba el catálogo de
 80 muebles, el módulo (manifiesto, vistas, permisos y controlador), la lógica del
-panel (formato español, frases deterministas y salud del dato) y la coherencia de
-los recuentos del verificador. Son **52 pruebas**.
+panel (formato español, frases deterministas y salud del dato), el asistente
+técnico y la coherencia de los recuentos del verificador. Son **62 pruebas**.
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest            # 52 pruebas, sin laboratorio
+python -m pytest            # 58 pruebas, sin laboratorio
 ```
 
-Las **3 pruebas que sí necesitan el laboratorio en marcha** (Odoo respondiendo,
-panel del día y el verificador de recuentos) se saltan solas salvo que se pidan:
+Las **4 pruebas que sí necesitan el laboratorio en marcha** (Odoo respondiendo,
+panel del día, asistente técnico y el verificador de recuentos) se saltan solas
+salvo que se pidan:
 
 ```bash
 MUEBLES_LAB=1 python -m pytest -m vivo
 ```
 
 GitHub las ejecuta en cada push con el flujo `.github/workflows/tests.yml`.
+Los comandos se lanzan desde la raíz del repositorio (el módulo es un paquete de
+Odoo y la configuración de `pytest` lo tiene en cuenta).
 
 ## Instalación
 

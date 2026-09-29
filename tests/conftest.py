@@ -63,3 +63,8 @@ def verificador():
 @pytest.fixture(scope="session")
 def configuracion():
     return _cargar("configuracion", PANEL / "configuracion.py")
+
+
+@pytest.fixture(scope="session")
+def asistente():
+    return _cargar("asistente", PANEL / "asistente.py")

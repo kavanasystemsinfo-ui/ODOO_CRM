@@ -139,6 +139,24 @@ h2 + .dos-columnas, h2 + .grid, h2 + .tres-columnas { margin-top: 1.6rem; }
 footer { border-top: 1px solid var(--border); background: var(--bg2); color: var(--muted); text-align: center; padding: 2rem 2rem 2.5rem; font-size: .87rem; }
 footer p { max-width: 70ch; margin: 0 auto .5rem; }
 
+/* ---------- Asistente técnico (chat) ---------- */
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.chat { max-width: 760px; margin: 1.5rem auto 0; display: flex; flex-direction: column; gap: .75rem; }
+.chat-log { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; display: flex; flex-direction: column; gap: .6rem; max-height: 380px; overflow-y: auto; }
+.chat-msg { padding: .7rem .9rem; border-radius: var(--rsm); font-size: .95rem; white-space: pre-wrap; max-width: 88%; }
+.chat-msg.bot { background: var(--bg2); border: 1px solid var(--border); align-self: flex-start; }
+.chat-msg.user { background: var(--orange-s); border: 1px solid var(--orange2); align-self: flex-end; }
+.chat-msg.pensando { color: var(--text2); font-style: italic; }
+.chat-form { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.chat-form input { flex: 1 1 260px; background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: var(--rsm); padding: .75rem .9rem; font-family: inherit; font-size: .95rem; }
+.chat-form input:focus { outline: none; border-color: var(--orange); }
+.chat-form .boton { border: 0; cursor: pointer; }
+.chat-form .boton[disabled] { opacity: .6; cursor: progress; }
+.chat-sugerencias { display: flex; flex-wrap: wrap; gap: .4rem; }
+.chip { background: transparent; border: 1px solid var(--border); color: var(--text2); border-radius: 999px; padding: .35rem .85rem; font-family: inherit; font-size: .82rem; cursor: pointer; }
+.chip:hover { border-color: var(--orange); color: var(--text); }
+#chat-fuentes code { font-family: var(--mono); font-size: .8rem; }
+
 @media (max-width: 800px) {
   .nav { height: auto; padding: .8rem 1.2rem; }
   .nav nav { gap: 1rem; }

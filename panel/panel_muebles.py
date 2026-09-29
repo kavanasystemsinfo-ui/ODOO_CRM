@@ -38,6 +38,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import configuracion  # noqa: E402
+import asistente  # noqa: E402
 
 BANNER = "Laboratorio de demostración — Muebles del Hogar S.L. (base furniture_db)"
 CATALOGO = ("pc.complete_name LIKE 'Muebles de Hogar%'")
@@ -455,6 +456,19 @@ class PanelHandler(BaseHTTPRequestHandler):
                 "estado": "iniciado",
                 "mensaje": "Reinicio en marcha. Tarda cerca de un minuto; esta página "
                            "se actualizará sola."})
+            return
+        if self.path == "/api/preguntar":
+            try:
+                largo = int(self.headers.get("Content-Length", "0") or 0)
+                cuerpo = json.loads(self.rfile.read(largo).decode("utf-8") or "{}")
+            except (ValueError, UnicodeDecodeError):
+                self._responder_json(400, {"error": "petición no válida"})
+                return
+            pregunta = str(cuerpo.get("pregunta", "")).strip()[:400]
+            try:
+                self._responder_json(200, asistente.responder(pregunta))
+            except Exception as exc:  # noqa: BLE001
+                self._responder_json(500, {"error": f"el asistente falló: {exc}"})
             return
         self._responder_json(404, {"error": "ruta no encontrada"})
 
