@@ -37,9 +37,9 @@ docker exec -i <contenedor_odoo> odoo shell -d <base_de_datos> --db_host=<host> 
 
 ## Acceso al laboratorio
 
-- URL pública prevista: `https://muebles.kavanasystems.com` (pendiente de DNS).
+- URL pública activa: `https://muebles.kavanasystems.com` (HTTPS con Let's Encrypt).
 - Acceso local: `http://127.0.0.1:8070`.
-- Administrador: usuario `admin`, contraseña `admin` (cambiar en producción).
+- Administrador: usuario `admin`; contraseña en el fichero de credenciales del perfil (no versionado).
 
 ## Autor
 
