@@ -68,3 +68,8 @@ def configuracion():
 @pytest.fixture(scope="session")
 def asistente():
     return _cargar("asistente", PANEL / "asistente.py")
+
+
+@pytest.fixture(scope="session")
+def sandbox():
+    return _cargar("sandbox", PANEL / "sandbox.py")
