@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="panel_template" name="Panel de Muebles del Hogar">
+        <t t-call="website.layout">
+            <div class="container mt-5">
+                <h1>Panel de control - Muebles del Hogar S.L.</h1>
+                <p class="lead">Resumen del laboratorio</p>
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary mb-3">
+                            <div class="card-header">Productos totales</div>
+                            <div class="card-body">
+                                <h5 class="card-title" t-esc="total_products"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success mb-3">
+                            <div class="card-header">Productos de muebles</div>
+                            <div class="card-body">
+                                <h5 class="card-title" t-esc="furniture_products"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-info mb-3">
+                            <div class="card-header">Clientes</div>
+                            <div class="card-body">
+                                <h5 class="card-title" t-esc="customers"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning mb-3">
+                            <div class="card-header">Pedidos de venta</div>
+                            <div class="card-body">
+                                <h5 class="card-title" t-esc="orders"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <a href="/web/login" class="btn btn-secondary mt-3">Acceder al panel de administración</a>
+            </div>
+        </t>
+    </template>
+</odoo>
