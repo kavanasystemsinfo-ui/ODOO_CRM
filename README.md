@@ -45,6 +45,7 @@ movimiento real, tienda online y panel de control.
 | `scripts/limpieza_catalogo.py` | Deja un solo catálogo: renombra socios heredados, reapunta los pedidos al catálogo real y retira el catálogo genérico. |
 | `scripts/limpieza_catalogo_remate.py` | Termina la limpieza de las líneas de pedido que Odoo bloqueaba (facturadas/entregadas). |
 | `scripts/montar_almacen.py` | Existencias iniciales con movimiento trazado, compras recibidas y entregas hechas. |
+| `scripts/retirar_catalogo_heredado.py` | Retira el catálogo genérico que seguía archivado: lotes, facturas de la demo, líneas de pedido y apuntes de valoración. |
 | `scripts/alinear_modelo.py` | Vuelca el catálogo real en `furniture.product` y regenera el CSV del módulo. |
 
 Se ejecutan con `odoo shell` desde el contenedor:
