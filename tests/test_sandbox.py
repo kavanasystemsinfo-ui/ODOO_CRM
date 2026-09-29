@@ -15,6 +15,15 @@ import pytest
 CONF_SANDBOX = Path("/root/.hermes/profiles/hermes2/odoo_sandbox.conf")
 
 
+def _conf_disponible() -> bool:
+    # En CI la ruta no existe y además no se puede ni mirar (PermissionError):
+    # comprobar rutas del servidor nunca puede tumbar la recolección.
+    try:
+        return CONF_SANDBOX.is_file()
+    except OSError:
+        return False
+
+
 def test_nombre_valido_acepta_lo_que_generamos(sandbox):
     assert sandbox.nombre_valido("muebles_demo_a1b2c3d4")
     assert sandbox.nombre_valido("muebles_demo_abcdef")
@@ -107,7 +116,7 @@ def test_el_tope_y_la_vida_se_pueden_configurar(sandbox, monkeypatch):
     assert sandbox.ttl() == 600
 
 
-@pytest.mark.skipif(not CONF_SANDBOX.exists(), reason="config del Odoo de visitantes fuera del repositorio")
+@pytest.mark.skipif(not _conf_disponible(), reason="config del Odoo de visitantes fuera del repositorio")
 def test_el_odoo_de_visitantes_sirve_solo_sus_bases(sandbox):
     """La plantilla no puede servirse nunca, y el filtro debe aceptar los clones."""
     import re
