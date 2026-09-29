@@ -1,0 +1,33 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "landing/**"
+      - "video/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  suite:
+    name: Suite del laboratorio (sin Odoo)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias de test
+        run: pip install -r requirements-dev.txt
+
+      - name: Comprobar el catálogo, el módulo y la lógica del panel
+        run: python -m pytest tests -v
+
+      - name: Resumen
+        if: always()
+        run: echo "Las pruebas que necesitan el laboratorio en marcha se saltan solas en CI (MUEBLES_LAB=1 para lanzarlas en el servidor)."

@@ -127,6 +127,27 @@ Se ejecutan con `odoo shell` desde el contenedor:
 docker exec -i <contenedor_odoo> odoo shell -d <base_de_datos> --no-http < scripts/montar_almacen.py
 ```
 
+## Tests
+
+Suite de `pytest` que corre sin Odoo y sin PostgreSQL: comprueba el catálogo de
+80 muebles, el módulo (manifiesto, vistas, permisos y controlador), la lógica del
+panel (formato español, frases deterministas y salud del dato) y la coherencia de
+los recuentos del verificador. Son **52 pruebas**.
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest            # 52 pruebas, sin laboratorio
+```
+
+Las **3 pruebas que sí necesitan el laboratorio en marcha** (Odoo respondiendo,
+panel del día y el verificador de recuentos) se saltan solas salvo que se pidan:
+
+```bash
+MUEBLES_LAB=1 python -m pytest -m vivo
+```
+
+GitHub las ejecuta en cada push con el flujo `.github/workflows/tests.yml`.
+
 ## Instalación
 
 1. Clona este repositorio en tu carpeta de addons de Odoo.

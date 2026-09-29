@@ -1,0 +1,2 @@
+# Dependencias de la suite de tests (el módulo en sí no necesita ninguna).
+pytest>=8
