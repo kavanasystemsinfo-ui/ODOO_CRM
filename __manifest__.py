@@ -1,8 +1,8 @@
 {
-    'name': 'Home Furniture Simulation (ODOO_CRM)',
+    'name': 'Mobiliario del Hogar (laboratorio ODOO_CRM)',
     'version': '17.0.1.0.0',
     'category': 'Sales',
-    'summary': 'Simulación de empresa de muebles de hogar con 80 productos',
+    'summary': 'Simulación de empresa española de muebles de hogar con 80 productos',
     'description': """
 Módulo de simulación para una empresa de muebles de hogar.
 Incluye 80 productos de ejemplo con categorías, precios, stock y atributos.

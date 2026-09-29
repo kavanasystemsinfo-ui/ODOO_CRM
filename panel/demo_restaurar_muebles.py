@@ -65,8 +65,8 @@ ESPERADO = {
     "albaranes": 48,
     "albaranes hechos": 41,
     "pedidos de compra": 11,
-    "asientos contables": 13,
-    "actividades": 31,
+    "asientos contables": 10,
+    "actividades": 30,
     "unidades en almacén": 2190,
 }
 
