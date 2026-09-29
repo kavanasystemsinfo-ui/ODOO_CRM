@@ -217,7 +217,7 @@ respaldo movimientos . 2.190
     </div>
     <div class="tarjeta">
       <h4>Calidad</h4>
-      <p><strong>62 pruebas</strong> de <code>pytest</code> sobre catálogo, módulo, panel y asistente, ejecutadas en cada push con GitHub Actions; un verificador de <strong>14 recuentos</strong> contra el estado inicial y una instantánea canónica para restaurarlo.</p>
+      <p><strong>66 pruebas</strong> de <code>pytest</code> sobre catálogo, módulo, panel y asistente, ejecutadas en cada push con GitHub Actions; un verificador de <strong>14 recuentos</strong> contra el estado inicial y una instantánea canónica para restaurarlo.</p>
     </div>
   </div>
 </section>
@@ -244,7 +244,7 @@ PostgreSQL 15  ──  furniture_db (contabilidad, almacén con movimiento traza
 <section id="tests" class="seccion fondo-claro">
   <span class="sl">Tests</span>
   <h2>Lo que está probado, y cómo comprobarlo</h2>
-  <p class="intro"><strong>62 pruebas</strong> con <code>pytest</code>: 58 corren sin Odoo ni PostgreSQL y se lanzan en cada push con GitHub Actions; las otras 4 van contra el laboratorio en marcha y se saltan solas cuando no está.</p>
+  <p class="intro"><strong>66 pruebas</strong> con <code>pytest</code>: 62 corren sin Odoo ni PostgreSQL y se lanzan en cada push con GitHub Actions; las otras 4 van contra el laboratorio en marcha y se saltan solas cuando no está.</p>
   <div class="grid">
     <div class="ficha"><span class="etiqueta">CATÁLOGO</span><h4>El dato no se descuadra</h4><p>80 fichas con identificadores correlativos, reparto por las 9 categorías, precios y costes con margen coherente, existencias enteras, garantía de 24 meses y descripciones en español. Si alguien toca el CSV y descuadra el reparto, la suite lo dice.</p></div>
     <div class="ficha"><span class="etiqueta">MÓDULO</span><h4>El módulo está bien formado</h4><p>Manifiesto con sus dependencias y su licencia, versión de Odoo 17, cada fichero declarado existe, las vistas son XML válido y usan el modelo propio, los permisos son los correctos, el controlador exige sesión y el modelo declara todos los campos del catálogo.</p></div>
@@ -254,7 +254,7 @@ PostgreSQL 15  ──  furniture_db (contabilidad, almacén con movimiento traza
   <div class="codigo">
 <pre># En tu máquina, sin Odoo ni PostgreSQL
 pip install -r requirements-dev.txt
-python -m pytest                 <span class="ok"># 58 pruebas</span>
+python -m pytest                 <span class="ok"># 62 pruebas</span>
 
 # Contra el laboratorio en marcha (Odoo, panel y verificador)
 MUEBLES_LAB=1 python -m pytest -m vivo   <span class="ok"># 4 pruebas</span>
@@ -283,7 +283,7 @@ python3 panel/demo_restaurar_muebles.py --verificar   <span class="ok"># 14 recu
       <div class="botones">
         <a class="boton" href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM" target="_blank" rel="noopener">Ver el código en GitHub</a>
         <a class="boton secundario" href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM/blob/main/README.md" target="_blank" rel="noopener">Leer el README</a>
-        <a class="boton secundario" href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM/tree/main/tests" target="_blank" rel="noopener">Ver las 62 pruebas</a>
+        <a class="boton secundario" href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM/tree/main/tests" target="_blank" rel="noopener">Ver las 66 pruebas</a>
         <a class="boton secundario" href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM/actions" target="_blank" rel="noopener">Resultados de la CI</a>
       </div>
     </div>

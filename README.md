@@ -139,11 +139,11 @@ docker exec -i <contenedor_odoo> odoo shell -d <base_de_datos> --no-http < scrip
 Suite de `pytest` que corre sin Odoo y sin PostgreSQL: comprueba el catálogo de
 80 muebles, el módulo (manifiesto, vistas, permisos y controlador), la lógica del
 panel (formato español, frases deterministas y salud del dato), el asistente
-técnico y la coherencia de los recuentos del verificador. Son **62 pruebas**.
+técnico y la coherencia de los recuentos del verificador. Son **66 pruebas**.
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest            # 58 pruebas, sin laboratorio
+python -m pytest            # 62 pruebas, sin laboratorio
 ```
 
 Las **4 pruebas que sí necesitan el laboratorio en marcha** (Odoo respondiendo,
