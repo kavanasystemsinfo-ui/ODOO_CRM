@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Muebles del Hogar S.L. · Laboratorio Odoo 17 (demostración técnica)</title>
+<meta name="description" content="Proyecto de demostración: una empresa española ficticia de muebles montada sobre Odoo 17 — catálogo de 80 piezas, almacén que cuadra con el libro, tienda publicada, panel del día y botón para restaurar el laboratorio.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M3 11h18v6H3z"/><path d="M7 17v2M17 17v2"/></svg>
+      Muebles del Hogar · laboratorio Odoo 17
+    </a>
+    <nav>
+      <a href="#proyecto">Proyecto</a>
+      <a href="#laboratorio">El laboratorio</a>
+      <a href="#construido">Lo construido</a>
+      <a href="#panel">Panel del día</a>
+      <a href="#evidencia">Evidencia</a>
+      <a href="#acceso">Acceso</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <p class="badge">Proyecto de demostración · empresa ficticia · no conectado a sistemas reales</p>
+    <h1>Una empresa española de muebles montada entera sobre Odoo 17, con panel del día y botón para devolverla a cero</h1>
+    <p class="sub">Catálogo de 80 muebles, almacén que cuadra con el libro, tienda publicada en español y euros, pedidos, compras y un panel que cada mañana dice qué necesita decisión. Todo sobre un laboratorio aislado (<code>furniture_db</code>) con datos de ejemplo declarados como tales, y con la restauración probada de verdad: un clic y el laboratorio vuelve a su estado inicial.</p>
+    <div class="hero-cifras">
+      <div class="cifra"><strong>80</strong><span>muebles publicados, con precio, coste, medidas y material</span></div>
+      <div class="cifra"><strong>2.190</strong><span>unidades en almacén, idénticas al respaldo de movimientos</span></div>
+      <div class="cifra"><strong>56 + 11</strong><span>pedidos de venta y de compra, con su almacén detrás</span></div>
+      <div class="cifra"><strong>21 %</strong><span>IVA español en todo; precios y formatos en euros</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="proyecto" class="seccion">
+  <span class="sl">El proyecto</span>
+  <h2>Qué es y por qué se ha hecho</h2>
+  <div class="dos-columnas">
+    <div>
+      <h3>Qué es</h3>
+      <p>Un laboratorio de <strong>Odoo 17</strong> que simula una empresa de muebles de hogar completa: catálogo propio, clientes y proveedores del sector, almacén con movimiento trazado, pedidos de venta y de compra, tienda online y un <strong>panel del día</strong> con botón para restaurarlo todo.</p>
+      <p>La empresa es ficticia: <strong>Muebles del Hogar S.L.</strong>, con sede en Castelló de la Plana y NIF de laboratorio. Los datos son de ejemplo y así se declara aquí y en el propio panel. No hay ningún dato de ninguna empresa real detrás.</p>
+      <p>El catálogo de producto sí es real en su origen: las 80 piezas se extrajeron de <strong>District Home</strong> (Green Front Furniture, EE. UU.) con su precio, coste, material, medidas y fotografía. El laboratorio, en cambio, está ambientado como empresa española: nombres de mueble, categorías, descripciones, moneda e impuestos en español. Ese traslado se cuenta aquí porque es parte del trabajo, no un detalle escondido.</p>
+    </div>
+    <div>
+      <h3>Por qué se ha hecho</h3>
+      <p>Para demostrar <strong>capacidad real de montar un ERP de empresa</strong> —y no una maqueta— con criterio de ingeniería: datos que cuadran entre pantallas, automatizaciones que se pueden reejecutar y un entorno que se puede romper probando porque vuelve solo a su sitio.</p>
+      <p>Tres reglas se sostienen en todo el proyecto:</p>
+      <ul>
+        <li><strong>Si no cuadra, no se tapa.</strong> El almacén no se «ajusta» a ojo: cada unidad de las 2.190 está respaldada por un movimiento, y la diferencia con el libro se verifica a cero.</li>
+        <li><strong>Lo que no se sabe, se dice.</strong> El panel separa lo que calcula con reglas de lo que redactaría un modelo de IA; sin clave de modelo, lo declara en vez de aparentar que ha pensado.</li>
+        <li><strong>Nada se promete sin prueba.</strong> Cada afirmación de esta página se puede comprobar en el propio laboratorio mientras lo visitas.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="laboratorio" class="seccion fondo-claro">
+  <span class="sl">El laboratorio</span>
+  <h2>Cómo está montado</h2>
+  <p class="intro">Odoo 17 con PostgreSQL 15, contenedores separados y aislados del resto, servido por HTTPS propio. El laboratorio vive en un servidor modesto: lo que se demuestra aquí no necesita infraestructura de gran empresa.</p>
+  <div class="tres-columnas">
+    <div class="tarjeta">
+      <h4>Aislado de verdad</h4>
+      <p>Base <code>furniture_db</code> en su propio contenedor, con filtro de bases: el servidor no sirve ninguna otra base. Un dominio propio, certificado HTTPS y el puerto de Odoo cerrado al exterior.</p>
+    </div>
+    <div class="tarjeta">
+      <h4>Coherente consigo mismo</h4>
+      <p>Los mismos 80 muebles, con el mismo precio y el mismo stock, aparecen en el modelo propio, en los productos estándar y en la tienda. Ninguna pantalla cuenta una historia distinta.</p>
+    </div>
+    <div class="tarjeta">
+      <h4>Español y euros</h4>
+      <p>1.469 plantillas traducidas, el CRM con sus tramos en español (Nuevo, Calificado, Propuesta, Ganado), IVA del 21 % en productos, pedidos y compras, y formato español de importes.</p>
+    </div>
+  </div>
+
+  <div class="codigo">
+<pre># Comprobación de que el almacén cuadra con el libro (consulta real al laboratorio)
+existencias ......... 2.190
+respaldo movimientos . 2.190
+<span class="ok">diferencia ........... 0   <- nada sin justificar</span>
+
+# Lo que dice el panel del día (reglas, no modelo):
+"Buenos días. El catálogo tiene 80 muebles publicados y el almacén guarda
+ 2.190 unidades en 80 referencias, por un valor de 5.173.986 €."
+"De 56 pedidos, 37 están confirmados y 19 siguen en presupuesto."
+<span class="hi">"He revisado 30 actividades asignadas: 5 vencidas, 7 de hoy, 4 de mañana y 15 próximas."</span></pre>
+  </div>
+</section>
+
+<section id="construido" class="seccion">
+  <span class="sl">Lo construido</span>
+  <h2>Qué hay dentro, y en qué estado</h2>
+  <p class="intro">Diez piezas con su estado real: <strong>VERIFICADO</strong> significa que hay una comprobación hecha y citada, no una intención.</p>
+  <div class="grid">
+    <div class="ficha"><span class="etiqueta">CATÁLOGO</span><h4>80 muebles coherentes</h4><p>Del sofá al espejo, con precio, coste, categoría, material, medidas, estilo, garantía, descripción e imagen. Los tres catálogos muestran lo mismo.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">TIENDA</span><h4>Escaparate publicable</h4><p>Tienda online en español, con nueve secciones propias (sofás, comedor, dormitorio, recibidores…), precios en euros y ficha de producto con su fotografía.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">ALMACÉN</span><h4>Existencias cuadradas</h4><p>2.190 unidades respaldadas al 100 % por movimientos trazados. Cuando hubo un descuadre de 11 unidades, se buscó la causa y se cerró: no se ajustó a ojo.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">VENTAS</span><h4>Pedidos y compras con historia</h4><p>56 pedidos de venta (37 confirmados y 19 presupuestos), 11 pedidos de compra, 48 albaranes y un almacén con entregas hechas, listas y recepciones pendientes.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">ESPAÑOL</span><h4>Idioma, moneda e impuestos</h4><p>Español cargado y por defecto, euro como única moneda, IVA del 21 % aplicado a productos, pedidos y compras, y empresa con dirección y NIF de laboratorio.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">LIMPIEZA</span><h4>Sin restos de la demo</h4><p>Retirado el catálogo genérico y sus facturas, renombrados los socios heredados, sustituidas las categorías de la demo y pasadas a español las oportunidades y actividades.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">PANEL</span><h4>Panel del día</h4><p>Cifras, lo que pide atención y salud del dato. Entre sus comprobaciones va que el almacén cuadre y que todos los pedidos apunten al catálogo real.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">IA</span><h4>IA declarada, no simulada</h4><p>La redacción por modelo está preparada y se precomputa aparte. Si no hay clave, el panel lo dice: las frases que ves son reglas explícitas. Ninguna caja negra.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">REINICIO</span><h4>Botón para dejarlo como nuevo</h4><p>El panel puede devolver el laboratorio a su estado inicial desde una instantánea canónica. Exige sesión de administrador y tiene tres minutos de espera entre reinicios.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">RESTAURAR</span><h4>Restauración probada de verdad</h4><p>No basta con el botón: se paró Odoo, se rehízo la base, se cargó la instantánea y se arrancó. El manifiesto de 14 recuentos salió en verde y el almacén siguió cuadrando.</p><span class="estado">VERIFICADO</span></div>
+  </div>
+</section>
+
+<section id="panel" class="seccion fondo-claro">
+  <span class="sl">El panel del día</span>
+  <h2>Lo que hace útil a un ERP: decir qué toca hoy</h2>
+  <div class="dos-columnas">
+    <div>
+      <h3>Qué responde</h3>
+      <ul>
+        <li><strong>Las cifras de un vistazo:</strong> catálogo, valor del almacén, entregas y recepciones, pedidos confirmados frente a presupuestos.</li>
+        <li><strong>Lo que pide decisión:</strong> las actividades vencidas y las de hoy, las entregas preparadas para salir y las recepciones pendientes, cada una con su persona y su documento.</li>
+        <li><strong>La salud del dato:</strong> comprueba que el almacén cuadre con el libro y que ningún pedido apunte a un producto que no existe. Un ERP no puede arreglar lo que no se registra.</li>
+        <li><strong>Lo que no hay:</strong> si un dato no existe o un módulo no se usa, lo dice en vez de rellenarlo.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Cómo está hecho</h3>
+      <p>Es un servicio propio, independiente de Odoo: lee la base por consulta directa y <strong>solo lee</strong>. Si el laboratorio no responde, sirve la caché del día y lo declara, en lugar de enseñar una pantalla rota o inventarse cifras.</p>
+      <p>Las frases de resumen son <strong>reglas deterministas</strong>: se pueden leer, discutir y corregir. La parte de modelo de lenguaje está preparada para redactarlas, y si no hay clave configurada el panel lo dice abiertamente.</p>
+      <p>El botón de reinicio exige haber entrado antes en Odoo como administrador: un visitante anónimo recibe un <em>403</em>. Es la única acción del panel que escribe algo.</p>
+    </div>
+  </div>
+</section>
+
+<section id="evidencia" class="seccion">
+  <span class="sl">Evidencia</span>
+  <h2>Capturas reales, no maquetas</h2>
+  <p class="intro">Pantallazos tomados del laboratorio publicado mientras se preparaba esta página:</p>
+  <div class="galeria">
+    <figure>
+      <img src="assets/captura-panel-dia-20260929.png" alt="Captura real del panel del día del laboratorio de muebles: cifras del catálogo y del almacén, lo que pide atención y salud del dato">
+      <figcaption>El panel del día del laboratorio de muebles. Captura real, publicada en <a href="/panel/" target="_blank" rel="noopener">/panel/</a>.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/captura-tienda-20260929.png" alt="Captura real de la tienda del laboratorio: muebles con precios en euros y secciones en español">
+      <figcaption>La tienda, con precios en euros y secciones en español, servida desde Odoo.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/captura-ficha-20260929.png" alt="Captura real de la ficha de un producto del catálogo, con su descripción en español, medidas, material y precio en euros">
+      <figcaption>Ficha de producto: descripción, material, medidas y precio, todo en español y en euros.</figcaption>
+    </figure>
+  </div>
+  <p class="nota">Toda cifra citada en esta página (80 muebles, 2.190 unidades, 56 pedidos, 11 compras, IVA del 21 %, 1.469 plantillas traducidas) sale de consultas hechas sobre el laboratorio en marcha. Los pantallazos son del propio laboratorio publicado, sin retoques.</p>
+</section>
+
+<section id="acceso" class="seccion fondo-claro">
+  <span class="sl">Probar</span>
+  <h2>Acceso a la demostración</h2>
+  <div class="demo-box">
+    <h3>Tu turno</h3>
+    <p>El laboratorio está publicado y se puede tocar. Se sirve únicamente la base <code>furniture_db</code>, aislada por configuración: no hay ningún dato real detrás de estas claves.</p>
+    <ul>
+      <li><strong>Panel del día</strong> (solo lectura, sin credenciales): <a href="/panel/" target="_blank" rel="noopener">https://muebles.kavanasystems.com/panel/</a></li>
+      <li><strong>Tienda</strong> (pública): <a href="/shop" target="_blank" rel="noopener">https://muebles.kavanasystems.com/shop</a></li>
+      <li><strong>Odoo completo</strong> (ventas, almacén, compras, CRM, contabilidad): <a href="/web/login" target="_blank" rel="noopener">https://muebles.kavanasystems.com/web/login</a></li>
+    </ul>
+    <h4>Credenciales de demostración</h4>
+    <ul>
+      <li>Entrada a Odoo: usuario <code>admin</code> · clave <code>1Yb15wNX1S-StWLmnXEM0Q</code></li>
+    </ul>
+    <p class="nota">Escribe el usuario a mano, sin espacios al final. La contraseña maestra de la base no se publica. El laboratorio es un entorno de demostración aislado: puedes trastear, crear y borrar lo que quieras.</p>
+    <div class="reinicio-landing">
+      <h4>¿La has liado probando? Hay botón para dejarlo como nuevo</h4>
+      <p>En el panel del día está el botón <strong>Restaurar el laboratorio</strong>: devuelve la base a su estado inicial en un minuto, borrando lo que se haya cambiado. Para usarlo hay que haber entrado antes en Odoo (es la sesión de administrador la que autoriza), y entre reinicio y reinicio hay tres minutos de espera.</p>
+      <a class="boton" href="/panel/" target="_blank" rel="noopener">Abrir el panel del día</a>
+      <a class="boton secundario" href="/shop" target="_blank" rel="noopener">Ver la tienda</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Proyecto de demostración de Kavana Systems · Laboratorio <code>furniture_db</code> (empresa ficticia con datos de ejemplo), no conectado a los sistemas de ninguna empresa real.</p>
+  <p>Catálogo de producto de origen: District Home (Green Front Furniture, EE. UU.). Ambiente, idioma, moneda e impuestos: empresa española.</p>
+</footer>
+
+</body>
+</html>

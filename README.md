@@ -64,6 +64,21 @@ dando error 500 aunque los datos ya sean correctos. Ver
 - `scripts/`: utilidades del laboratorio (ver abajo).
 - `panel/`: **panel del día**, su configuración y el motor de restauración.
 
+## Landing del proyecto
+
+- URL pública: `https://muebles.kavanasystems.com/muebles/` (y el dominio raíz
+  redirige ahí). Es la puerta de entrada que ve quien visita el proyecto.
+- Es una página **estática** (`/var/www/html/muebles/`, versionada en
+  `landing/`), con el estilo de Kavana Systems: tema oscuro, naranja corporativo,
+  tipografías Inter y JetBrains Mono.
+- Cuenta qué es el laboratorio, cómo está montado, qué hay dentro con su estado
+  (VERIFICADO), cómo funciona el panel del día, las capturas reales y el acceso
+  a la demostración. **Toda cifra de la landing se puede comprobar en el
+  laboratorio en marcha.**
+- Al publicarla, la portada del sitio de Odoo pasó a ser la tienda (`/shop`) y
+  la antigua página del laboratorio se movió a `/laboratorio`. El panel del
+  módulo sigue en `/muebles/panel` (lo sirve Odoo, no la landing).
+
 ## Panel del día
 
 - URL pública: `https://muebles.kavanasystems.com/panel/` (servicio propio,
