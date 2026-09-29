@@ -7,6 +7,7 @@ Módulo Odoo que simula una empresa de muebles de hogar con 80 productos, client
 - Modelo `furniture.product` con catálogo de 80 muebles (nombre, categoría, PVP, coste, stock, material, dimensiones, estilo, garantía y descripción).
 - Categorías de producto: Sofás, Mesas, Sillas, Camas, Armarios, Estanterías, Escritorios, Butacas, Mesitas, Recibidores, Bancos y Colchones.
 - Productos estándar de Odoo creados a partir del catálogo, publicados en la tienda online.
+- Los 80 productos del catálogo estándar se han extraído de District Home (tienda online de Green Front Furniture) mediante `scripts/import_districthome_products.py`.
 - Stock inicial para los 80 productos.
 - 30 clientes de ejemplo.
 - 40 pedidos de venta (la mitad confirmados).
