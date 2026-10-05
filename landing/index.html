@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Muebles del Hogar S.L. · Laboratorio Odoo 17 (demostración técnica)</title>
-<meta name="description" content="Proyecto de demostración: una empresa española ficticia de muebles montada sobre Odoo 17 — catálogo de 80 piezas, almacén que cuadra con el libro, tienda publicada, panel del día y botón para restaurar el laboratorio.">
+<title>Laboratorio Odoo 17 · Kavana Systems (demostración técnica)</title>
+<meta name="description" content="Proyecto de demostración: laboratorio Odoo 17 completo que muestra capacidad de montar un ERP desde cero, crear asistente técnico IA que busca en docs reales, y mantener tests verificables. El mueble es solo el ejemplo concreto; la arquitectura es agnóstica.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -35,37 +35,51 @@
 
 <section class="hero">
   <div class="hero-inner">
-    <p class="badge">Proyecto de demostración · empresa ficticia · no conectado a sistemas reales</p>
-    <h1>Una empresa española de muebles montada entera sobre Odoo 17, con panel del día y botón para devolverla a cero</h1>
-    <p class="sub">Catálogo de 80 muebles, almacén que cuadra con el libro, tienda publicada en español y euros, pedidos, compras y un panel que cada mañana dice qué necesita decisión. Todo sobre un laboratorio aislado (<code>furniture_db</code>) con datos de ejemplo declarados como tales, y con la restauración probada de verdad: un clic y el laboratorio vuelve a su estado inicial.</p>
+    <p class="badge">Laboratorio verificable · datos de ejemplo · no conectado a sistemas reales</p>
+    <h1>Laboratorio Odoo 17 completo que demuestra capacidad de montar un ERP desde cero, crear asistente técnico IA verificable y mantener tests automáticos</h1>
+    <p class="sub">Architettura agnóstica: el mueble es solo el caso de uso concreto. Lo que se demuestra aquí es la capacidad de:</p>
     <div class="hero-cifras">
-      <div class="cifra"><strong>80</strong><span>muebles publicados, con precio, coste, categoría y material</span></div>
-      <div class="cifra"><strong>2.190</strong><span>unidades en almacén, idénticas al respaldo de movimientos</span></div>
-      <div class="cifra"><strong>56 + 11</strong><span>pedidos de venta y de compra, con su almacén detrás</span></div>
-      <div class="cifra"><strong>21 %</strong><span>IVA español en todo; precios y formatos en euros</span></div>
+      <div class="cifra"><strong>Montar</strong><span>Odoo 17 completo desde cero (modelo, vistas, datos de ejemplo, tienda)</span></div>
+      <div class="cifra"><strong>Automatizar</strong><span>con asistente IA que busca en docs reales (no inventa)</span></div>
+      <div class="cifra"><strong>Verificar</strong><span>con 66 pruebas pytest + verificador de 14 recuentos</span></div>
+      <div class="cifra"><strong>Resetear</strong><span>con un clic (panel del día) o cada 30 min (servidor)</span></div>
     </div>
   </div>
 </section>
 
 <section id="proyecto" class="seccion">
-  <span class="sl">El proyecto</span>
+  <span class="sl">Proyecto</span>
   <h2>Qué es y por qué se ha hecho</h2>
   <div class="dos-columnas">
     <div>
       <h3>Qué es</h3>
-      <p>Un laboratorio de <strong>Odoo 17</strong> que simula una empresa de muebles de hogar completa: catálogo propio, clientes y proveedores del sector, almacén con movimiento trazado, pedidos de venta y de compra, tienda online y un <strong>panel del día</strong> con botón para restaurarlo todo.</p>
-      <p>La empresa es ficticia: <strong>Muebles del Hogar S.L.</strong>, con sede en Castelló de la Plana y NIF de laboratorio. Los datos son de ejemplo y así se declara aquí y en el propio panel. No hay ningún dato de ninguna empresa real detrás.</p>
-      <p>El catálogo de producto sí es real en su origen: las 80 piezas se extrajeron de <strong>District Home</strong> (Green Front Furniture, EE. UU.) con su precio, su fotografía y su ficha original, de la que se dedujeron material y estilo. El laboratorio, en cambio, está ambientado como empresa española: nombres de mueble, categorías, descripciones, moneda e impuestos en español. Ese traslado se cuenta aquí porque es parte del trabajo, no un detalle escondido.</p>
+      <p>Un <strong>laboratorio Odoo 17 verificable</strong> que incluye:</p>
+      <ul>
+        <li>Módulo propio <code>furniture.product</code> con 80 productos de ejemplo</li>
+        <li>Tienda online publicada y coherente con el catálogo</li>
+        <li>Almacén con movimiento trazado que cuadra con el libro</li>
+        <li>Panel del día (servicio propio, solo lectura) que muestra qué necesita decisión hoy</li>
+        <li>Asistente técnico IA que responde solo con lo que hay en el repositorio (README, tests, panel, scripts)</li>
+        <li>Tests automatizados: 66 pytest + verificador de 14 recuentos</li>
+        <li>Mecanismo de reset automático cada 30 minutos + botón manual en el panel</li>
+      </ul>
+      <p><strong>Importante:</strong> el mueble de hogar es solo el ejemplo concreto elegido. La arquitectura, los patrones y las demostraciones técnicas son completamente agnósticas y aplicables a cualquier dominio (industrial, logístico, servicios, etc.).</p>
     </div>
     <div>
       <h3>Por qué se ha hecho</h3>
-      <p>Para demostrar <strong>capacidad real de montar un ERP de empresa</strong> —y no una maqueta— con criterio de ingeniería: datos que cuadran entre pantallas, automatizaciones que se pueden reejecutar y un entorno que se puede romper probando porque vuelve solo a su sitio.</p>
-      <p>Tres reglas se sostienen en todo el proyecto:</p>
+      <p>Para demostrar <strong>capacidad real de montar un ERP de empresa</strong> —y no una maqueta— con criterio de ingeniería:</p>
       <ul>
-        <li><strong>Si no cuadra, no se tapa.</strong> El almacén no se «ajusta» a ojo: cada unidad de las 2.190 está respaldada por un movimiento, y la diferencia con el libro se verifica a cero.</li>
-        <li><strong>Lo que no se sabe, se dice.</strong> El panel separa lo que calcula con reglas de lo que redactaría un modelo de IA; sin clave de modelo, lo declara en vez de aparentar que ha pensado.</li>
-        <li><strong>Nada se promete sin prueba.</strong> Cada afirmación de esta página se puede comprobar en el propio laboratorio mientras lo visitas.</li>
+        <li><strong>Datos que cuadran:</strong> el almacén no se "ajusta" a ojo; cada unidad está respaldada por un movimiento trazado</li>
+        <li><strong>IA honesta:</strong> el asistente nunca inventa; si no hay datos o clave de modelo, lo dice explícitamente</li>
+        <li><strong>Todo verificable:</strong> cada afirmación puede comprobarse en el laboratorio o ejecutando los tests</li>
+        <li><strong>Entorno aislado y reseteable:</strong> puedes trastear sin miedo porque vuelve solo a su estado inicial</li>
       </ul>
+      <p>Tres reglas sostienen todo el proyecto:</p>
+      <ol>
+        <li><strong>Si no cuadra, no se tapa.</strong> Se busca la causa y se cierra, nunca se ajusta a ojo.</li>
+        <li><strong>Lo que no se sabe, se dice.</strong> El panel y el asistente declaran sus límites en vez de aparentar.</li>
+        <li><strong>Nada se promete sin prueba.</strong> Cada claim tiene una verificación asociada (test, consulta, o documentación).</li>
+      </ol>
     </div>
   </div>
 </section>
@@ -106,18 +120,19 @@ respaldo movimientos . 2.190
 <section id="construido" class="seccion">
   <span class="sl">Lo construido</span>
   <h2>Qué hay dentro, y en qué estado</h2>
-  <p class="intro">Diez piezas con su estado real: <strong>VERIFICADO</strong> significa que hay una comprobación hecha y citada, no una intención.</p>
+  <p class="intro">Diez componentes con su estado real: <strong>VERIFICADO</strong> significa que hay una comprobación hecha y citada, no una intención.</p>
   <div class="grid">
-    <div class="ficha"><span class="etiqueta">CATÁLOGO</span><h4>80 muebles coherentes</h4><p>Del sofá al espejo, con precio, coste, categoría, material, estilo, garantía, descripción e imagen. Los tres catálogos muestran lo mismo.</p><span class="estado">VERIFICADO</span></div>
-    <div class="ficha"><span class="etiqueta">TIENDA</span><h4>Escaparate publicable</h4><p>Tienda online en español, con nueve secciones propias (sofás, comedor, dormitorio, recibidores…), precios en euros y ficha de producto con su fotografía.</p><span class="estado">VERIFICADO</span></div>
-    <div class="ficha"><span class="etiqueta">ALMACÉN</span><h4>Existencias cuadradas</h4><p>2.190 unidades respaldadas al 100 % por movimientos trazados. Cuando hubo un descuadre de 11 unidades, se buscó la causa y se cerró: no se ajustó a ojo.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">MODELO</span><h4>Catálogo coherente</h4><p>80 productos con identificadores correlativos, precio, coste, categoría, material, estilo, garantía y descripción. Los tres catálogos (propio, estándar, tienda) muestran lo mismo.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">TIENDA</span><h4>Escaparate publicable</h4><p>Tienda online en español, con nueve secciones propias, precios en euros y ficha de producto con su fotografía.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">ALMACÉN</span><h4>Existencias cuadradas</h4><p>2.190 unidades respaldadas al 100 % por movimientos trazados. Cuando hubo un descuadre, se buscó la causa y se cerró: no se ajustó a ojo.</p><span class="estado">VERIFICADO</span></div>
     <div class="ficha"><span class="etiqueta">VENTAS</span><h4>Pedidos y compras con historia</h4><p>56 pedidos de venta (37 confirmados y 19 presupuestos), 11 pedidos de compra, 48 albaranes y un almacén con entregas hechas, listas y recepciones pendientes.</p><span class="estado">VERIFICADO</span></div>
     <div class="ficha"><span class="etiqueta">ESPAÑOL</span><h4>Idioma, moneda e impuestos</h4><p>Español cargado y por defecto, euro como única moneda, IVA del 21 % aplicado a productos, pedidos y compras, y empresa con dirección y NIF de laboratorio.</p><span class="estado">VERIFICADO</span></div>
     <div class="ficha"><span class="etiqueta">LIMPIEZA</span><h4>Sin restos de la demo</h4><p>Retirado el catálogo genérico y sus facturas, renombrados los socios heredados, sustituidas las categorías de la demo y pasadas a español las oportunidades y actividades.</p><span class="estado">VERIFICADO</span></div>
-    <div class="ficha"><span class="etiqueta">PANEL</span><h4>Panel del día</h4><p>Cifras, lo que pide atención y salud del dato. Entre sus comprobaciones va que el almacén cuadre y que todos los pedidos apunten al catálogo real.</p><span class="estado">VERIFICADO</span></div>
-    <div class="ficha"><span class="etiqueta">IA</span><h4>IA declarada, no simulada</h4><p>La redacción por modelo está preparada y se precomputa aparte. Si no hay clave, el panel lo dice: las frases que ves son reglas explícitas. Ninguna caja negra.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">PANEL</span><h4>Panel del día</h4><p>Servicio propio que lee directamente por SQL (sin ORM), muestra cifras, lo que pide atención y salud del dato. Incluye botón de reinicio para administradores.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">IA</span><h4>Asistente técnico declarada</h4><p>Busca en los documentos reales del proyecto (README, tests, panel, scripts). Si no hay clave de modelo, devuelve fragmentos exactos en vez de redactar. Nunca inventa.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">TESTS</span><h4>Suite verificable</h4><p>66 pruebas pytest (62 sin Odoo/PostgreSQL, 4 contra el laboratorio en marcha). Plus: verificador de 14 recuentos contra el estado inicial.</p><span class="estado">VERIFICADO</span></div>
     <div class="ficha"><span class="etiqueta">REINICIO</span><h4>Botón para dejarlo como nuevo</h4><p>El panel puede devolver el laboratorio a su estado inicial desde una instantánea canónica. Exige sesión de administrador y tiene tres minutos de espera entre reinicios.</p><span class="estado">VERIFICADO</span></div>
-    <div class="ficha"><span class="etiqueta">RESTAURAR</span><h4>Restauración probada de verdad</h4><p>No basta con el botón: se paró Odoo, se rehízo la base, se cargó la instantánea y se arrancó. El manifiesto de 14 recuentos salió en verde y el almacén siguió cuadrando.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">RESTAURAR</span><h4>Restauración probada de verdad</h4><p>No basta con el botón: se paró Odoo, se rehizo la base, se cargó la instantánea y se arrancó. El manifiesto de 14 recuentos salió en verde y el almacén siguió cuadrando.</p><span class="estado">VERIFICADO</span></div>
   </div>
 </section>
 
@@ -296,7 +311,7 @@ python3 panel/demo_restaurar_muebles.py --verificar   <span class="ok"># 14 recu
   <p class="intro">Responde solo con lo que hay en el repositorio: README, decisiones, panel, scripts y pruebas. Si la respuesta no está ahí, lo dice en lugar de inventarla.</p>
   <div class="chat">
     <div class="chat-log" id="chat-log">
-      <div class="chat-msg bot">Hola. Soy el asistente técnico del laboratorio de muebles. Pregúntame por el catálogo, el almacén, el panel, las pruebas o cómo está montado.</div>
+      <div class="chat-msg bot">Hola. Soy el asistente técnico del laboratorio Odoo 17. Pregúntame por el catálogo, el almacén, el panel, las pruebas o cómo está montado.</div>
     </div>
     <form class="chat-form" id="chat-form">
       <label class="sr" for="chat-input">Tu pregunta</label>
