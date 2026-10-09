@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Scoring Kavana en el formulario de oportunidad -->
+    <record id="crm_lead_view_form_scoring" model="ir.ui.view">
+        <field name="name">crm.lead.form.scoring.kavana</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='priority']" position="after">
+                <field name="x_score_kavana"/>
+                <field name="x_prioridad_sugerida"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Señales Kavana" name="senales_kavana">
+                    <group>
+                        <field name="x_es_contrato"/>
+                        <field name="x_proyecto_referenciado"/>
+                        <field name="x_muestra_pedida"/>
+                        <field name="x_contacto_reciente" readonly="1"/>
+                        <field name="x_email_corporativo" readonly="1"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Score en la lista de oportunidades -->
+    <record id="crm_lead_view_tree_scoring" model="ir.ui.view">
+        <field name="name">crm.lead.tree.scoring.kavana</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='expected_revenue']" position="after">
+                <field name="x_score_kavana" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

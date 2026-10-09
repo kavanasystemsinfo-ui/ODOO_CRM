@@ -107,3 +107,31 @@ def test_el_modelo_declara_los_campos_del_catalogo(raiz):
     for campo in ("name", "category", "list_price", "standard_price", "qty_available",
                   "material", "dimensions", "style", "warranty_months", "description"):
         assert re.search(rf"\b{campo}\s*=\s*fields\.", fuentes), f"el modelo no declara {campo}"
+
+
+def test_hereda_crm_lead_con_scoring_determinista(raiz):
+    """El módulo hereda crm.lead con las señales y el score del benchmark."""
+    codigo = (raiz / "models" / "crm_lead_scoring.py").read_text(encoding="utf-8")
+    ast.parse(codigo)
+    assert "_inherit = 'crm.lead'" in codigo
+    for campo in ("x_es_contrato", "x_proyecto_referenciado", "x_muestra_pedida",
+                  "x_contacto_reciente", "x_email_corporativo", "x_score_kavana",
+                  "x_prioridad_sugerida"):
+        assert re.search(rf"\b{campo}\s*=\s*fields\.", codigo), f"falta el campo {campo}"
+    # el score no se guarda: se recalcula al leer (patrón del benchmark)
+    assert "compute='_compute_x_score_kavana'" in codigo
+    assert "store=True" not in codigo
+
+
+def test_las_vistas_de_scoring_son_xml_valido_y_heredan_del_crm(raiz):
+    ruta = raiz / "views" / "crm_lead_scoring_views.xml"
+    ET.parse(ruta)
+    contenido = ruta.read_text(encoding="utf-8")
+    assert 'inherit_id" ref="crm.crm_lead_view_form"' in contenido
+    assert 'inherit_id" ref="crm.crm_lead_view_tree"' in contenido
+    for campo in ("x_score_kavana", "x_prioridad_sugerida", "x_es_contrato", "x_muestra_pedida"):
+        assert f'name="{campo}"' in contenido, f"la vista no pinta {campo}"
+
+
+def test_el_manifiesto_carga_las_vistas_de_scoring(raiz):
+    assert "views/crm_lead_scoring_views.xml" in _manifiesto(raiz)["data"]

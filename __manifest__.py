@@ -14,6 +14,7 @@ Incluye 80 productos de ejemplo con categorías, precios, stock y atributos.
         'security/ir.model.access.csv',
         'views/furniture_product_views.xml',
         'views/panel_template.xml',
+        'views/crm_lead_scoring_views.xml',
         'data/furniture.product.csv',
     ],
     'installable': True,
