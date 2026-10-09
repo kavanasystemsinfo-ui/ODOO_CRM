@@ -1,0 +1,85 @@
+{
+  "universo": "muebles-del-hogar",
+  "version": "1",
+  "actualizado": "2026-10-09",
+  "descripcion": "Universo del laboratorio ODOO_CRM: la empresa ficticia Muebles del Hogar S.L. (Castelló de la Plana). Versionado como fuente de verdad de la AMBIENTACIÓN del lab; los datos operativos (catálogo, clientes, pedidos, almacén) siguen viviendo en los artefactos que este fichero referencia y que la suite valida. Inspirado en el patrón de pantalytics/odoo-demo-data (benchmark 2026-10-08).",
+  "empresa": {
+    "nombre": "Muebles del Hogar S.L.",
+    "direccion": "Calle Mayor 123",
+    "ciudad": "Castellón",
+    "codigo_postal": "12001",
+    "pais": "base.es",
+    "telefono": "+34 964 123 456",
+    "email": "info@mueblesdelhogar.example",
+    "web": "https://mueblesdelhogar.example",
+    "nif": "B12345678",
+    "nota_nif": "ficticio, se cambia en un minuto",
+    "almacen": "Almacén central"
+  },
+  "ambiente": {
+    "idioma": "es_ES",
+    "idioma_por_defecto": true,
+    "moneda": "EUR",
+    "impuesto_venta": "IVA 21 %",
+    "impuesto_compra": "IVA 21 %",
+    "formato_numerico": "español (12.415,50 €)",
+    "pais": "España",
+    "notas": [
+      "La web sirve solo en español; el backend se ve en español.",
+      "Los tramos del CRM: Nuevo, Calificado, Propuesta y Ganado.",
+      "Los cambios de idioma/moneda por SQL desde fuera no refrescan la caché del servidor en marcha: usar scripts/refrescar_cache_web.py."
+    ]
+  },
+  "catalogo": {
+    "fuente_de_verdad": "data/furniture.product.csv",
+    "origen": "District Home (Green Front Furniture), extraído con scripts/import_districthome_products.py",
+    "referencias": 80,
+    "categorias": ["armarios", "bancos", "butacas", "camas", "mesas", "mesitas", "otros", "sillas", "sofas"],
+    "materiales": ["Acero", "Latón", "Lino", "Madera", "Metal", "Mármol", "Piel", "Ratán", "Raíz de nogal", "Roble", "Teca", "Terciopelo", "Travertino", "Vidrio"],
+    "estilos": ["Antiguo", "Clásico", "Contemporáneo", "Minimalista", "Moderno", "Vintage"],
+    "garantia_meses": 24,
+    "tienda_categorias": ["Sofás y chaise longue", "Mesas de comedor", "Mesitas y mesas de centro", "Sillas y taburetes", "Sillones y butacas", "Bancos y pufs", "Armarios y vitrinas", "Dormitorio", "Recibidores y consolas", "Decoración y espejos"]
+  },
+  "poblado": {
+    "politica": "Los scripts de scripts/ son el motor de carga; este universo es el índice versionado que los ordena y valida.",
+    "orden": [
+      "import_districthome_products.py",
+      "load_product_images.py",
+      "create_lab_data.py",
+      "limpieza_catalogo.py",
+      "limpieza_catalogo_remate.py",
+      "montar_almacen.py",
+      "retirar_catalogo_heredado.py",
+      "arreglar_socios_heredados.py",
+      "arreglar_textos_y_hueco.py",
+      "espanolizar_laboratorio.py",
+      "alinear_modelo.py"
+    ],
+    "modo": "docker exec -i <contenedor_odoo> odoo shell -d <base> --no-http < scripts/<paso>",
+    "nota": "Regenerar la base completa desde cero (drop + replay de los 11 pasos) no está automatizado en un solo comando: hoy el lab público se restaura desde la instantánea canónica (panel/demo_restaurar_muebles.py). El replay de un comando es la evolución natural; ver docs/adr/ADR-001-migracion-odoo-18.md, apartado de fricciones."
+  },
+  "recuentos_canonicos": {
+    "fuente": "panel/demo_restaurar_muebles.py (ESPERADO), medidos con SQL antes de publicar",
+    "productos activos": 80,
+    "productos publicados": 80,
+    "referencias del modelo propio": 80,
+    "clientes": 34,
+    "proveedores": 5,
+    "pedidos de venta": 56,
+    "pedidos confirmados": 37,
+    "presupuestos": 19,
+    "albaranes": 48,
+    "albaranes hechos":  41,
+    "pedidos de compra": 11,
+    "asientos contables": 10,
+    "actividades": 30,
+    "unidades en almacén": 2190
+  },
+  "estado_publicado": {
+    "landing": "https://muebles.kavanasystems.com/muebles/",
+    "tienda": "https://muebles.kavanasystems.com/shop",
+    "panel_del_dia": "https://muebles.kavanasystems.com/panel/",
+    "panel_del_modulo": "/muebles/panel",
+    "limpieza_automatica": "cron cada 30 min contra los 14 recuentos; restaura solo si alguien tocó algo"
+  }
+}
