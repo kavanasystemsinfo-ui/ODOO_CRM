@@ -46,6 +46,18 @@ def test_las_vistas_son_xml_valido(raiz):
         ET.parse(ruta)
 
 
+def test_las_vistas_siguen_las_convenciones_oca(raiz):
+    """Convenciones que exige el linter oficial OCA (oca-checks-odoo-module)."""
+    for ruta in (raiz / "views").glob("*.xml"):
+        contenido = ruta.read_text(encoding="utf-8")
+        assert contenido.startswith('<?xml version="1.0" encoding="UTF-8" ?>'), (
+            f"{ruta.name}: cabecera XML canónica OCA"
+        )
+        assert "<data>" not in contenido, f"{ruta.name}: nodo <data> deprecado, los records van bajo <odoo>"
+        assert "<tree string=" not in contenido, f"{ruta.name}: atributo string deprecado en <tree>"
+        assert "t-esc=" not in contenido, f"{ruta.name}: t-esc deprecado desde Odoo 15, usar t-out"
+
+
 def test_la_vista_del_catalogo_usa_el_modelo_propio(raiz):
     contenido = (raiz / "views" / "furniture_product_views.xml").read_text(encoding="utf-8")
     assert contenido.count('name="model">furniture.product') >= 3  # lista, formulario y búsqueda

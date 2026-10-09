@@ -26,6 +26,9 @@ jobs:
       - name: Instalar dependencias de test
         run: pip install -r requirements-dev.txt
 
+      - name: Lint OCA del módulo (linter oficial de la OCA)
+        run: python scripts/lint_oca.py
+
       - name: Comprobar el catálogo, el módulo y la lógica del panel
         run: python -m pytest tests -v
 

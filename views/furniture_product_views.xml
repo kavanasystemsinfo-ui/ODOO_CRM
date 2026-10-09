@@ -1,81 +1,79 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
-    <data>
-        <!-- Tree view -->
-        <record id="view_furniture_product_tree" model="ir.ui.view">
-            <field name="name">furniture.product.tree</field>
-            <field name="model">furniture.product</field>
-            <field name="arch" type="xml">
-                <tree string="Productos de muebles">
-                    <field name="name"/>
-                    <field name="category"/>
-                    <field name="list_price"/>
-                    <field name="qty_available"/>
-                    <field name="material"/>
-                    <field name="style"/>
-                </tree>
-            </field>
-        </record>
+    <!-- Tree view -->
+    <record id="view_furniture_product_tree" model="ir.ui.view">
+        <field name="name">furniture.product.tree</field>
+        <field name="model">furniture.product</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="list_price"/>
+                <field name="qty_available"/>
+                <field name="material"/>
+                <field name="style"/>
+            </tree>
+        </field>
+    </record>
 
-        <!-- Form view -->
-        <record id="view_furniture_product_form" model="ir.ui.view">
-            <field name="name">furniture.product.form</field>
-            <field name="model">furniture.product</field>
-            <field name="arch" type="xml">
-                <form string="Producto de mueble">
-                    <sheet>
+    <!-- Form view -->
+    <record id="view_furniture_product_form" model="ir.ui.view">
+        <field name="name">furniture.product.form</field>
+        <field name="model">furniture.product</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
                         <group>
-                            <group>
-                                <field name="name"/>
-                                <field name="category"/>
-                                <field name="list_price"/>
-                                <field name="standard_price"/>
-                                <field name="qty_available"/>
-                            </group>
-                            <group>
-                                <field name="material"/>
-                                <field name="dimensions"/>
-                                <field name="style"/>
-                                <field name="warranty_months"/>
-                                <field name="active"/>
-                            </group>
+                            <field name="name"/>
+                            <field name="category"/>
+                            <field name="list_price"/>
+                            <field name="standard_price"/>
+                            <field name="qty_available"/>
                         </group>
                         <group>
-                            <field name="description"/>
+                            <field name="material"/>
+                            <field name="dimensions"/>
+                            <field name="style"/>
+                            <field name="warranty_months"/>
+                            <field name="active"/>
                         </group>
-                    </sheet>
-                </form>
-            </field>
-        </record>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
 
-        <!-- Search view -->
-        <record id="view_furniture_product_search" model="ir.ui.view">
-            <field name="name">furniture.product.search</field>
-            <field name="model">furniture.product</field>
-            <field name="arch" type="xml">
-                <search string="Buscar productos">
-                    <field name="name"/>
-                    <field name="category"/>
-                    <field name="material"/>
-                    <field name="style"/>
-                </search>
-            </field>
-        </record>
+    <!-- Search view -->
+    <record id="view_furniture_product_search" model="ir.ui.view">
+        <field name="name">furniture.product.search</field>
+        <field name="model">furniture.product</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="material"/>
+                <field name="style"/>
+            </search>
+        </field>
+    </record>
 
-        <!-- Action -->
-        <record id="action_furniture_product" model="ir.actions.act_window">
-            <field name="name">Productos de muebles</field>
-            <field name="res_model">furniture.product</field>
-            <field name="view_mode">tree,form</field>
-            <field name="help" type="html">
-                <p class="o_view_nocontent_smiling_face">
-                    Añade tu primer producto de muebles
-                </p>
-            </field>
-        </record>
+    <!-- Action -->
+    <record id="action_furniture_product" model="ir.actions.act_window">
+        <field name="name">Productos de muebles</field>
+        <field name="res_model">furniture.product</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Añade tu primer producto de muebles
+            </p>
+        </field>
+    </record>
 
-        <!-- Menu -->
-        <menuitem id="menu_furniture_root" name="Muebles de Hogar" sequence="10"/>
-        <menuitem id="menu_furniture_products" name="Productos" parent="menu_furniture_root" action="action_furniture_product" sequence="10"/>
-    </data>
+    <!-- Menu -->
+    <menuitem id="menu_furniture_root" name="Muebles de Hogar" sequence="10"/>
+    <menuitem id="menu_furniture_products" name="Productos" parent="menu_furniture_root" action="action_furniture_product" sequence="10"/>
 </odoo>
