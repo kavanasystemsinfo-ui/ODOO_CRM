@@ -116,6 +116,27 @@ def _porcentaje(parte: int, total: int) -> str:
     return f"{round(parte * 100 / total, 1):.1f}".replace(".", ",") + " %"
 
 
+def frase_evolucion(nombre: str, hoy: int, ayer: int, semana: int) -> str:
+    """Compara el movimiento de hoy con ayer y con el total de hace 7 días.
+
+    Patrón de los informes MIS (benchmark 2026-10-08, punto 2): la misma cifra
+    cobra sentido al lado de su periodo anterior. De 0 a N no es un
+    porcentaje: es apertura.
+    """
+    n = formato_numero
+    partes = []
+    if hoy == ayer == semana:
+        return f"{nombre}: sin cambios frente a ayer ni a la semana pasada."
+    if hoy != ayer:
+        diferencia = hoy - ayer
+        verbo = "sube" if diferencia > 0 else "baja"
+        partes.append(f"{verbo} {n(abs(diferencia))} frente a ayer"
+                      + (f" ({_porcentaje(abs(diferencia), ayer)})" if ayer else ""))
+    if hoy != semana:
+        partes.append(f"frente a los {n(semana)} de los últimos 7 días")
+    return f"{nombre}: " + ", ".join(partes) + "."
+
+
 def construir_resumen(cifras: dict) -> dict:
     """Convierte las cifras leídas en el resumen que ve el espectador.
 
@@ -143,6 +164,18 @@ def construir_resumen(cifras: dict) -> dict:
             f"{n(cifras['vencidas'])} vencidas, {n(cifras['hoy'])} de hoy, "
             f"{n(cifras['manana'])} de mañana y {n(cifras['proximas'])} próximas. "
             f"Lo que necesita decisión son las {n(cifras['vencidas'])} vencidas.")
+
+    evolucion = cifras.get("evolucion") or {}
+    if evolucion:
+        frases.append(
+            "Comparado con otros días: "
+            + frase_evolucion("entregas hechas", int(evolucion.get("entregas_hoy", 0)),
+                              int(evolucion.get("entregas_ayer", 0)),
+                              int(evolucion.get("entregas_semana", 0)))
+            + " "
+            + frase_evolucion("recepciones hechas", int(evolucion.get("recepciones_hoy", 0)),
+                               int(evolucion.get("recepciones_ayer", 0)),
+                               int(evolucion.get("recepciones_semana", 0))))
 
     salud = cifras.get("salud_dato", [])
     faltan = [s["campo"] for s in salud if not s.get("ok") and not s.get("no_aplica")]
@@ -314,6 +347,29 @@ def leer_cifras() -> dict:
         prioridades.append({"tipo": "recepción", "etiqueta": nombre,
                             "texto": f"Recepción pendiente de {proveedor}", "urgente": False})
     cifras["prioridades"] = prioridades
+
+    # ------------------------------------------------------------------
+    # Comparación de periodos (patrón MIS, benchmark punto 2): el
+    # movimiento de hoy frente al de ayer y al total de 7 días.
+    # ------------------------------------------------------------------
+    def hechas(code: str, desde: str, hasta: str) -> int:
+        return _numero(
+            "SELECT count(*) FROM stock_picking sp "
+            "JOIN stock_picking_type pt ON pt.id = sp.picking_type_id "
+            f"WHERE pt.code = '{code}' AND sp.state = 'done' "
+            f"AND sp.date_done::date >= '{desde}' AND sp.date_done::date <= '{hasta}'")
+
+    hoy = date.today()
+    ayer = date.fromordinal(hoy.toordinal() - 1)
+    hace_7 = date.fromordinal(hoy.toordinal() - 6)
+    cifras["evolucion"] = {
+        "entregas_hoy": hechas('outgoing', hoy.isoformat(), hoy.isoformat()),
+        "entregas_ayer": hechas('outgoing', ayer.isoformat(), ayer.isoformat()),
+        "entregas_semana": hechas('outgoing', hace_7.isoformat(), hoy.isoformat()),
+        "recepciones_hoy": hechas('incoming', hoy.isoformat(), hoy.isoformat()),
+        "recepciones_ayer": hechas('incoming', ayer.isoformat(), ayer.isoformat()),
+        "recepciones_semana": hechas('incoming', hace_7.isoformat(), hoy.isoformat()),
+    }
     return cifras
 
 
@@ -359,6 +415,7 @@ footer{margin:20px 0;color:#9a8d80;font-size:12px}
 <main><h1>Panel del día</h1><div class="sub" id="estado">Cargando...</div>
 <div id="frases"></div>
 <h2>Cifras del día</h2><div class="cifras" id="cifras"></div>
+<h2>Comparado con otros días</h2><div class="cifras" id="evolucion"></div>
 <h2>Lo que pide atención</h2><ul id="bandeja"></ul>
 <h2>Salud del dato</h2><ul id="salud"></ul>
 <div class="reinicio">
@@ -383,6 +440,12 @@ fetch('api/dia').then(r=>r.json()).then(d=>{
    ['Compras',d.compras],['Actividades',d.actividades],['Vencidas',d.vencidas]]
    .forEach(([k,v])=>{const q=document.createElement('div');q.className='caja';
      q.innerHTML='<b>'+v+'</b>'+k;c.appendChild(q);});
+  const ev = document.getElementById('evolucion');
+  const e = d.evolucion||{};
+  [['Entregas hoy',e.entregas_hoy],['Entregas ayer',e.entregas_ayer],['Entregas 7 días',e.entregas_semana],
+   ['Recepciones hoy',e.recepciones_hoy],['Recepciones ayer',e.recepciones_ayer],['Recepciones 7 días',e.recepciones_semana]]
+   .forEach(([k,v])=>{const q=document.createElement('div');q.className='caja';
+     q.innerHTML='<b>'+(v===undefined?'—':v)+'</b>'+k;ev.appendChild(q);});
   const b = document.getElementById('bandeja');
   if(!d.prioridades.length){const li=document.createElement('li');li.textContent='Nada pendiente en el tramo de atención.';b.appendChild(li);}
   d.prioridades.forEach(p=>{const li=document.createElement('li');

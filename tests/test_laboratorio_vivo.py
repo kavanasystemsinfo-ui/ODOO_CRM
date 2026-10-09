@@ -53,6 +53,20 @@ def test_el_panel_del_dia_responde(configuracion):
         assert clave in datos, f"el panel no devuelve {clave}"
 
 
+def test_el_panel_compara_con_otros_dias(configuracion):
+    """La sección de evolución (hoy/ayer/7 días) llega y es coherente."""
+    datos = _json(f"http://127.0.0.1:{configuracion.puerto_panel()}/api/dia")
+    ev = datos.get("evolucion")
+    assert isinstance(ev, dict), "el panel no devuelve la evolución por periodos"
+    for clave in ("entregas_hoy", "entregas_ayer", "entregas_semana",
+                  "recepciones_hoy", "recepciones_ayer", "recepciones_semana"):
+        assert clave in ev, f"falta {clave} en la evolución"
+        assert int(ev[clave]) >= 0
+    # coherencia básica: la semana (7 días, hoy incluido) no puede ser menor que hoy
+    assert ev["entregas_semana"] >= ev["entregas_hoy"]
+    assert ev["recepciones_semana"] >= ev["recepciones_hoy"]
+
+
 def test_odoo_responde_en_su_puerto(configuracion):
     url = f"http://127.0.0.1:{configuracion.puerto_odoo_host()}/web/login"
     with urllib.request.urlopen(url, timeout=15) as respuesta:

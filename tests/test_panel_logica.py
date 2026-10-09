@@ -116,3 +116,50 @@ def test_configuracion_se_puede_apuntar_a_otro_laboratorio(configuracion, monkey
     finally:
         monkeypatch.undo()
         importlib.reload(configuracion)
+
+
+# ---------------------------------------------------------------------------
+# Comparación de periodos (patrón mis-builder: hoy vs ayer y vs hace 7 días)
+# ---------------------------------------------------------------------------
+
+def test_frase_de_evolucion_sin_cambios(panel):
+    frase = panel.frase_evolucion("entregas", 33, 33, 33)
+    assert frase == "entregas: sin cambios frente a ayer ni a la semana pasada."
+
+
+def test_frase_de_evolucion_sube(panel):
+    frase = panel.frase_evolucion("entregas", 33, 28, 20)
+    assert "ayer" in frase and "sube" in frase
+    assert "5" in frase  # +5 frente a ayer
+
+
+def test_frase_de_evolucion_baja(panel):
+    frase = panel.frase_evolucion("entregas", 20, 33, 40)
+    assert "baja" in frase
+    assert "13" in frase  # -13 frente a ayer
+
+
+def test_frase_de_evolucion_con_cero_como_referencia(panel):
+    """De 0 a N es apertura, no crecimiento porcentual: se dice sin porcentaje."""
+    frase = panel.frase_evolucion("entregas", 3, 0, 0)
+    assert "3" in frase
+    assert "%" not in frase
+
+
+def test_resumen_incluye_la_evolucion_cuando_hay_datos(panel):
+    cifras = dict(CIFRAS)
+    cifras["evolucion"] = {
+        "entregas_hoy": 33, "entregas_ayer": 28, "entregas_semana": 120,
+        "recepciones_hoy": 8, "recepciones_ayer": 0, "recepciones_semana": 30,
+    }
+    resumen = panel.construir_resumen(cifras)
+    texto = " ".join(resumen["frases"])
+    assert "ayer" in texto or "semana" in texto
+    # y las cifras de evolución viajan para que el HTML las pinte
+    assert resumen["evolucion"] == cifras["evolucion"]
+
+
+def test_resumen_sin_datos_de_evolucion_no_menciona_periodos(panel):
+    texto = " ".join(panel.construir_resumen(dict(CIFRAS))["frases"])
+    assert "ayer" not in texto
+
