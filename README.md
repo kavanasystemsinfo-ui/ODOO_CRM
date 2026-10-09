@@ -56,15 +56,19 @@ dando error 500 aunque los datos ya sean correctos. Ver
 
 ## Estructura
 
-- `models/`: modelo `furniture.product`.
-- `views/`: vistas del catálogo y plantilla de la página del laboratorio.
+- `models/`: modelo `furniture.product`, scoring determinista de oportunidades
+  (`lead_scoring.py`) y su herencia de `crm.lead` (`crm_lead_scoring.py`).
+- `views/`: vistas del catálogo, plantilla de la página del laboratorio y
+  vistas de scoring del CRM.
 - `controllers/`: controlador `/muebles/panel` dentro del sitio web.
 - `security/`: permisos de acceso.
-- `data/`: catálogo de 80 muebles (`furniture.product.csv`) y datos de origen de
-  District Home (`districthome_products.json`).
-- `scripts/`: utilidades del laboratorio (ver abajo).
+- `data/`: catálogo de 80 muebles (`furniture.product.csv`), datos de origen de
+  District Home (`districthome_products.json`) y universo versionado del
+  laboratorio (`universo.json`).
+- `scripts/`: utilidades del laboratorio y runner del linter OCA (`lint_oca.py`).
 - `panel/`: **panel del día**, su configuración, el motor de restauración y el
   asistente técnico (`asistente.py`).
+- `docs/adr/`: decisiones de arquitectura (ADR-001: migración a Odoo 18).
 
 ## Landing del proyecto
 
@@ -138,15 +142,16 @@ docker exec -i <contenedor_odoo> odoo shell -d <base_de_datos> --no-http < scrip
 
 Suite de `pytest` que corre sin Odoo y sin PostgreSQL: comprueba el catálogo de
 80 muebles, el módulo (manifiesto, vistas, permisos y controlador), la lógica del
-panel (formato español, frases deterministas y salud del dato), el asistente
-técnico y la coherencia de los recuentos del verificador. Son **90 pruebas**.
+panel (formato español, frases deterministas, evolución por periodos y salud del
+dato), el asistente técnico, el scoring determinista de oportunidades y la
+coherencia de los recuentos del verificador. Son **113 pruebas**.
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest            # 85 pruebas en verde (5 se saltan: 4 de laboratorio y 1 de sandbox)
+python -m pytest            # 107 pruebas en verde (6 se saltan: 5 de laboratorio y 1 de sandbox)
 ```
 
-Las **4 pruebas que sí necesitan el laboratorio en marcha** (Odoo respondiendo,
+Las **5 pruebas que sí necesitan el laboratorio en marcha** (Odoo respondiendo,
 panel del día, asistente técnico y el verificador de recuentos) se saltan solas
 salvo que se pidan:
 
