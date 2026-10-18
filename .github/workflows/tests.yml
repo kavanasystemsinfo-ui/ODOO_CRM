@@ -9,6 +9,8 @@ on:
       - "video/**"
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
 
 jobs:
   suite:
@@ -16,22 +18,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
           cache-dependency-path: requirements-dev.txt
-
       - name: Instalar dependencias de test
         run: pip install -r requirements-dev.txt
-
       - name: Lint OCA del módulo (linter oficial de la OCA)
         run: python scripts/lint_oca.py
-
       - name: Comprobar el catálogo, el módulo y la lógica del panel
         run: python -m pytest tests -v
-
       - name: Resumen
         if: always()
         run: echo "Las pruebas que necesitan el laboratorio en marcha se saltan solas en CI (MUEBLES_LAB=1 para lanzarlas en el servidor)."
+  vivo-tests:
+    name: Suite de laboratorio vivo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Instalar dependencias de test
+        run: pip install -r requirements-dev.txt
+      - name: Ejecutar tests vivo
+        run: MUEBLES_LAB=1 python -m pytest tests/test_laboratorio_vivo.py -v
+        env:
+          MUEBLES_LAB: "1"

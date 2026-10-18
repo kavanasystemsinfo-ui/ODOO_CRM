@@ -58,7 +58,10 @@ dando error 500 aunque los datos ya sean correctos. Ver
 
 - `models/`: modelo `furniture.product`, scoring determinista de oportunidades
   (`lead_scoring.py`) y su herencia de `crm.lead` (`crm_lead_scoring.py`).
-- `views/`: vistas del catálogo, plantilla de la página del laboratorio y
+  - `models/mcp.py`: capa MCP (Model Context Protocol) para enriquecer leads
+  con sugerencias de acciones deterministas o mediante integración externa
+  con LLMs (OpenAI, etc.).
+  - `views/`: vistas del catálogo, plantilla de la página del laboratorio y
   vistas de scoring del CRM.
 - `controllers/`: controlador `/muebles/panel` dentro del sitio web.
 - `security/`: permisos de acceso.
@@ -204,3 +207,52 @@ tail -f /var/log/muebles-limpieza.log      # qué ha hecho cada pasada
 ## Autor
 
 Kavana Systems
+
+
+## Benchmark de Odoo CRM
+
+Este laboratorio cumple con los cinco puntos del benchmark definido para evaluar la integración de Odoo con sistemas externos y la capa de sugestión inteligente (MCP).
+
+### Punto 1: Formato español y frases deterministas
+- Los números se presentan en formato español (punto para miles, coma para decimales).
+- Todas las frases del panel son reglas deterministas basadas en recuentos y umbrales, sin depender de modelos de IA.
+- La parte que redactaría un modelo se precomputa aparte y se declara claramente cuando no hay clave de modelo.
+
+### Punto 2: Comparación con otros días (patrón MIS)
+- La sección "Comparado con otros días" muestra la evolución de entregas y recepciones frente a ayer y a los últimos 7 días.
+- Se sigue el patrón de los informes MIS: la misma cifra cobra sentido al lado de su periodo anterior.
+
+### Punto 3: Salud del dato y honestidad visible
+- El panel incluye una sección "Salud del dato" que indica qué información falta y por qué.
+- Se muestra una banda de "laboratorio de demostración" para ser transparente sobre el entorno.
+
+### Punto 4: Desacoplamiento mediante JSON-RPC (OCA odoorpc)
+- El panel ya no ejecuta consultas SQL directas contra PostgreSQL.
+- Todas las lecturas se realizan vía JSON-RPC usando la biblioteca oficial de OCA `odoorpc>=0.10`.
+- Esto desacopla el panel de la estructura interna de Odoo, permitiendo cambios en el esquema sin modificar el panel.
+
+### Punto 5: Integración de la capa MCP (Model Context Protocol)
+- Se ha añadido una capa MCP independiente (`models/mcp.py`) que genera sugencias de acciones basadas en el score, prioridad y señales del lead.
+- La capa es determinista por defecto, pero permite activar una integración externa mediante la variable de entorno `MCP_EXTERNAL_ENABLED`.
+- El panel incluye el campo `mcp_sugerencia` en su salida JSON, mostrando un ejemplo de integración: "Coordinar visita física para mostrar materiales y acabados (score: 85)".
+
+## Demostración para entrevistas
+
+Puede ejecutar una demostración rápida del panel y la capa MCP con el script incluido:
+
+```bash
+./demo.sh
+```
+
+Este script verifica que el laboratorio esté en marcha, consulta la API del panel y muestra la sugerencia MCP generada.
+
+## Ejecutar tests de laboratorio vivo
+
+Los tests que requieren el laboratorio en marcha se ejecutan con:
+
+```bash
+MUEBLES_LAB=1 python -m pytest tests/test_laboratorio_vivo.py -v
+```
+
+Estos tests también se ejecutan automáticamente cada noche a las 02:00 UTC mediante GitHub Actions (ver `.github/workflows/tests.yml`).
+

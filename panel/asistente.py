@@ -35,7 +35,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 FICHEROS_SUELTOS = ("README.md", "DECISIONS.md", "SECURITY.md", "pytest.ini", "requirements-dev.txt")
 CARPETAS = ("tests", "panel", "scripts", "models", "controllers", "views", "security", "data")
 EXTENSIONES = (".md", ".py", ".xml", ".csv", ".ini", ".txt", ".json")
-IGNORAR = ("__pycache__", "cache_panel", "landing", "video", "districthome_products.json")
+IGNORAR = ("__pycache__", "cache_panel", "demo/landing", "demo/video", "districthome_products.json")
 
 LINEAS_POR_FRAGMENTO = 28
 MAX_FRAGMENTOS = 5
