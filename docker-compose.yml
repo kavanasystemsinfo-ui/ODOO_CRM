@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  odoo:
+    image: odoo:17
+    container_name: furniture_odoo
+    ports:
+      # Solo en loopback para seguridad
+      - "127.0.0.1:8070:8069"
+    environment:
+      - HOST=db
+      - USER=odoo
+      - PASSWORD=odoo
+      - DATABASE=furniture_db
+    volumes:
+      - ./addons:/mnt/extra-addons
+      - ./config:/etc/odoo
+      - /root/.hermes/profiles/hermes2/ODOO_CRM:/mnt/extra-addons/muebles_crm
+      # Filestore de Odoo (imágenes y assets): NUNCA en la capa del contenedor
+      - odoo_data:/var/lib/odoo
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    container_name: furniture_db
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_INITDB_ARGS=--auth-host=md5
+    volumes:
+      - furniture_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  furniture_db_data:
+  odoo_data:
