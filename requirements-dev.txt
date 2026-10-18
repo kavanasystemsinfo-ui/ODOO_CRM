@@ -1,3 +1,7 @@
 # Dependencias de la suite de tests (el módulo en sí no necesita ninguna).
 pytest>=8
 oca-odoo-pre-commit-hooks>=0.2
+# Cliente JSON-RPC de OCA para Odoo (benchmark punto 4: panel por API en vez de SQL)
+odoorpc>=0.10
+
+# Cache busting 2026-10-18

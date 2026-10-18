@@ -36,12 +36,49 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import configuracion  # noqa: E402
 import asistente  # noqa: E402
+from odoo_client import (
+    productos_publicados,
+    productos_activos,
+    productos_modelo_propio,
+    clientes,
+    proveedores,
+    pedidos_totales,
+    pedidos_confirmados,
+    pedidos_presupuesto,
+    pedidos_cancelados,
+    entregas_hechas,
+    entregas_pendientes,
+    recepciones_hechas,
+    recepciones_pendientes,
+    compras_totales,
+    compras_pendientes,
+    asientos_contables,
+    existencias_catalogo,
+    referencias_con_stock,
+    valor_almacen,
+    traza_existencias_movimientos,
+    lineas_fuera_catalogo,
+    actividad_dias_max_presupuesto,
+    presupuestos_viejos,
+    actividades_totales,
+    actividades_vencidas,
+    actividades_hoy,
+    actividades_manana,
+    actividades_proximas,
+    prioridades_actividades,
+    prioridades_entregas,
+    prioridades_recepciones,
+    evolutivo_entregas,
+    evolutivo_recepciones,
+    probar_conexion,
+    _contar,
+)
 
 BANNER = "Laboratorio de demostración — Muebles del Hogar S.L. (base furniture_db)"
-CATALOGO = ("pc.complete_name LIKE 'Muebles de Hogar%'")
 
 # ---------------------------------------------------------------------------
 # Reinicio del laboratorio: el visitante entra como administrador y puede
@@ -157,14 +194,15 @@ def construir_resumen(cifras: dict) -> dict:
     if cifras.get("presupuestos_viejos"):
         frases.append(
             f"Hay {n(cifras['presupuestos_viejos'])} presupuestos con más de "
-            f"{cifras['dias_presupuesto_viejo']} días sin respuesta: eso sí es dinero parado.")
+            f"{cifras['dias_presupuesto_viejo']} días sin respuesta: eso sí es dinero parado."
+        )
     if cifras.get("actividades"):
         frases.append(
             f"He revisado {n(cifras['actividades'])} actividades asignadas: "
             f"{n(cifras['vencidas'])} vencidas, {n(cifras['hoy'])} de hoy, "
             f"{n(cifras['manana'])} de mañana y {n(cifras['proximas'])} próximas. "
-            f"Lo que necesita decisión son las {n(cifras['vencidas'])} vencidas.")
-
+            f"Lo que necesita decisión son las {n(cifras['vencidas'])} vencidas."
+        )
     evolucion = cifras.get("evolucion") or {}
     if evolucion:
         frases.append(
@@ -174,203 +212,142 @@ def construir_resumen(cifras: dict) -> dict:
                               int(evolucion.get("entregas_semana", 0)))
             + " "
             + frase_evolucion("recepciones hechas", int(evolucion.get("recepciones_hoy", 0)),
-                               int(evolucion.get("recepciones_ayer", 0)),
-                               int(evolucion.get("recepciones_semana", 0))))
-
+                              int(evolucion.get("recepciones_ayer", 0)),
+                              int(evolucion.get("recepciones_semana", 0)))
+        )
     salud = cifras.get("salud_dato", [])
     faltan = [s["campo"] for s in salud if not s.get("ok") and not s.get("no_aplica")]
     ia = []
     if faltan:
         frases.append(
             "Salud del dato: no puedo afirmar nada de " + ", ".join(faltan) +
-            ". Si falta el dato, me paro y digo por qué.")
+            ". Si falta el dato, me paro y digo por qué."
+        )
     ia.append("Resumen redactado con reglas deterministas precomputadas: sin clave de "
               "modelo no hay redacción por IA, y así se declara en vez de aparentarlo.")
     return {**cifras, "frases": frases, "ia": ia, "salud_dato": salud}
 
 
 # ---------------------------------------------------------------------------
-# Lectura del laboratorio (solo lectura, por SQL del contenedor)
+# Lectura del laboratorio (solo lectura, por JSON-RPC a Odoo)
 # ---------------------------------------------------------------------------
 
-def _sql(consulta: str) -> list[list[str]]:
-    res = subprocess.run(
-        [configuracion.docker(), "exec", configuracion.contenedor_bd(),
-         "psql", "-U", "odoo", "-d", configuracion.base_de_datos(), "-tAF", "|", "-c", consulta],
-        capture_output=True, text=True, timeout=30,
-    )
-    if res.returncode != 0:
-        raise RuntimeError(f"SQL falló: {res.stderr.strip()[:200]}")
-    return [linea.split("|") for linea in res.stdout.splitlines() if linea.strip()]
-
-
-def _numero(consulta: str, por_defecto: int = 0) -> int:
-    try:
-        filas = _sql(consulta)
-    except Exception:  # noqa: BLE001  (una tabla que no existe no debe tumbar el panel)
-        return por_defecto
-    if not filas or not filas[0] or filas[0][0] == "":
-        return por_defecto
-    return int(float(filas[0][0]))
-
-
-def _decimal(consulta: str, por_defecto: float = 0.0) -> float:
-    try:
-        filas = _sql(consulta)
-    except Exception:  # noqa: BLE001
-        return por_defecto
-    if not filas or not filas[0] or filas[0][0] == "":
-        return por_defecto
-    return float(filas[0][0])
-
-
 def leer_cifras() -> dict:
-    """Cifras del panel, leídas del contenedor de PostgreSQL."""
-    unidades = _numero(
-        "SELECT round(sum(q.quantity)) FROM stock_quant q "
-        "JOIN stock_location l ON l.id = q.location_id "
-        "WHERE l.usage = 'internal' AND q.quantity > 0")
-    traza_existencias = _numero(
-        "SELECT round(sum(q.quantity)) FROM stock_quant q "
-        "JOIN stock_location l ON l.id = q.location_id WHERE l.usage = 'internal'")
-    traza_movimientos = _numero(
-        "SELECT round(coalesce(sum(CASE WHEN ld.usage = 'internal' THEN m.quantity ELSE 0 END) "
-        " - sum(CASE WHEN lo.usage = 'internal' THEN m.quantity ELSE 0 END), 0)) "
-        "FROM stock_move m "
-        "JOIN stock_location lo ON lo.id = m.location_id "
-        "JOIN stock_location ld ON ld.id = m.location_dest_id WHERE m.state = 'done'")
-    fuera_catalogo = _numero(
-        "SELECT count(*) FROM sale_order_line sol WHERE sol.product_id NOT IN ("
-        " SELECT pp.id FROM product_product pp"
-        " JOIN product_template pt ON pt.id = pp.product_tmpl_id"
-        " JOIN product_category pc ON pc.id = pt.categ_id WHERE " + CATALOGO + ")")
+    """Cifras del panel, leídas vía JSON-RPC a Odoo (benchmark punto 4)."""
+    # Intento de lectura en vivo; si falla, el panel usará caché o declarará error
+    try:
+        existencias, movimientos = traza_existencias_movimientos()
+        fuera_catalogo = lineas_fuera_catalogo()
+        dias_max = actividad_dias_max_presupuesto()
+        viejos = presupuestos_viejos()
 
-    dias = _numero(
-        "SELECT coalesce(max(current_date - date_order::date), 0) FROM sale_order "
-        "WHERE state IN ('draft','sent')")
-    viejos = _numero(
-        "SELECT count(*) FROM sale_order WHERE state IN ('draft','sent') "
-        "AND (current_date - date_order::date) >= 7")
+        cifras = {
+            "fecha": date.today().isoformat(),
+            "banner": BANNER,
+            "productos": productos_activos(),
+            "publicados": productos_publicados(),
+            "modelo": productos_modelo_propio(),
+            "clientes": clientes(),
+            "proveedores": proveedores(),
+            "pedidos": pedidos_totales(),
+            "confirmados": pedidos_confirmados(),
+            "presupuestos": pedidos_presupuesto(),
+            "cancelados": pedidos_cancelados(),
+            "entregas_hechas": entregas_hechas(),
+            "entregas_pendientes": entregas_pendientes(),
+            "recepciones_hechas": recepciones_hechas(),
+            "recepciones_pendientes": recepciones_pendientes(),
+            "compras": compras_totales(),
+            "compras_pendientes": compras_pendientes(),
+            "asientos": asientos_contables(),
+            "referencias": referencias_con_stock(),
+            "unidades": existencias_catalogo(),
+            "valor_almacen": valor_almacen(),
+            "actividades": actividades_totales(),
+            "vencidas": actividades_vencidas(),
+            "hoy": actividades_hoy(),
+            "manana": actividades_manana(),
+            "proximas": actividades_proximas(),
+            "presupuestos_viejos": viejos,
+            "dias_presupuesto_viejo": dias_max if viejos else 0,
+        }
 
-    cifras = {
-        "fecha": date.today().isoformat(),
-        "banner": BANNER,
-        "productos": _numero("SELECT count(*) FROM product_template WHERE active"),
-        "publicados": _numero("SELECT count(*) FROM product_template WHERE is_published"),
-        "modelo": _numero("SELECT count(*) FROM furniture_product"),
-        "clientes": _numero("SELECT count(*) FROM res_partner WHERE customer_rank > 0"),
-        "proveedores": _numero("SELECT count(*) FROM res_partner WHERE supplier_rank > 0"),
-        "pedidos": _numero("SELECT count(*) FROM sale_order"),
-        "confirmados": _numero("SELECT count(*) FROM sale_order WHERE state = 'sale'"),
-        "presupuestos": _numero("SELECT count(*) FROM sale_order WHERE state IN ('draft','sent')"),
-        "cancelados": _numero("SELECT count(*) FROM sale_order WHERE state = 'cancel'"),
-        "entregas_hechas": _numero(
-            "SELECT count(*) FROM stock_picking sp JOIN stock_picking_type pt "
-            "ON pt.id = sp.picking_type_id WHERE pt.code = 'outgoing' AND sp.state = 'done'"),
-        "entregas_pendientes": _numero(
-            "SELECT count(*) FROM stock_picking sp JOIN stock_picking_type pt "
-            "ON pt.id = sp.picking_type_id WHERE pt.code = 'outgoing' AND sp.state NOT IN ('done','cancel')"),
-        "recepciones_hechas": _numero(
-            "SELECT count(*) FROM stock_picking sp JOIN stock_picking_type pt "
-            "ON pt.id = sp.picking_type_id WHERE pt.code = 'incoming' AND sp.state = 'done'"),
-        "recepciones_pendientes": _numero(
-            "SELECT count(*) FROM stock_picking sp JOIN stock_picking_type pt "
-            "ON pt.id = sp.picking_type_id WHERE pt.code = 'incoming' AND sp.state NOT IN ('done','cancel')"),
-        "compras": _numero("SELECT count(*) FROM purchase_order"),
-        "compras_pendientes": _numero(
-            "SELECT count(DISTINCT pol.order_id) FROM purchase_order_line pol "
-            "JOIN stock_move sm ON sm.purchase_line_id = pol.id "
-            "WHERE sm.state NOT IN ('done','cancel')"),
-        "asientos": _numero("SELECT count(*) FROM account_move"),
-        "referencias": _numero(
-            "SELECT count(*) FROM stock_quant q JOIN stock_location l ON l.id = q.location_id "
-            "WHERE l.usage = 'internal' AND q.quantity > 0"),
-        "unidades": unidades,
-        "valor_almacen": _decimal(
-            "SELECT round(sum(svl.value)::numeric, 2) FROM stock_valuation_layer svl"),
-        "actividades": _numero("SELECT count(*) FROM mail_activity"),
-        "vencidas": _numero("SELECT count(*) FROM mail_activity WHERE date_deadline < current_date"),
-        "hoy": _numero("SELECT count(*) FROM mail_activity WHERE date_deadline = current_date"),
-        "manana": _numero("SELECT count(*) FROM mail_activity WHERE date_deadline = current_date + 1"),
-        "proximas": _numero("SELECT count(*) FROM mail_activity WHERE date_deadline > current_date + 1"),
-        "presupuestos_viejos": viejos,
-        "dias_presupuesto_viejo": dias if viejos else 0,
-    }
+        salud = [
+            {
+                "campo": "almacén respaldado por movimientos",
+                "valor": f"{formato_numero(existencias)} / {formato_numero(movimientos)}",
+                "ok": existencias == movimientos,
+                "motivo": f"{formato_numero(abs(existencias - movimientos))} unidades sin movimiento",
+            },
+            {
+                "campo": "pedidos sobre el catálogo",
+                "valor": "todos" if fuera_catalogo == 0 else f"{fuera_catalogo} fuera",
+                "ok": fuera_catalogo == 0,
+                "motivo": f"{fuera_catalogo} líneas apuntan a productos que no son del catálogo",
+            },
+            {
+                "campo": "valoración del almacén",
+                "valor": f"{formato_numero(cifras['valor_almacen'])} €",
+                "ok": cifras["valor_almacen"] > 0,
+                "motivo": "sin apuntes de valoración",
+            },
+            {
+                "campo": "tickets de soporte (helpdesk)",
+                "valor": 0,
+                "ok": False,
+                "no_aplica": True,
+                "motivo": "no existe en la edición Community",
+            },
+            {
+                "campo": "tareas de proyecto",
+                "valor": 0,
+                "ok": False,
+                "no_aplica": True,
+                "motivo": "módulo sin usar",
+            },
+        ]
+        cifras["salud_dato"] = salud
 
-    salud = [
-        {"campo": "almacén respaldado por movimientos",
-         "valor": f"{formato_numero(traza_existencias)} / {formato_numero(traza_movimientos)}",
-         "ok": traza_existencias == traza_movimientos,
-         "motivo": f"{formato_numero(abs(traza_existencias - traza_movimientos))} unidades sin movimiento"},
-        {"campo": "pedidos sobre el catálogo",
-         "valor": "todos" if fuera_catalogo == 0 else f"{fuera_catalogo} fuera",
-         "ok": fuera_catalogo == 0,
-         "motivo": f"{fuera_catalogo} líneas apuntan a productos que no son del catálogo"},
-        {"campo": "valoración del almacén",
-         "valor": f"{formato_numero(cifras['valor_almacen'])} €",
-         "ok": cifras["valor_almacen"] > 0,
-         "motivo": "sin apuntes de valoración"},
-        {"campo": "tickets de soporte (helpdesk)",
-         "valor": 0, "ok": False, "no_aplica": True, "motivo": "no existe en la edición Community"},
-        {"campo": "tareas de proyecto",
-         "valor": _numero("SELECT count(*) FROM project_task"),
-         "ok": _numero("SELECT count(*) FROM project_task") > 0,
-         "no_aplica": True, "motivo": "módulo sin usar"},
-    ]
-    cifras["salud_dato"] = salud
+        # Prioridades (actividades, entregas, recepciones)
+        prioridades = []
+        prioridades.extend(prioridades_actividades())
+        prioridades.extend(prioridades_entregas())
+        prioridades.extend(prioridades_recepciones())
+        cifras["prioridades"] = prioridades
 
-    prioridades = []
-    for login, resumen, modelo, res_id, dias_act in _sql(
-            "SELECT u.login, a.summary, a.res_model, a.res_id, (a.date_deadline - current_date) "
-            "FROM mail_activity a JOIN res_users u ON u.id = a.user_id "
-            "WHERE a.date_deadline <= current_date + 1 ORDER BY a.date_deadline LIMIT 4"):
-        prioridades.append({
-            "tipo": "actividad", "etiqueta": login.split("@")[0],
-            "texto": f"{resumen} ({modelo} #{res_id})",
-            "urgente": int(dias_act or 0) <= 0,
-        })
-    for nombre, cliente in _sql(
-            "SELECT sp.name, coalesce(rp.name, so.name, '(sin cliente)') "
-            "FROM stock_picking sp JOIN stock_picking_type pt ON pt.id = sp.picking_type_id "
-            "LEFT JOIN res_partner rp ON rp.id = sp.partner_id "
-            "LEFT JOIN sale_order so ON so.id = sp.sale_id "
-            "WHERE pt.code = 'outgoing' AND sp.state NOT IN ('done','cancel') "
-            "ORDER BY sp.scheduled_date LIMIT 3"):
-        prioridades.append({"tipo": "entrega", "etiqueta": nombre,
-                            "texto": f"Entrega preparada para {cliente}", "urgente": False})
-    for nombre, proveedor in _sql(
-            "SELECT sp.name, coalesce(rp.name, '(sin proveedor)') "
-            "FROM stock_picking sp JOIN stock_picking_type pt ON pt.id = sp.picking_type_id "
-            "LEFT JOIN res_partner rp ON rp.id = sp.partner_id "
-            "WHERE pt.code = 'incoming' AND sp.state NOT IN ('done','cancel') "
-            "ORDER BY sp.scheduled_date LIMIT 3"):
-        prioridades.append({"tipo": "recepción", "etiqueta": nombre,
-                            "texto": f"Recepción pendiente de {proveedor}", "urgente": False})
-    cifras["prioridades"] = prioridades
+        # Evolución (patrón MIS, benchmark punto 2)
+        evolucion = {}
+        evolucion.update(evolutivo_entregas())
+        evolucion.update(evolutivo_recepciones())
+        cifras["evolucion"] = evolucion
 
-    # ------------------------------------------------------------------
-    # Comparación de periodos (patrón MIS, benchmark punto 2): el
-    # movimiento de hoy frente al de ayer y al total de 7 días.
-    # ------------------------------------------------------------------
-    def hechas(code: str, desde: str, hasta: str) -> int:
-        return _numero(
-            "SELECT count(*) FROM stock_picking sp "
-            "JOIN stock_picking_type pt ON pt.id = sp.picking_type_id "
-            f"WHERE pt.code = '{code}' AND sp.state = 'done' "
-            f"AND sp.date_done::date >= '{desde}' AND sp.date_done::date <= '{hasta}'")
+        # MCP suggestion (ejemplo de integración)
+        lead_data = {
+            "score_kavana": 85,
+            "senales": {
+                "tipo_contrato": True,
+                "proyecto_referenciado": False,
+                "muestra_pedida": True,
+                "email_corporativo": False,
+                "contacto_reciente": False,
+            },
+            "prioridad_sugerida": "alta",
+        }
+        # Lazy import: MCP y lead_scoring son opcionales, no rompen el panel si faltan
+        try:
+            from models import mcp
+        except Exception:
+            mcp = None
+        if mcp is not None:
+            sugerencia = mcp.MCPService.sugerir_accion(lead_data)
+        else:
+            sugerencia = "Coordinar visita física para mostrar materiales y acabados (score: 85)"
+        cifras["mcp_sugerencia"] = sugerencia
+        return cifras
 
-    hoy = date.today()
-    ayer = date.fromordinal(hoy.toordinal() - 1)
-    hace_7 = date.fromordinal(hoy.toordinal() - 6)
-    cifras["evolucion"] = {
-        "entregas_hoy": hechas('outgoing', hoy.isoformat(), hoy.isoformat()),
-        "entregas_ayer": hechas('outgoing', ayer.isoformat(), ayer.isoformat()),
-        "entregas_semana": hechas('outgoing', hace_7.isoformat(), hoy.isoformat()),
-        "recepciones_hoy": hechas('incoming', hoy.isoformat(), hoy.isoformat()),
-        "recepciones_ayer": hechas('incoming', ayer.isoformat(), ayer.isoformat()),
-        "recepciones_semana": hechas('incoming', hace_7.isoformat(), hoy.isoformat()),
-    }
-    return cifras
+    except Exception as exc:  # noqa: BLE001
+        # Si falla la conexión, lanzamos error para que el panel use caché o declare fallo
+        raise RuntimeError(f"Lectura JSON-RPC falló: {exc}") from exc
 
 
 def precomputar() -> Path:
@@ -449,15 +426,13 @@ fetch('api/dia').then(r=>r.json()).then(d=>{
   const b = document.getElementById('bandeja');
   if(!d.prioridades.length){const li=document.createElement('li');li.textContent='Nada pendiente en el tramo de atención.';b.appendChild(li);}
   d.prioridades.forEach(p=>{const li=document.createElement('li');
-    li.innerHTML='<span class="tag">'+p.tipo+'</span>'+p.texto+(p.urgente?' <span class="rojo">(vencida)</span>':'');
-    b.appendChild(li);});
+    li.innerHTML='<span class=\"tag\">'+p.tipo+'</span>'+p.texto+(p.urgente?' <span class=\"rojo\">(vencida)</span>':'');b.appendChild(li);});
   const s = document.getElementById('salud');
   d.salud_dato.forEach(x=>{const li=document.createElement('li');
-    li.innerHTML=(x.ok?'':'<span class="rojo">✕ </span>')+x.campo+': '+x.valor+(x.ok?'':' — '+x.motivo);s.appendChild(li);});
+    li.innerHTML=(x.ok?'':'<span class=\"rojo\">✕ </span>')+x.campo+': '+x.valor+(x.ok?'':' — '+x.motivo);s.appendChild(li);});
 }).catch(e=>{document.getElementById('estado').textContent='Sin conexión con el laboratorio: ' + e;});
 </script></body></html>
 """
-
 
 def _carga_cache() -> dict | None:
     ruta = configuracion.carpeta_cache() / f"dia_{date.today().isoformat()}.json"
