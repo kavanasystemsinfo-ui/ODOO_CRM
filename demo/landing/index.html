@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Odoo 17 · Kavana Systems (demostración técnica)</title>
+<meta name="description" content="Proyecto de demostración: laboratorio Odoo 17 completo que muestra capacidad de montar un ERP desde cero, crear asistente técnico IA que busca en docs reales, y mantener tests verificables. El mueble es solo el ejemplo concreto; la arquitectura es agnóstica.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M3 11h18v6H3z"/><path d="M7 17v2M17 17v2"/></svg>
+      Muebles del Hogar · laboratorio Odoo 17
+    </a>
+    <nav>
+      <a href="#proyecto">Proyecto</a>
+      <a href="#laboratorio">El laboratorio</a>
+      <a href="#construido">Lo construido</a>
+      <a href="#decisiones">Decisiones</a>
+      <a href="#flujo">Flujo</a>
+      <a href="#tests">Tests</a>
+      <a href="#panel">Panel del día</a>
+      <a href="#evidencia">Evidencia</a>
+      <a href="#asistente">Asistente</a>
+      <a href="#acceso">Acceso</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <p class="badge">Laboratorio verificable · datos de ejemplo · no conectado a sistemas reales</p>
+    <h1>Laboratorio Odoo 17 completo que demuestra capacidad de montar un ERP desde cero, crear asistente técnico IA verificable y mantener tests automáticos</h1>
+    <p class="sub">Architettura agnóstica: el mueble es solo el caso de uso concreto. Lo que se demuestra aquí es la capacidad de:</p>
+    <div class="hero-cifras">
+      <div class="cifra"><strong>Montar</strong><span>Odoo 17 completo desde cero (modelo, vistas, datos de ejemplo, tienda)</span></div>
+      <div class="cifra"><strong>Automatizar</strong><span>con asistente IA que busca en docs reales (no inventa)</span></div>
+      <div class="cifra"><strong>Verificar</strong><span>con 66 pruebas pytest + verificador de 14 recuentos</span></div>
+      <div class="cifra"><strong>Resetear</strong><span>con un clic (panel del día) o cada 30 min (servidor)</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="resumen-ejecutivo" class="seccion">
+  <span class="sl">Resumen ejecutivo</span>
+  <h2>Qué aporta a tu empresa</h2>
+  <div class="tres-columnas">
+    <div class="tarjeta">
+      <h4>Almacén que nunca miente</h4>
+      <p>2.190 unidades en existencia, cada una trazada a un movimiento real — diferencia con el libro siempre 0.</p>
+    </div>
+    <div class="tarjeta">
+      <h4>Decisiones claras cada mañana</h4>
+      <p>El panel del día muestra qué pedidos confirmar, qué actividades vigilar y si el dato está sano — sin rellenar huecos.</p>
+    </div>
+    <div class="tarjeta">
+      <h4>IA que no invita a creer</h4>
+      <p>Si no hay datos o clave de modelo, el asistente dice "no lo sé" en vez de inventar respuestas verificables.</p>
+    </div>
+    <div class="tarjeta">
+      <h4>Todo probado, nada supuesto</h4>
+      <p>66 tests automáticos + verificador de estado inicial — cada afirmación se puede ejecutar y comprobar.</p>
+    </div>
+  </div>
+</section>
+
+<section id="proyecto" class="seccion">
+  <span class="sl">Proyecto</span>
+  <h2>Qué es y por qué se ha hecho</h2>
+  <div class="dos-columnas">
+    <div>
+      <h3>Qué es</h3>
+      <p>Un <strong>laboratorio Odoo 17 verificable</strong> que incluye:</p>
+      <ul>
+        <li>Módulo propio <code>furniture.product</code> con 80 productos de ejemplo</li>
+        <li>Tienda online publicada y coherente con el catálogo</li>
+        <li>Almacén con movimiento trazado que cuadra con el libro</li>
+        <li>Panel del día (servicio propio, solo lectura) que muestra qué necesita decisión hoy</li>
+        <li>Asistente técnico IA que responde solo con lo que hay en el repositorio (README, tests, panel, scripts)</li>
+        <li>Tests automatizados: 66 pytest + verificador de 14 recuentos</li>
+        <li>Mecanismo de reset automático cada 30 minutos + botón manual en el panel</li>
+      </ul>
+      <p><strong>Importante:</strong> el mueble de hogar es solo el ejemplo concreto elegido. La arquitectura, los patrones y las demostraciones técnicas son completamente agnósticas y aplicables a cualquier dominio (industrial, logístico, servicios, etc.).</p>
+    </div>
+    <div>
+      <h3>Por qué se ha hecho</h3>
+      <p>Para demostrar <strong>capacidad real de montar un ERP de empresa</strong> —y no una maqueta— con criterio de ingeniería:</p>
+      <ul>
+        <li><strong>Datos que cuadran:</strong> el almacén no se "ajusta" a ojo; cada unidad está respaldada por un movimiento trazado</li>
+        <li><strong>IA honesta:</strong> el asistente nunca inventa; si no hay datos o clave de modelo, lo dice explícitamente</li>
+        <li><strong>Todo verificable:</strong> cada afirmación puede comprobarse en el laboratorio o ejecutando los tests</li>
+        <li><strong>Entorno aislado y reseteable:</strong> puedes trastear sin miedo porque vuelve solo a su estado inicial</li>
+      </ul>
+      <p>Tres reglas sostienen todo el proyecto:</p>
+      <ol>
+        <li><strong>Si no cuadra, no se tapa.</strong> Se busca la causa y se cierra, nunca se ajusta a ojo.</li>
+        <li><strong>Lo que no se sabe, se dice.</strong> El panel y el asistente declaran sus límites en vez de aparentar.</li>
+        <li><strong>Nada se promete sin prueba.</strong> Cada claim tiene una verificación asociada (test, consulta, o documentación).</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section id="laboratorio" class="seccion fondo-claro">
+  <span class="sl">El laboratorio</span>
+  <h2>Cómo está montado</h2>
+  <p class="intro">Odoo 17 con PostgreSQL 15, contenedores separados y aislados del resto, servido por HTTPS propio. El laboratorio vive en un servidor modesto: lo que se demuestra aquí no necesita infraestructura de gran empresa.</p>
+  <div class="tres-columnas">
+    <div class="tarjeta">
+      <h4>Aislado de verdad</h4>
+      <p>Base <code>furniture_db</code> en su propio contenedor, con filtro de bases: el servidor no sirve ninguna otra base. Un dominio propio, certificado HTTPS y el puerto de Odoo cerrado al exterior.</p>
+    </div>
+    <div class="tarjeta">
+      <h4>Coherente consigo mismo</h4>
+      <p>Los mismos 80 muebles, con el mismo precio y el mismo stock, aparecen en el modelo propio, en los productos estándar y en la tienda. Ninguna pantalla cuenta una historia distinta.</p>
+    </div>
+    <div class="tarjeta">
+      <h4>Español y euros</h4>
+      <p>1.469 plantillas traducidas, el CRM con sus tramos en español (Nuevo, Calificado, Propuesta, Ganado), IVA del 21 % en productos, pedidos y compras, y formato español de importes.</p>
+    </div>
+  </div>
+
+  <div class="codigo">
+<pre># Comprobación de que el almacén cuadra con el libro (consulta real al laboratorio)
+existencias ......... 2.190
+respaldo movimientos . 2.190
+<span class="ok">diferencia ........... 0   <- nada sin justificar</span>
+
+# Lo que dice el panel del día (reglas, no modelo):
+"Buenos días. El catálogo tiene 80 muebles publicados y el almacén guarda
+ 2.190 unidades en 80 referencias, por un valor de 5.173.986 €."
+"De 56 pedidos, 37 están confirmados y 19 siguen en presupuesto."
+<span class="hi">"He revisado 30 actividades asignadas: 5 vencidas, 7 de hoy, 4 de mañana y 15 próximas."</span></pre>
+  </div>
+</section>
+
+<section id="construido" class="seccion">
+  <span class="sl">Lo construido</span>
+  <h2>Qué hay dentro, y en qué estado</h2>
+  <p class="intro">Diez componentes con su estado real: <strong>VERIFICADO</strong> significa que hay una comprobación hecha y citada, no una intención.</p>
+  <div class="grid">
+    <div class="ficha"><span class="etiqueta">MODELO</span><h4>Catálogo coherente</h4><p>80 productos con identificadores correlativos, precio, coste, categoría, material, estilo, garantía y descripción. Los tres catálogos (propio, estándar, tienda) muestran lo mismo.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">TIENDA</span><h4>Escaparate publicable</h4><p>Tienda online en español, con nueve secciones propias, precios en euros y ficha de producto con su fotografía.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">ALMACÉN</span><h4>Existencias cuadradas</h4><p>2.190 unidades respaldadas al 100 % por movimientos trazados. Cuando hubo un descuadre, se buscó la causa y se cerró: no se ajustó a ojo.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">VENTAS</span><h4>Pedidos y compras con historia</h4><p>56 pedidos de venta (37 confirmados y 19 presupuestos), 11 pedidos de compra, 48 albaranes y un almacén con entregas hechas, listas y recepciones pendientes.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">ESPAÑOL</span><h4>Idioma, moneda e impuestos</h4><p>Español cargado y por defecto, euro como única moneda, IVA del 21 % aplicado a productos, pedidos y compras, y empresa con dirección y NIF de laboratorio.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">LIMPIEZA</span><h4>Sin restos de la demo</h4><p>Retirado el catálogo genérico y sus facturas, renombrados los socios heredados, sustituidas las categorías de la demo y pasadas a español las oportunidades y actividades.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">PANEL</span><h4>Panel del día</h4><p>Servicio propio que lee directamente por SQL (sin ORM), muestra cifras, lo que pide atención y salud del dato. Incluye botón de reinicio para administradores.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">IA</span><h4>Asistente técnico declarada</h4><p>Busca en los documentos reales del proyecto (README, tests, panel, scripts). Si no hay clave de modelo, devuelve fragmentos exactos en vez de redactar. Nunca inventa.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">TESTS</span><h4>Suite verificable</h4><p>66 pruebas pytest (62 sin Odoo/PostgreSQL, 4 contra el laboratorio en marcha). Plus: verificador de 14 recuentos contra el estado inicial.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">REINICIO</span><h4>Botón para dejarlo como nuevo</h4><p>El panel puede devolver el laboratorio a su estado inicial desde una instantánea canónica. Exige sesión de administrador y tiene tres minutos de espera entre reinicios.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">RESTAURAR</span><h4>Restauración probada de verdad</h4><p>No basta con el botón: se paró Odoo, se rehizo la base, se cargó la instantánea y se arrancó. El manifiesto de 14 recuentos salió en verde y el almacén siguió cuadrando.</p><span class="estado">VERIFICADO</span></div>
+  </div>
+</section>
+
+<section id="panel" class="seccion fondo-claro">
+  <span class="sl">El panel del día</span>
+  <h2>Lo que hace útil a un ERP: decir qué toca hoy</h2>
+  <div class="dos-columnas">
+    <div>
+      <h3>Qué responde</h3>
+      <ul>
+        <li><strong>Las cifras de un vistazo:</strong> catálogo, valor del almacén, entregas y recepciones, pedidos confirmados frente a presupuestos.</li>
+        <li><strong>Lo que pide decisión:</strong> las actividades vencidas y las de hoy, las entregas preparadas para salir y las recepciones pendientes, cada una con su persona y su documento.</li>
+        <li><strong>La salud del dato:</strong> comprueba que el almacén cuadre con el libro y que ningún pedido apunte a un producto que no existe. Un ERP no puede arreglar lo que no se registra.</li>
+        <li><strong>Lo que no hay:</strong> si un dato no existe o un módulo no se usa, lo dice en vez de rellenarlo.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Cómo está hecho</h3>
+      <p>Es un servicio propio, independiente de Odoo: lee la base por consulta directa y <strong>solo lee</strong>. Si el laboratorio no responde, sirve la caché del día y lo declara, en lugar de enseñar una pantalla rota o inventarse cifras.</p>
+      <p>Las frases de resumen son <strong>reglas deterministas</strong>: se pueden leer, discutir y corregir. La parte de modelo de lenguaje está preparada para redactarlas, y si no hay clave configurada el panel lo dice abiertamente.</p>
+      <p>El botón de reinicio exige haber entrado antes en Odoo como administrador: un visitante anónimo recibe un <em>403</em>. Es la única acción del panel que escribe algo.</p>
+    </div>
+  </div>
+</section>
+
+<section id="evidencia" class="seccion">
+  <span class="sl">Evidencia</span>
+  <h2>Capturas reales, no maquetas</h2>
+  <p class="intro">Pantallazos tomados del laboratorio publicado mientras se preparaba esta página:</p>
+  <div class="galeria">
+    <figure>
+      <img src="assets/captura-panel-dia-20260929.png" alt="Captura real del panel del día del laboratorio de muebles: cifras del catálogo y del almacén, lo que pide atención y salud del dato">
+      <figcaption>El panel del día del laboratorio de muebles. Captura real, publicada en <a href="/panel/" target="_blank" rel="noopener">/panel/</a>.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/captura-tienda-20260929.png" alt="Captura real de la tienda del laboratorio: muebles con precios en euros y secciones en español">
+      <figcaption>La tienda, con precios en euros y secciones en español, servida desde Odoo.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/captura-ficha-20260929.png" alt="Captura real de la ficha de un producto del catálogo, con su descripción en español, material y precio en euros">
+      <figcaption>Ficha de producto: descripción, material y precio, todo en español y en euros.</figcaption>
+    </figure>
+  </div>
+  <p class="nota">Toda cifra citada en esta página (80 muebles, 2.190 unidades, 56 pedidos, 11 compras, IVA del 21 %, 1.469 plantillas traducidas) sale de consultas hechas sobre el laboratorio en marcha. Los pantallazos son del propio laboratorio publicado, sin retoques.</p>
+</section>
+
+<section id="acceso" class="seccion fondo-claro">
+  <span class="sl">Probar</span>
+  <h2>Acceso a la demostración</h2>
+  <div class="demo-box">
+    <h3>Tu turno</h3>
+    <p>El laboratorio está publicado y se puede tocar. Se sirve únicamente la base <code>furniture_db</code>, aislada por configuración: no hay ningún dato real detrás de estas claves.</p>
+    <ul>
+      <li><strong>Panel del día</strong> (solo lectura, sin credenciales): <a href="/panel/" target="_blank" rel="noopener">https://odoocrm.kavanasystems.com/panel/</a></li>
+      <li><strong>Tienda</strong> (pública): <a href="/shop" target="_blank" rel="noopener">https://odoocrm.kavanasystems.com/shop</a></li>
+      <li><strong>Odoo completo</strong> (ventas, almacén, compras, CRM, contabilidad): <a href="/web/login" target="_blank" rel="noopener">https://odoocrm.kavanasystems.com/web/login</a></li>
+    </ul>
+    <h4>Credenciales de demostración</h4>
+    <ul>
+      <li>Entrada a Odoo: usuario <code>visita</code> · clave <code>Visita-lSJyr0yzCSQElzGF</code></li>
+    </ul>
+    <p class="nota">Es un usuario de pruebas con ventas, compras y almacén, y sin acceso a la configuración de la empresa. La contraseña del administrador no se publica. El laboratorio está aislado por configuración: no hay ningún dato real detrás de estas claves.</p>
+    <div class="reinicio-landing">
+      <h4>Puedes trastear sin miedo: esto se limpia solo</h4>
+      <p>El servidor devuelve el laboratorio a su estado inicial <strong>cada media hora</strong>, así que lo que cambies no se queda para el siguiente que entre. No hay botón de reinicio a propósito: así nadie puede dejar la demo rota para otro.</p>
+      <a class="boton" href="/panel/" target="_blank" rel="noopener">Abrir el panel del día</a>
+      <a class="boton secundario" href="/shop" target="_blank" rel="noopener">Ver la tienda</a>
+    </div>
+  </div>
+</section>
+
+<section id="decisiones" class="seccion">
+  <span class="sl">Decisiones</span>
+  <h2>Lo que se decidió, y por qué</h2>
+  <p class="intro">Cada decisión con su motivo y su contrapartida. Ninguna es la única posible: son las que se sostienen con lo que hay.</p>
+  <div class="grid">
+    <div class="ficha"><span class="etiqueta">ERP</span><h4>Odoo 17, no un CRM a medida</h4><p>Montar el ERP sobre Odoo da contabilidad, almacén, compras y web ya probados por miles de empresas; el trabajo se concentra en el dato y en la ambientación. La contrapartida: se hereda su modelo y hay que limpiar los restos de la demo, cosa que se hizo y se documenta.</p></div>
+    <div class="ficha"><span class="etiqueta">DATO</span><h4>Una sola verdad para tres catálogos</h4><p>El modelo propio (<code>furniture.product</code>), los productos estándar y la tienda muestran los mismos 80 muebles con el mismo precio y las mismas existencias. Cuando hubo tres catálogos a la vez se unificaron; mantenerlos separados habría garantizado que se contradijeran.</p></div>
+    <div class="ficha"><span class="etiqueta">PANEL</span><h4>El panel lee por SQL, sin ORM</h4><p>Es un servicio aparte, con la librería estándar de Python y sin dependencias: si Odoo está caído o migrando, el panel sigue diciendo lo que hay. A cambio, las consultas van contra el esquema de Odoo y hay que revisarlas si algún día se cambia de versión.</p></div>
+    <div class="ficha"><span class="etiqueta">HONESTIDAD</span><h4>Sin laboratorio, caché declarada</h4><p>Si no puede leer, el panel sirve la última cifra del día y lo dice; nunca inventa un número. Y la parte de redacción por IA se declara: sin clave de modelo, las frases son reglas, y se ve.</p></div>
+    <div class="ficha"><span class="etiqueta">DEMO</span><h4>Reinicio con sesión y espera</h4><p>El laboratorio se rompe probando, así que hay botón para devolverlo a su instantánea canónica. Se exige sesión de administrador de Odoo (un anónimo recibe un 403) y tres minutos entre reinicios, para que un visitante no borre la demo que otro está mirando.</p></div>
+    <div class="ficha"><span class="etiqueta">ASISTENTE</span><h4>Responde con el repositorio, no con imaginación</h4><p>El asistente técnico busca en los documentos reales del proyecto (README, tests, panel y scripts) y responde con eso. Si no encuentra nada, lo dice. Si no hay clave de modelo, enseña los fragmentos exactos en lugar de aparentar.</p></div>
+  </div>
+</section>
+
+<section id="stack" class="seccion fondo-claro">
+  <span class="sl">Stack</span>
+  <h2>Con qué está hecho</h2>
+  <div class="tres-columnas">
+    <div class="tarjeta">
+      <h4>Aplicación</h4>
+      <p>Módulo propio de <strong>Odoo 17</strong> en Python: modelo <code>furniture.product</code>, vistas de lista, formulario y búsqueda, permisos de acceso, controlador web para el panel del módulo y datos del catálogo en CSV.</p>
+    </div>
+    <div class="tarjeta">
+      <h4>Infraestructura</h4>
+      <p><strong>PostgreSQL 15</strong> y Odoo en contenedores separados y aislados, <strong>nginx</strong> delante con HTTPS de Let's Encrypt, y toda la pieza del panel en un servicio systemd propio que solo lee.</p>
+    </div>
+    <div class="tarjeta">
+      <h4>Calidad</h4>
+      <p><strong>66 pruebas</strong> de <code>pytest</code> sobre catálogo, módulo, panel y asistente, ejecutadas en cada push con GitHub Actions; un verificador de <strong>14 recuentos</strong> contra el estado inicial y una instantánea canónica para restaurarlo.</p>
+    </div>
+  </div>
+</section>
+
+<section id="flujo" class="seccion">
+  <span class="sl">El flujo</span>
+  <h2>Cómo circula el dato, de la oficina a la decisión</h2>
+  <p class="intro">El ciclo real del laboratorio, de punta a punta: quién escribe, dónde queda y quién lo lee.</p>
+  <div class="codigo">
+<pre>Oficina (Odoo 17)                Tienda pública
+  │ ventas, compras, CRM            │ pedidos del escaparate
+  ▼                                 ▼
+PostgreSQL 15  ──  furniture_db (contabilidad, almacén con movimiento trazado)
+  │
+  ├──►  Panel del día (servicio propio, solo lee)  ──►  «qué toca hoy» y salud del dato
+  │
+  └──►  Asistente técnico (este chat)  ──►  responde con los documentos del repositorio
+                                              │
+                                              ▼
+                                    ¿cuadra? ¿está probado? ¿puedo montarlo?</pre>
+  </div>
+</section>
+
+<section id="tests" class="seccion fondo-claro">
+  <span class="sl">Tests</span>
+  <h2>Lo que está probado, y cómo comprobarlo</h2>
+  <p class="intro"><strong>66 pruebas</strong> con <code>pytest</code>: 62 corren sin Odoo ni PostgreSQL y se lanzan en cada push con GitHub Actions; las otras 4 van contra el laboratorio en marcha y se saltan solas cuando no está.</p>
+  <div class="grid">
+    <div class="ficha"><span class="etiqueta">CATÁLOGO</span><h4>El dato no se descuadra</h4><p>80 fichas con identificadores correlativos, reparto por las 9 categorías, precios y costes con margen coherente, existencias enteras, garantía de 24 meses y descripciones en español. Si alguien toca el CSV y descuadra el reparto, la suite lo dice.</p></div>
+    <div class="ficha"><span class="etiqueta">MÓDULO</span><h4>El módulo está bien formado</h4><p>Manifiesto con sus dependencias y su licencia, versión de Odoo 17, cada fichero declarado existe, las vistas son XML válido y usan el modelo propio, los permisos son los correctos, el controlador exige sesión y el modelo declara todos los campos del catálogo.</p></div>
+    <div class="ficha"><span class="etiqueta">PANEL</span><h4>Las frases son reglas</h4><p>Formato español de importes y porcentajes, las frases del resumen con sus cifras, qué dice cuando un dato de salud falla y qué ignora cuando no aplica, y la configuración del laboratorio por variables de entorno.</p></div>
+    <div class="ficha"><span class="etiqueta">ASISTENTE</span><h4>Responde con el repositorio</h4><p>Que encuentre los fragmentos correctos, que cite fichero y línea, que no use los documentos pesados, que diga «no encuentro nada de eso» cuando la pregunta es inventada y que, sin clave de modelo, devuelva los fragmentos en vez de redactar.</p></div>
+  </div>
+  <div class="codigo">
+<pre># En tu máquina, sin Odoo ni PostgreSQL
+pip install -r requirements-dev.txt
+python -m pytest                 <span class="ok"># 62 pruebas</span>
+
+# Contra el laboratorio en marcha (Odoo, panel y verificador)
+MUEBLES_LAB=1 python -m pytest -m vivo   <span class="ok"># 4 pruebas</span>
+
+# El verificador del estado inicial del laboratorio
+python3 panel/demo_restaurar_muebles.py --verificar   <span class="ok"># 14 recuentos OK</span></pre>
+  </div>
+  <p class="nota">Las pruebas y el flujo de integración continua están en el repositorio: <a href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM/tree/main/tests" target="_blank" rel="noopener">carpeta <code>tests/</code></a> y <a href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM/actions" target="_blank" rel="noopener">resultados en Actions</a>. En cada push se ejecutan solas.</p>
+</section>
+
+<section id="codigo" class="seccion">
+  <span class="sl">Código</span>
+  <h2>El repositorio, abierto</h2>
+  <p class="intro">Todo lo que se cuenta aquí está en GitHub: el módulo, los scripts que montaron el laboratorio, el panel, el asistente y las pruebas.</p>
+  <div class="dos-columnas">
+    <div>
+      <h3>Qué mirar primero</h3>
+      <ul>
+        <li><strong>El README</strong> explica qué es, cómo se monta desde cero y qué hace cada script, en orden.</li>
+        <li><strong>La carpeta <code>tests/</code></strong> es la mejor radiografía del proyecto: dice lo que se da por bueno y lo comprueba.</li>
+        <li><strong>El panel</strong> (<code>panel/</code>) es el sitio donde se ve la forma de trabajar: solo lee, declara lo que no sabe y no depende del ORM.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Enlaces</h3>
+      <div class="botones">
+        <a class="boton" href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM" target="_blank" rel="noopener">Ver el código en GitHub</a>
+        <a class="boton secundario" href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM/blob/main/README.md" target="_blank" rel="noopener">Leer el README</a>
+        <a class="boton secundario" href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM/tree/main/tests" target="_blank" rel="noopener">Ver las 66 pruebas</a>
+        <a class="boton secundario" href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM/actions" target="_blank" rel="noopener">Resultados de la CI</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="asistente" class="seccion fondo-claro">
+  <span class="sl">Asistente técnico</span>
+  <h2>Pregúntale al proyecto</h2>
+  <p class="intro">Responde solo con lo que hay en el repositorio: README, decisiones, panel, scripts y pruebas. Si la respuesta no está ahí, lo dice en lugar de inventarla.</p>
+  <div class="chat">
+    <div class="chat-log" id="chat-log">
+      <div class="chat-msg bot">Hola. Soy el asistente técnico del laboratorio Odoo 17. Pregúntame por el catálogo, el almacén, el panel, las pruebas o cómo está montado.</div>
+    </div>
+    <form class="chat-form" id="chat-form">
+      <label class="sr" for="chat-input">Tu pregunta</label>
+      <input id="chat-input" type="text" maxlength="300" autocomplete="off" placeholder="¿Cómo se comprueba que el almacén cuadra con el libro?">
+      <button class="boton" type="submit" id="chat-enviar">Preguntar</button>
+    </form>
+    <div class="chat-sugerencias">
+      <button type="button" class="chip" data-pregunta="¿Cómo se comprueba que el almacén cuadra con el libro?">¿Cómo se comprueba el almacén?</button>
+      <button type="button" class="chip" data-pregunta="¿Qué pruebas tiene el proyecto y dónde se ejecutan?">¿Qué pruebas tiene?</button>
+      <button type="button" class="chip" data-pregunta="¿Cómo está montado el laboratorio y qué contenedores usa?">¿Cómo está montado?</button>
+      <button type="button" class="chip" data-pregunta="¿Qué hace el panel del día y de dónde saca las cifras?">¿Qué hace el panel?</button>
+    </div>
+    <p class="nota" id="chat-fuentes">El asistente cita de qué fichero del <a href="https://github.com/kavanasystemsinfo-ui/ODOO_CRM" target="_blank" rel="noopener">repositorio</a> saca cada respuesta.</p>
+  </div>
+  <script>
+  (function () {
+    var API = '/panel/api/preguntar';
+    var log = document.getElementById('chat-log');
+    var form = document.getElementById('chat-form');
+    var input = document.getElementById('chat-input');
+    var boton = document.getElementById('chat-enviar');
+    var pie = document.getElementById('chat-fuentes');
+
+    function burbuja(texto, clase) {
+      var div = document.createElement('div');
+      div.className = 'chat-msg ' + clase;
+      div.textContent = texto;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+      return div;
+    }
+
+    function preguntar(pregunta) {
+      if (!pregunta || pregunta.length < 4) return;
+      burbuja(pregunta, 'user');
+      var esperando = burbuja('Buscando en el repositorio...', 'bot pensando');
+      boton.disabled = true;
+      fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pregunta: pregunta })
+      }).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(function (d) {
+        esperando.remove();
+        burbuja(d.respuesta || 'No he podido responder.', 'bot');
+        if (d.fuentes && d.fuentes.length) {
+          pie.innerHTML = 'Fuentes en el repositorio: <code>' + d.fuentes.join('</code> · <code>') + '</code>';
+        }
+      }).catch(function () {
+        esperando.remove();
+        burbuja('El asistente no está disponible ahora mismo. El resto de la página funciona igual.', 'bot');
+      }).then(function () {
+        boton.disabled = false;
+        input.value = '';
+      });
+    }
+
+    form.addEventListener('submit', function (evento) {
+      evento.preventDefault();
+      preguntar(input.value.trim());
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.chat-sugerencias .chip'), function (chip) {
+      chip.addEventListener('click', function () {
+        input.value = chip.getAttribute('data-pregunta');
+        preguntar(input.value);
+      });
+    });
+  })();
+  </script>
+</section>
+
+<footer>
+  <p>Proyecto de demostración de Kavana Systems · Laboratorio <code>furniture_db</code> (empresa ficticia con datos de ejemplo), no conectado a los sistemas de ninguna empresa real.</p>
+  <p>Catálogo de producto de origen: District Home (Green Front Furniture, EE. UU.). Ambiente, idioma, moneda e impuestos: empresa española.</p>
+</footer>
+
+</body>
+</html>

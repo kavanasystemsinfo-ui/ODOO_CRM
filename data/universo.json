@@ -34,11 +34,54 @@
     "fuente_de_verdad": "data/furniture.product.csv",
     "origen": "District Home (Green Front Furniture), extraído con scripts/import_districthome_products.py",
     "referencias": 80,
-    "categorias": ["armarios", "bancos", "butacas", "camas", "mesas", "mesitas", "otros", "sillas", "sofas"],
-    "materiales": ["Acero", "Latón", "Lino", "Madera", "Metal", "Mármol", "Piel", "Ratán", "Raíz de nogal", "Roble", "Teca", "Terciopelo", "Travertino", "Vidrio"],
-    "estilos": ["Antiguo", "Clásico", "Contemporáneo", "Minimalista", "Moderno", "Vintage"],
+    "categorias": [
+      "armarios",
+      "bancos",
+      "butacas",
+      "camas",
+      "mesas",
+      "mesitas",
+      "otros",
+      "sillas",
+      "sofas"
+    ],
+    "materiales": [
+      "Acero",
+      "Latón",
+      "Lino",
+      "Madera",
+      "Metal",
+      "Mármol",
+      "Piel",
+      "Ratán",
+      "Raíz de nogal",
+      "Roble",
+      "Teca",
+      "Terciopelo",
+      "Travertino",
+      "Vidrio"
+    ],
+    "estilos": [
+      "Antiguo",
+      "Clásico",
+      "Contemporáneo",
+      "Minimalista",
+      "Moderno",
+      "Vintage"
+    ],
     "garantia_meses": 24,
-    "tienda_categorias": ["Sofás y chaise longue", "Mesas de comedor", "Mesitas y mesas de centro", "Sillas y taburetes", "Sillones y butacas", "Bancos y pufs", "Armarios y vitrinas", "Dormitorio", "Recibidores y consolas", "Decoración y espejos"]
+    "tienda_categorias": [
+      "Sofás y chaise longue",
+      "Mesas de comedor",
+      "Mesitas y mesas de centro",
+      "Sillas y taburetes",
+      "Sillones y butacas",
+      "Bancos y pufs",
+      "Armarios y vitrinas",
+      "Dormitorio",
+      "Recibidores y consolas",
+      "Decoración y espejos"
+    ]
   },
   "poblado": {
     "politica": "Los scripts de scripts/ son el motor de carga; este universo es el índice versionado que los ordena y valida.",
@@ -69,14 +112,14 @@
     "pedidos confirmados": 37,
     "presupuestos": 19,
     "albaranes": 48,
-    "albaranes hechos":  41,
+    "albaranes hechos": 41,
     "pedidos de compra": 11,
     "asientos contables": 10,
     "actividades": 30,
     "unidades en almacén": 2190
   },
   "estado_publicado": {
-    "landing": "https://odoocrm.kavanasystems.com/muebles/",
+    "landing": "https://www.kavanasystems.com/odoo_intelligence/",
     "tienda": "https://odoocrm.kavanasystems.com/shop",
     "panel_del_dia": "https://odoocrm.kavanasystems.com/panel/",
     "panel_del_modulo": "/muebles/panel",
