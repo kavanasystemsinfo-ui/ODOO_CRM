@@ -204,7 +204,7 @@ Este documento resume las decisiones técnicas clave del proyecto, con enlaces a
 
 ## Próximas Decisiones Pendientes (Roadmap)
 
-1. **Migrar panel 100% a JSON-RPC** - Eliminar cualquier resto de SQL directo (ya hecho en panel, verificar `odoo_client.py` cubre todo).
+1. ~~**Migrar panel 100% a JSON-RPC**~~ ~~- Eliminar cualquier resto de SQL directo (ya hecho en panel, verificar `odoo_client.py` cubre todo).~~ ✅ **COMPLETADO**
 2. **`docker-compose.yml` en raíz** + `demo.sh` portable.
 3. **Separar landing/video** a `demo/` o repo `ODOO_CRM-demo`.
 4. **`pyproject.toml`** con `ruff`, `black`, `mypy`, `pre-commit`.

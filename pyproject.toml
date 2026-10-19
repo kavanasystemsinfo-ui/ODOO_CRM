@@ -1,0 +1,102 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "odoo_crm"
+version = "0.1.0"
+description = "Laboratorio de empresa ficticia de muebles de hogar para demostración de Odoo CRM"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Jorge Adán", email = "jorge.adán@kavanasystems.com"}
+]
+keywords = ["odoo", "crm", "demo", "manufacturing", "panel"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+# The module itself does not have runtime dependencies (it's an Odoo addon)
+# but we define development dependencies as optional.
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6.0",
+    "black>=24.0.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+    "pytest>=8.0.0",
+    "oca-odoo-pre-commit-hooks>=0.2",
+    "odoorpc>=0.10",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+select = ["E", "F", "W", "C90"]
+ignore = [
+    "E501",  # line length too long (handled by Black)
+    "W503",  # line break before binary operator (handled by Black)
+    "E203",  # whitespace before ':' (handled by Black)
+]
+# Extend ignore with Odoo-specific if needed
+extend-ignore = [
+    "E203",  # Whitespace before ':' (already in ignore)
+    "W503",  # Line break before binary operator (already in ignore)
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.py$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = 3.8
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = false
+ignore_missing_imports = true  # Because we might not have Odoo stubs installed
+follow_imports = "silent"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# Marker for live tests
+markers = [
+    "vivo: mark test that requires a live Odoo/PostgreSQL instance",
+]
+
+[tool.pre-commit.hooks]
+# We can let pre-commit use the config from .pre-commit-config.yaml if exists, or define here.
+# For simplicity, we'll assume a separate .pre-commit-config.yaml is used.
+# But we can also define default language_version.
+# Alternatively, we can let the user run `pre-commit install` and it will use the repo's config.
+# We'll not define hooks here to avoid duplication; we'll rely on a separate config file.
+# However, we can note that the project uses pre-commit and the config is in .pre-commit-config.yaml.
+# Since we don't have that file yet, we can create a basic one or leave it to the user.
+# For now, we'll just ensure the dependency is present.

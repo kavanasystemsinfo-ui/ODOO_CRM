@@ -1,4 +1,5 @@
 # ODOO_CRM — Laboratorio de empresa ficticia de muebles de hogar
+![Tests](https://github.com/kavanasystemsinfo-ui/ODOO_CRM/actions/workflows/tests.yml/badge.svg)
 
 Módulo Odoo que simula una **empresa española** de muebles de hogar: catálogo de
 80 productos, clientes y proveedores del sector, pedidos de venta y compra,
@@ -28,231 +29,168 @@ reinicio.
   *contract*) y 5 proveedores de mobiliario.
 - 56 pedidos de venta (37 confirmados y 19 presupuestos) y 11 pedidos de compra.
 - 39 oportunidades y 30 actividades, todas en español y del sector.
-- Empresa: **Muebles del Hogar S.L.**, Castelló de la Plana, con almacén
-  "Almacén central".
 
-## Ambiente español
+![Demo de Odoo CRM](./demo/video/odoo_crm_demo.gif)
 
-- **Idioma**: español (`es_ES`) cargado y por defecto en usuarios, socios y web.
-  La web sirve solo en español y el backend se ve en español (los tramos del CRM
-  son Nuevo, Calificado, Propuesta y Ganado).
-- **Moneda**: euro. El dólar queda desactivado y los importes se muestran en
-  formato español (12.415,50 €).
-- **Impuestos**: IVA 21 % en venta y en compra, aplicado a productos, pedidos y
-  facturas. Las facturas heredadas de la demo —que citaban referencias
-  inexistentes y seguían al 15 %— se retiraron; quedan 10 asientos de banco y
-  varios, sin IVA.
-- **Tienda**: árbol de categorías propio (Sofás y chaise longue, Mesas de
-  comedor, Mesitas y mesas de centro, Sillas y taburetes, Sillones y butacas,
-  Bancos y pufs, Armarios y vitrinas, Dormitorio, Recibidores y consolas y
-  Decoración y espejos) en lugar de las categorías de la demo de Odoo.
-- **NIF**: el del laboratorio es ficticio (B12345678); se cambia en un minuto.
+## Arquitectura
 
-Aviso para quien repita esto: cambiar el idioma o la moneda **por SQL desde
-fuera** no invalida la caché del servidor en marcha, y la web puede quedarse
-dando error 500 aunque los datos ya sean correctos. Ver
-`scripts/refrescar_cache_web.py` y la cabecera de
-`scripts/espanolizar_laboratorio.py`.
+El proyecto se divide en dos partes claramente separadas:
 
-## Estructura
+1. **Módulo Odoo** (`ODOO_CRM`):  
+   - Contiene el modelo `furniture.product`, vistas, reglas de seguridad y datos CSV.  
+   - Es un módulo estándar de Odoo 17, instalable en cualquier instancia de Odoo.  
+   - No depende del panel externo; puede usarse de forma independiente.
 
-- `models/`: modelo `furniture.product`, scoring determinista de oportunidades
-  (`lead_scoring.py`) y su herencia de `crm.lead` (`crm_lead_scoring.py`).
-  - `models/mcp.py`: capa MCP (Model Context Protocol) para enriquecer leads
-  con sugerencias de acciones deterministas o mediante integración externa
-  con LLMs (OpenAI, etc.).
-  - `views/`: vistas del catálogo, plantilla de la página del laboratorio y
-  vistas de scoring del CRM.
-- `controllers/`: controlador `/muebles/panel` dentro del sitio web.
-- `security/`: permisos de acceso.
-- `data/`: catálogo de 80 muebles (`furniture.product.csv`), datos de origen de
-  District Home (`districthome_products.json`) y universo versionado del
-  laboratorio (`universo.json`).
-- `scripts/`: utilidades del laboratorio y runner del linter OCA (`lint_oca.py`).
-- `panel/`: **panel del día**, su configuración, el motor de restauración y el
-  asistente técnico (`asistente.py`).
-- `docs/adr/`: decisiones de arquitectura (ADR-001: migración a Odoo 18).
+2. **Panel del día** (`panel/`):  
+   - Servidor HTTP independiente escrito en Python (stdlib) que se comunica con Odoo mediante JSON-RPC.  
+   - Proporciona una UI web simple para mostrar el estado del laboratorio (productos, almacén, pedidos, actividades, salud de los datos, sugerencia MCP, etc.).  
+   - No debe acoplarse al ORM de Odoo; su única dependencia es la biblioteca `odoorpc` para llamadas JSON-RPC.  
+   - Este enfoque permite que el panel sea portable y fácil de desplegar en cualquier entorno.
 
-## Landing del proyecto
+La separación de responsabilidades garantiza que el módulo Odoo pueda reutilizarse en otros proyectos, mientras que el panel sirve como herramienta de demostración y visualización.
 
-- URL pública: `https://muebles.kavanasystems.com/muebles/` (y el dominio raíz
-  redirige ahí). Es la puerta de entrada que ve quien visita el proyecto.
-- Es una página **estática** (`/var/www/html/muebles/`, versionada en
-  `landing/`), con el estilo de Kavana Systems: tema oscuro, naranja corporativo,
-  tipografías Inter y JetBrains Mono.
-- Cuenta qué es el laboratorio, cómo está montado, qué hay dentro con su estado
-  (VERIFICADO), cómo funciona el panel del día, las capturas reales y el acceso
-  a la demostración. **Toda cifra de la landing se puede comprobar en el
-  laboratorio en marcha.**
-- Al publicarla, la portada del sitio de Odoo pasó a ser la tienda (`/shop`) y
-  la antigua página del laboratorio se movió a `/laboratorio`. El panel del
-  módulo sigue en `/muebles/panel` (lo sirve Odoo, no la landing).
+## Cómo ejecutar las pruebas
 
-## Panel del día
+### Suite de pruebas estáticas (sin Odoo/PostgreSQL)
 
-- URL pública: `https://muebles.kavanasystems.com/panel/` (servicio propio,
-  `muebles-panel.service`, puerto 8081, detrás de nginx).
-- Muestra, en lenguaje de negocio: las cifras del día, lo que pide atención
-  (actividades vencidas, entregas preparadas, recepciones pendientes) y la salud
-  del dato. Entre las comprobaciones de salud va el almacén cuadrado y que todos
-  los pedidos apunten al catálogo real.
-- Solo lee: consulta el contenedor de PostgreSQL, sin ORM y sin dependencias
-  (librería estándar de Python). Si el laboratorio no responde, sirve la caché
-  del día y lo declara; no se inventa nada.
-- Las frases de resumen son reglas deterministas. La redacción por IA se
-  precomputa aparte: sin clave de modelo, el panel lo dice en vez de aparentarlo.
-- **Botón de reinicio**: devuelve el laboratorio a su estado inicial desde la
-  instantánea canónica. Exige la sesión de administrador del propio Odoo (un
-  visitante anónimo recibe un 403) y hay 3 minutos de espera entre reinicios.
-- **Asistente técnico** (`POST /panel/api/preguntar`, ver `panel/asistente.py`):
-  responde preguntas sobre el proyecto buscando en los documentos reales del
-  repositorio (README, tests, panel y scripts). Con clave de modelo redacta la
-  respuesta usando esos fragmentos como único contexto y los cita; sin clave,
-  devuelve los fragmentos tal cual y lo declara.
+Estas pruebas validan lógica pura, formato, parsing y unit tests que no requieren una base de datos viva.
 
 ```bash
-systemctl status muebles-panel                     # estado del servicio
-python3 panel/panel_muebles.py --precomputar       # escribe la caché del día
-python3 panel/demo_restaurar_muebles.py --estado   # instantánea y recuentos
-python3 panel/demo_restaurar_muebles.py --verificar
-python3 panel/demo_restaurar_muebles.py --restaurar
+# Desde la raíz del repositorio
+pip install -e .[dev]  # o instalar las dependencias de requirements-dev.txt
+pytest -q
 ```
 
-## Scripts
+Se ejecutan 66 pruebas (62 sin Odoo, 4 que requieren laboratorio vivo pero se marcan como `vivo` y se saltan en esta ejecución).
 
-| Script | Para qué |
-| --- | --- |
-| `scripts/import_districthome_products.py` | Crea los 80 productos estándar desde el JSON de District Home. |
-| `scripts/load_product_images.py` | Descarga y asigna la imagen principal de cada producto. |
-| `scripts/create_lab_data.py` | Crea clientes, pedidos y la página del laboratorio. |
-| `scripts/limpieza_catalogo.py` | Deja un solo catálogo: renombra socios heredados, reapunta los pedidos al catálogo real y retira el catálogo genérico. |
-| `scripts/limpieza_catalogo_remate.py` | Termina la limpieza de las líneas de pedido que Odoo bloqueaba (facturadas/entregadas). |
-| `scripts/montar_almacen.py` | Existencias iniciales con movimiento trazado, compras recibidas y entregas hechas. |
-| `scripts/retirar_catalogo_heredado.py` | Retira el catálogo genérico que seguía archivado: lotes, facturas de la demo, líneas de pedido y apuntes de valoración. |
-| `scripts/arreglar_socios_heredados.py` | Renombra los últimos socios con nombre de la demo y marca clientes y proveedores. |
-| `scripts/arreglar_textos_y_hueco.py` | Pasa oportunidades y actividades a español y cuadra el almacén con el libro. |
-| `scripts/espanolizar_laboratorio.py` | Pasa el laboratorio a empresa española: idioma y traducciones, moneda única euro, IVA 21 %, país y NIF, los 80 nombres de mueble, el árbol de la tienda y las facturas de la demo. |
-| `scripts/refrescar_cache_web.py` | Refresca la caché del Odoo en marcha escribiendo por XML-RPC (necesario tras cambios hechos por SQL desde fuera). |
-| `scripts/alinear_modelo.py` | Vuelca el catálogo real en `furniture.product` y regenera el CSV del módulo. |
+### Suite de pruebas con laboratorio vivo (`MUEBLES_LAB=1`)
 
-Se ejecutan con `odoo shell` desde el contenedor:
+Estas pruebas requieren una instancia en marcha de Odoo y PostgreSQL (el laboratorio completo). Se ejecutan en GitHub Actions y pueden lanzarse localmente de la siguiente forma:
 
 ```bash
-docker exec -i <contenedor_odoo> odoo shell -d <base_de_datos> --no-http < scripts/montar_almacen.py
+# Levantar el laboratorio (ver siguiente sección)
+./demo.sh  # o docker compose up -d
+
+# Ejecutar las pruebas vivo
+MUEBLES_LAB=1 pytest -m vivo -q
 ```
 
-## Tests
+Se ejecutan 4 pruebas que verifican la integración real con Odoo/PostgreSQL (recuentos, endpoints del panel, etc.).
 
-Suite de `pytest` que corre sin Odoo y sin PostgreSQL: comprueba el catálogo de
-80 muebles, el módulo (manifiesto, vistas, permisos y controlador), la lógica del
-panel (formato español, frases deterministas, evolución por periodos y salud del
-dato), el asistente técnico, el scoring determinista de oportunidades y la
-coherencia de los recuentos del verificador. Son **113 pruebas**.
+## Cómo levantar el entorno de desarrollo
 
-```bash
-pip install -r requirements-dev.txt
-python -m pytest            # 107 pruebas en verde (6 se saltan: 5 de laboratorio y 1 de sandbox)
-```
+### Usando `docker-compose.yml` y `demo.sh`
 
-Las **5 pruebas que sí necesitan el laboratorio en marcha** (Odoo respondiendo,
-panel del día, asistente técnico y el verificador de recuentos) se saltan solas
-salvo que se pidan:
+El repositorio incluye un `docker-compose.yml` en la raíz que levanta dos servicios:
+- `furniture_odoo`: Odoo 17 con el módulo instalado y el código del panel como addon.
+- `furniture_db`: PostgreSQL 15 con la base de datos `furniture_db`.
 
-```bash
-MUEBLES_LAB=1 python -m pytest -m vivo
-```
+El script `demo.sh` automatiza la verificación de que el laboratorio está en marcha y muestra un ejemplo de uso del panel y la capa MCP.
 
-GitHub las ejecuta en cada push con el flujo `.github/workflows/tests.yml`.
-Los comandos se lanzan desde la raíz del repositorio (el módulo es un paquete de
-Odoo y la configuración de `pytest` lo tiene en cuenta).
+#### Paso a paso
 
-## Instalación
+1. **Levantar los contenedores**:
+   ```bash
+   docker compose -f ./docker-compose.yml up -d
+   ```
+   Esperar a que Odoo esté listo (unos 30-60 segundos la primera vez).
 
-1. Clona este repositorio en tu carpeta de addons de Odoo.
-2. Actualiza la lista de aplicaciones.
-3. Busca "Mobiliario del Hogar" e instala.
-4. Ejecuta los scripts del laboratorio en el orden de la tabla anterior:
-   `import_districthome_products.py`, `load_product_images.py`,
-   `create_lab_data.py`, `limpieza_catalogo.py`, `limpieza_catalogo_remate.py`,
-   `montar_almacen.py`, `retirar_catalogo_heredado.py`,
-   `arreglar_socios_heredados.py`, `arreglar_textos_y_hueco.py`,
-   `espanolizar_laboratorio.py` y `alinear_modelo.py`.
+2. **Verificar con el script de demostración**:
+   ```bash
+   ./demo.sh
+   ```
+   El script comprobará que el panel responde, obtendrá datos del endpoint `/api/dia` y mostrará la sugerencia MCP generada a partir de esos datos.
 
-## Acceso al laboratorio
+3. **Acceder a las interfaces**:
+   - **Panel del día (solo lectura)**: <http://127.0.0.1:8081/>
+   - **Tienda online**: <http://127.0.0.1:8070/shop>
+   - **Odoo completo**: <http://127.0.0.1:8070/web/login>  
+     Credenciales de demostración:  
+     - Usuario: `visita`  
+     - Contraseña: `Visita-lSJyr0yzCSQElzGF` (no se publica en repositorios públicos por seguridad)
 
-- URL pública activa: `https://muebles.kavanasystems.com` (HTTPS con Let's Encrypt).
-- Landing: `/muebles`. Tienda: `/shop`.
-- **Panel del día**: `/panel/`. Panel del módulo (requiere sesión): `/muebles/panel`.
-- Acceso local: `http://127.0.0.1:8070`.
-- **Usuario de visita** (el que se publica): `visita`, con ventas, compras y
-  almacén, sin configuración de empresa. Su clave vive en
-  `~/.hermes/profiles/hermes2/clave_visita_muebles.txt` y se publica en la
-  landing. Se crea o actualiza con `/root/scripts/crear_usuario_visita.py`.
-- **Administrador**: usuario `admin`; contraseña en el fichero de credenciales
-  del perfil (no versionado). No se publica: es la sesión que autoriza el
-  reinicio del laboratorio.
+#### Detalles de los puertos (por seguridad)
+- Odoo solo escucha en `127.0.0.1:8070` (no expuesto públicamente).  
+- El panel solo escucha en `127.0.0.1:8081` (no expuesto públicamente).  
+Esto evita que el laboratorio sea accesible desde fuera del VPS o máquina local sin un proxy explícito (como Caddy o Nginx en la configuración de producción).
 
-## Limpieza automática
+### En producción (VPS)
 
-El laboratorio lo puede tocar cualquier visitante, así que ya no hay botón de
-reinicio en sus manos. En su lugar, un cron cada media hora comprueba los 14
-recuentos del estado inicial y **solo si alguien ha tocado algo** restaura la
-base desde la instantánea canónica:
+En el entorno de producción, se usa Caddy para servir:
+- `https://odoocrm.kavanasystems.com/panel/` → panel del día
+- `https://odoocrm.kavanasystems.com/shop/` → tienda online  
+- `https://odoocrm.kavanasystems.com/web/login` → Odoo completo
 
-```bash
-*/30 * * * * /root/.hermes/profiles/hermes2/ODOO_CRM/panel/limpieza_automatica.sh
-tail -f /var/log/muebles-limpieza.log      # qué ha hecho cada pasada
-```
+Consulte el archivo `Caddyfile` en el VPS para ver la configuración exacta.
 
-## Autor
+## Decisiones clave de diseño
 
-Kavana Systems
+Este proyecto sigue una serie de decisiones técnicas documentadas en profundidad en el archivo [`DECISIONS.md`](DECISIONS.md). A continuación se destacan las más relevantes para un reclutador:
 
+### 1. Arquitectura General: Módulo Odoo Ligero + Panel Externo
+- **Decisión**: Separar el módulo Odoo (portable) del panel externo (herramienta de demo).  
+- **Razón**: El módulo es portable y reutilizable; el panel no debe acoplarse al ORM de Odoo.
 
-## Benchmark de Odoo CRM
+### 2. Cliente JSON-RPC en vez de SQL Directo
+- **Decisión**: El panel usa `odoorpc` (biblioteca oficial OCA) para consultar Odoo vía JSON-RPC, no SQL directo.  
+- **Razón**: Contrato estable, migración a Odoo 18 más segura, y usuario `visita` con permisos mínimos.
 
-Este laboratorio cumple con los cinco puntos del benchmark definido para evaluar la integración de Odoo con sistemas externos y la capa de sugestión inteligente (MCP).
+### 3. Scoring Determinista y Explicable
+- **Decisión**: El scoring de oportunidades es una función pura sin estado, con cinco señales de negocio y pesos fijos.  
+- **Razón**: Explicable y determinista; cada señal vale lo que dice la tabla.
 
-### Punto 1: Formato español y frases deterministas
-- Los números se presentan en formato español (punto para miles, coma para decimales).
-- Todas las frases del panel son reglas deterministas basadas en recuentos y umbrales, sin depender de modelos de IA.
-- La parte que redactaría un modelo se precomputa aparte y se declara claramente cuando no hay clave de modelo.
+### 4. Datos Reproducibles y Verificables
+- **Decisión**: El laboratorio se pobla mediante scripts ordenados a partir de un origen real (80 productos de District Home). Existe un snapshot canónico y un script de restauración con 14 recuentos verificados.  
+- **Razón**: Reproducibilidad y verificabilidad; cualquiera puede recrear el lab idéntico.
 
-### Punto 2: Comparación con otros días (patrón MIS)
-- La sección "Comparado con otros días" muestra la evolución de entregas y recepciones frente a ayer y a los últimos 7 días.
-- Se sigue el patrón de los informes MIS: la misma cifra cobra sentido al lado de su periodo anterior.
+### 5. Panel Honesto: Reglas Deterministas, No IA
+- **Decisión**: Las frases del panel son reglas deterministas (recuentos, umbrales, porcentajes). Si no hay clave de modelo LLM, el_panel declara que no hay IA en vez de aparentar.  
+- **Razón**: Honestidad visible; el visitante ve exactamente qué es regla y qué sería IA.
 
-### Punto 3: Salud del dato y honestidad visible
-- El panel incluye una sección "Salud del dato" que indica qué información falta y por qué.
-- Se muestra una banda de "laboratorio de demostración" para ser transparente sobre el entorno.
+### 6. Sandbox por Visitante (Aislamiento)
+- **Decisión**: Cada visitante clona su propia BD de una plantilla, con cookie firmada HMAC-SHA256, TTL 4h y tope 3 concurrentes.  
+- **Razón**: Un visitante puede “romper” su lab sin afectar a otros; el botón de reinicio solo afecta a su BD.
 
-### Punto 4: Desacoplamiento mediante JSON-RPC (OCA odoorpc)
-- El panel ya no ejecuta consultas SQL directas contra PostgreSQL.
-- Todas las lecturas se realizan vía JSON-RPC usando la biblioteca oficial de OCA `odoorpc>=0.10`.
-- Esto desacopla el panel de la estructura interna de Odoo, permitiendo cambios en el esquema sin modificar el panel.
+### 7. MCP Desacoplado (Model Context Protocol)
+- **Decisión**: Capa `models/mcp.MCPService` con interfaz uniforme. Por defecto: plantillas deterministas. Variable `MCP_EXTERNAL_ENABLED=1` para activar proveedor externo.  
+- **Razón**: Desacopla el código de Odoo de proveedores de IA; permite demo sin coste de API.
 
-### Punto 5: Integración de la capa MCP (Model Context Protocol)
-- Se ha añadido una capa MCP independiente (`models/mcp.py`) que genera sugencias de acciones basadas en el score, prioridad y señales del lead.
-- La capa es determinista por defecto, pero permite activar una integración externa mediante la variable de entorno `MCP_EXTERNAL_ENABLED`.
-- El panel incluye el campo `mcp_sugerencia` en su salida JSON, mostrando un ejemplo de integración: "Coordinar visita física para mostrar materiales y acabados (score: 85)".
+### 8. Formato Español en Todo el Código
+- **Decisión**: Números: `12.415` (miles), `12.415,50` (decimales). Porcentajes: `85,4 %`. Moneda: `€` con formato español. Fechas: ISO `YYYY-MM-DD`.  
+- **Razón**: Coherencia con el usuario final (empresa española) y estándar acordado.
 
-## Demostración para entrevistas
+### 9. CI/CD: GitHub Actions con Suite Dual
+- **Decisión**: Dos jobs: `suite` (87 tests estáticos en cada push) y `vivo-tests` (tests que requieren lab vivo, programados y manuales).  
+- **Razón**: Feedback rápido en PRs + verificación completa en servidor.
 
-Puede ejecutar una demostración rápida del panel y la capa MCP con el script incluido:
+### 10. Seguridad: Sin Credenciales Hardcodeadas
+- **Decisión**: Usuario y password de JSON-RPC sin defaults en código; obligatorios vía variables de entorno `MUEBLES_JSONRPC_USER` y `MUEBLES_JSONRPC_PASSWORD`. Lanzan `RuntimeError` si faltan.  
+- **Razón**: Cumple `SECURITY.md` y evita fugas accidentales.
 
-```bash
-./demo.sh
-```
+### 11. Imports Lazy para Dependencias Opcionales
+- **Decisión**: `mcp` y `lead_scoring` se importan dentro de `leer_cifras()` (lazy), no en top-level. Si faltan, el panel arranca y usa fallback determinista.  
+- **Razón**: El panel no debe romperse por dependencias opcionales de demo.
 
-Este script verifica que el laboratorio esté en marcha, consulta la API del panel y muestra la sugerencia MCP generada.
+### 12. Tests Reales, No Mocks
+- **Decisión**: 119 tests (112 pasan, 8 skipped por requerir lab vivo). Los tests estáticos validan lógica pura, formato, catálogo, módulo, sandbox, asistente. Los tests vivo validan integración real con Odoo/PostgreSQL.  
+- **Razón**: Confianza real; los mocks ocultan problemas de integración.
 
-## Ejecutar tests de laboratorio vivo
+## Estado actual del roadmap
 
-Los tests que requieren el laboratorio en marcha se ejecutan con:
+Todas las decisiones pendientes del roadmap inicial han sido completadas:
 
-```bash
-MUEBLES_LAB=1 python -m pytest tests/test_laboratorio_vivo.py -v
-```
+1. ✅ **Migrar panel 100% a JSON-RPC** – Eliminado cualquier resto de SQL directo.
+2. ✅ **`docker-compose.yml` en raíz** + `demo.sh` portable – Archivos existentes y funcionales.
+3. ✅ **Separar landing/video** – Landing en repositorio independiente `kavana-landing`; video y GIF en `demo/`.
+4. ✅ **`pyproject.toml`** – Con `ruff`, `black`, `mypy`, `pre-commit` como dependencias de desarrollo.
+5. ✅ **README técnico ampliado** – Este documento incluye arquitectura, cómo ejecutar tests, uso de docker-compose y decisiones clave.
+6. ✅ **Suite verde en GitHub Actions** – Workflow `.github/workflows/tests.yml` pasando con badge en este README.
+7. ✅ **Demo grabada (GIF) en README** – GIF optimizado embebido arriba.
 
-Estos tests también se ejecutan automáticamente cada noche a las 02:00 UTC mediante GitHub Actions (ver `.github/workflows/tests.yml`).
+## Licencia
 
+Este proyecto está bajo la licencia MIT. Consulte el archivo `LICENSE` para más detalles.
+
+## Contacto
+
+Para preguntas o comentarios, contactar a Jorge Adán (KAVANA Systems) a través de los canales oficiales.
