@@ -85,7 +85,7 @@ emp.partner_id.write({
     'zip': '12005',
     'street': 'Carrer de la Industria, 24',
     'vat': 'B12345678',
-    'website': 'https://muebles.kavanasystems.com',
+    'website': 'https://odoocrm.kavanasystems.com',
 })
 print("empresa:", emp.partner_id.name, "|", emp.partner_id.country_id.name,
       "|", emp.partner_id.state_id.name, "|", emp.partner_id.city, "| NIF", emp.partner_id.vat)
