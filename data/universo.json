@@ -1,7 +1,7 @@
 {
   "universo": "muebles-del-hogar",
-  "version": "1",
-  "actualizado": "2026-10-09",
+  "version": "2",
+  "actualizado": "2026-10-19",
   "descripcion": "Universo del laboratorio ODOO_CRM: la empresa ficticia Muebles del Hogar S.L. (Castelló de la Plana). Versionado como fuente de verdad de la AMBIENTACIÓN del lab; los datos operativos (catálogo, clientes, pedidos, almacén) siguen viviendo en los artefactos que este fichero referencia y que la suite valida. Inspirado en el patrón de pantalytics/odoo-demo-data (benchmark 2026-10-08).",
   "empresa": {
     "nombre": "Muebles del Hogar S.L.",
@@ -76,10 +76,10 @@
     "unidades en almacén": 2190
   },
   "estado_publicado": {
-    "landing": "https://muebles.kavanasystems.com/muebles/",
-    "tienda": "https://muebles.kavanasystems.com/shop",
-    "panel_del_dia": "https://muebles.kavanasystems.com/panel/",
+    "landing": "https://odoocrm.kavanasystems.com/muebles/",
+    "tienda": "https://odoocrm.kavanasystems.com/shop",
+    "panel_del_dia": "https://odoocrm.kavanasystems.com/panel/",
     "panel_del_modulo": "/muebles/panel",
-    "limpieza_automatica": "cron cada 30 min contra los 14 recuentos; restaura solo si alguien tocó algo"
+    "limpieza_automatica": "cron cada 30 min contra los 14 recuentos; restaura solo si alguien tocó algo; la instantánea canónica incluye precios escalados (x0.1) y valoración del almacén por existencias x coste"
   }
 }
