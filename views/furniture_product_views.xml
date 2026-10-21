@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
-    <!-- Tree view -->
+    <!-- List view (tree renamed to list in Odoo 20) -->
     <record id="view_furniture_product_tree" model="ir.ui.view">
-        <field name="name">furniture.product.tree</field>
+        <field name="name">furniture.product.list</field>
         <field name="model">furniture.product</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="category"/>
                 <field name="list_price"/>
                 <field name="qty_available"/>
                 <field name="material"/>
                 <field name="style"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -65,7 +65,7 @@
     <record id="action_furniture_product" model="ir.actions.act_window">
         <field name="name">Productos de muebles</field>
         <field name="res_model">furniture.product</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Añade tu primer producto de muebles

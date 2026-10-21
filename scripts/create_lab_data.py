@@ -65,7 +65,8 @@ for fp in furniture_products:
         'list_price': fp.list_price,
         'standard_price': fp.standard_price,
         'categ_id': categ_ids.get(fp.category, parent_categ.id),
-        'detailed_type': 'product',
+        'type': 'consu',
+        'is_storable': True,
         'sale_ok': True,
         'purchase_ok': True,
         'description_sale': f"{fp.description or ''} | Material: {fp.material or ''} | Dimensiones: {fp.dimensions or ''} | Estilo: {fp.style or ''} | Garantía: {fp.warranty_months or 0} meses".strip(),
@@ -116,7 +117,7 @@ if customer_count < 30:
     for i in range(to_create):
         vals_list.append({
             'name': f'Cliente Muebles {i+1:02d}',
-            'company_type': 'company',
+            'is_company': True,
             'customer_rank': 1,
             'email': f'cliente{i+1:02d}@example.com',
             'phone': f'+34 600 {i+1:03d} {i+1:03d}',
@@ -135,7 +136,7 @@ sale_order_count = env['sale.order'].search_count([])
 if sale_order_count < 40:
     to_create = 40 - sale_order_count
     customers = env['res.partner'].search([('customer_rank', '>', 0)], limit=50)
-    products = env['product.product'].search([('sale_ok', '=', True), ('detailed_type', '=', 'product')], limit=100)
+    products = env['product.product'].search([('sale_ok', '=', True), ('type', '=', 'product')], limit=100)
     if customers and products:
         created_orders = 0
         for i in range(to_create):

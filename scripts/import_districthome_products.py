@@ -57,12 +57,12 @@ for p in products:
         'list_price': p.get('price', 0.0),
         'standard_price': round(p.get('price', 0.0) * 0.6, 2),
         'categ_id': categ_id,
-        'detailed_type': 'product',
+        'type': 'consu',
+        'is_storable': True,
         'sale_ok': True,
         'purchase_ok': True,
         'description_sale': description,
         'description': description,
-        'is_published': True,
         'default_code': p.get('handle', ''),
     }
     env['product.template'].create(vals)

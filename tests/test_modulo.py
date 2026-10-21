@@ -29,7 +29,7 @@ def test_manifiesto_con_las_claves_obligatorias(raiz):
 
 
 def test_version_para_odoo_17(raiz):
-    assert _manifiesto(raiz)["version"].startswith("17.0.")
+    assert _manifiesto(raiz)["version"].startswith("20.0.")
 
 
 def test_dependencias_del_modulo(raiz):

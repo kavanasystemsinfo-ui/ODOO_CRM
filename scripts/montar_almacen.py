@@ -80,9 +80,9 @@ productos = env['product.product'].search([
     ('active', '=', True)])
 paso("referencias del catalogo: %d" % len(productos))
 
-no_almacenables = [p for p in productos if p.detailed_type != 'product']
+no_almacenables = [p for p in productos if p.type != 'consu']
 for producto in no_almacenables:
-    producto.product_tmpl_id.write({'detailed_type': 'product'})
+    producto.product_tmpl_id.write({'type': 'consu'})
 env.cr.commit()
 paso("puestas como almacenables: %d" % len(no_almacenables))
 
