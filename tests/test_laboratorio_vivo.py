@@ -1,13 +1,17 @@
 """Comprobaciones contra el laboratorio en marcha (Odoo, PostgreSQL y panel).
 
 Se saltan solas salvo que se pidan con `MUEBLES_LAB=1`, porque necesitan los
-contenedores del laboratorio y la red local. En CI no se ejecutan.
+contenedores del laboratorio y la red local. En CI se ejecutan contra la demo
+pública: `MUEBLES_LAB_PANEL` y `MUEBLES_LAB_ODOO` apuntan a
+https://odoocrm.kavanasystems.com y la prueba del verificador (que necesita
+docker con la BD local) se salta sola en el runner.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import urllib.request
@@ -24,6 +28,30 @@ pytestmark = [
 ]
 
 
+def _bd_local_disponible() -> bool:
+    """True si docker corre aquí y el contenedor de la BD del lab está en marcha."""
+    if not shutil.which("docker"):
+        return False
+    try:
+        res = subprocess.run(
+            ["docker", "ps", "--filter", "name=furniture_db", "--format", "{{.Names}}"],
+            capture_output=True, text=True, timeout=15,
+        )
+    except Exception:  # noqa: BLE001
+        return False
+    return "furniture_db" in res.stdout
+
+
+def _url_panel(configuracion) -> str:
+    return (os.environ.get("MUEBLES_LAB_PANEL")
+            or f"http://127.0.0.1:{configuracion.puerto_panel()}").rstrip("/")
+
+
+def _url_odoo(configuracion) -> str:
+    return (os.environ.get("MUEBLES_LAB_ODOO")
+            or f"http://127.0.0.1:{configuracion.puerto_odoo_host()}").rstrip("/")
+
+
 def _json(url: str, tiempo: int = 15) -> dict:
     with urllib.request.urlopen(url, timeout=tiempo) as respuesta:
         return json.loads(respuesta.read().decode("utf-8"))
@@ -38,6 +66,8 @@ def _json_post(url: str, datos: dict, tiempo: int = 60) -> dict:
         return json.loads(respuesta.read().decode("utf-8"))
 
 
+@pytest.mark.skipif(not _bd_local_disponible(),
+                    reason="sin docker con la BD local del laboratorio (solo corre en el servidor)")
 def test_el_verificador_del_laboratorio_pasa(configuracion):
     resultado = subprocess.run(
         [sys.executable, str(RAIZ / "panel" / "demo_restaurar_muebles.py"), "--verificar"],
@@ -48,14 +78,14 @@ def test_el_verificador_del_laboratorio_pasa(configuracion):
 
 
 def test_el_panel_del_dia_responde(configuracion):
-    datos = _json(f"http://127.0.0.1:{configuracion.puerto_panel()}/api/dia")
+    datos = _json(f"{_url_panel(configuracion)}/api/dia")
     for clave in ("productos", "unidades", "salud_dato"):
         assert clave in datos, f"el panel no devuelve {clave}"
 
 
 def test_el_panel_compara_con_otros_dias(configuracion):
     """La sección de evolución (hoy/ayer/7 días) llega y es coherente."""
-    datos = _json(f"http://127.0.0.1:{configuracion.puerto_panel()}/api/dia")
+    datos = _json(f"{_url_panel(configuracion)}/api/dia")
     ev = datos.get("evolucion")
     assert isinstance(ev, dict), "el panel no devuelve la evolución por periodos"
     for clave in ("entregas_hoy", "entregas_ayer", "entregas_semana",
@@ -68,14 +98,14 @@ def test_el_panel_compara_con_otros_dias(configuracion):
 
 
 def test_odoo_responde_en_su_puerto(configuracion):
-    url = f"http://127.0.0.1:{configuracion.puerto_odoo_host()}/web/login"
+    url = f"{_url_odoo(configuracion)}/web/login"
     with urllib.request.urlopen(url, timeout=15) as respuesta:
         assert respuesta.status == 200
 
 
 def test_el_asistente_tecnico_responde(configuracion):
     datos = _json_post(
-        f"http://127.0.0.1:{configuracion.puerto_panel()}/api/preguntar",
+        f"{_url_panel(configuracion)}/api/preguntar",
         {"pregunta": "¿cuántas pruebas tiene la suite y cómo se comprueba el almacén?"},
     )
     assert datos.get("respuesta"), datos

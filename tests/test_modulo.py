@@ -128,7 +128,7 @@ def test_las_vistas_de_scoring_son_xml_valido_y_heredan_del_crm(raiz):
     ET.parse(ruta)
     contenido = ruta.read_text(encoding="utf-8")
     assert 'inherit_id" ref="crm.crm_lead_view_form"' in contenido
-    assert 'inherit_id" ref="crm.crm_lead_view_tree"' in contenido
+    assert 'inherit_id" ref="crm.crm_case_tree_view_oppor"' in contenido
     for campo in ("x_score_kavana", "x_prioridad_sugerida", "x_es_contrato", "x_muestra_pedida"):
         assert f'name="{campo}"' in contenido, f"la vista no pinta {campo}"
 

@@ -31,7 +31,7 @@ jobs:
         run: python -m pytest tests -v
       - name: Resumen
         if: always()
-        run: echo "Las pruebas que necesitan el laboratorio en marcha se saltan solas en CI (MUEBLES_LAB=1 para lanzarlas en el servidor)."
+        run: echo "Este job corre la suite autocontenida (sin Odoo). El job 'vivo' ejecuta las pruebas contra la demo pública en cada push y cron."
   vivo-tests:
     name: Suite de laboratorio vivo
     runs-on: ubuntu-latest
@@ -44,7 +44,9 @@ jobs:
           cache-dependency-path: requirements-dev.txt
       - name: Instalar dependencias de test
         run: pip install -r requirements-dev.txt
-      - name: Ejecutar tests vivo
-        run: MUEBLES_LAB=1 python -m pytest tests/test_laboratorio_vivo.py -v
+      - name: Ejecutar tests vivo contra la demo pública
+        run: python -m pytest tests/test_laboratorio_vivo.py -v
         env:
           MUEBLES_LAB: "1"
+          MUEBLES_LAB_PANEL: "https://odoocrm.kavanasystems.com/panel"
+          MUEBLES_LAB_ODOO: "https://odoocrm.kavanasystems.com"
