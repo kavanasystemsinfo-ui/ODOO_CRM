@@ -1,22 +1,26 @@
 """Test de extremo a extremo que simula un comercial usando el panel y la capa MCP."""
 
 import importlib
+import importlib.util
 import sys
+from pathlib import Path
+
 import pytest
 
 # Add the ODOO_CRM root to sys.path so we can import models and panel
-sys.path.insert(0, '/root/ODOO_CRM')
-sys.path.insert(0, '/root/ODOO_CRM/panel')
+RAIZ = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(RAIZ))
+sys.path.insert(0, str(RAIZ / 'panel'))
 
 
 def test_e2e_comercial_mcp():
     """Prueba de extremo a extremo: comercial consulta panel -> obtiene lead -> usa MCP.sugerir_accion."""
     # Import panel module
-    spec = importlib.util.spec_from_file_location('panel_muebles', '/root/ODOO_CRM/panel/panel_muebles.py')
+    spec = importlib.util.spec_from_file_location('panel_muebles', RAIZ / 'panel' / 'panel_muebles.py')
     panel = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(panel)
     # Import MCP module
-    spec_mcp = importlib.util.spec_from_file_location('mcp', '/root/ODOO_CRM/models/mcp.py')
+    spec_mcp = importlib.util.spec_from_file_location('mcp', RAIZ / 'models' / 'mcp.py')
     mcp_module = importlib.util.module_from_spec(spec_mcp)
     spec_mcp.loader.exec_module(mcp_module)
 
