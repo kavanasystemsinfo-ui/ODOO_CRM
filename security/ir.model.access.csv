@@ -1,2 +1,5 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_furniture_product_user,furniture.product.user,model_furniture_product,base.group_user,1,1,1,1
+id,name,model_id:id,group_id:id,operation
+1,furniture.product.user,model_furniture_product,base.group_user,read
+2,furniture.product.user,model_furniture_product,base.group_user,write
+3,furniture.product.user,model_furniture_product,base.group_user,create
+4,furniture.product.user,model_furniture_product,base.group_user,unlink
