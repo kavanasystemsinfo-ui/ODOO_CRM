@@ -7,10 +7,10 @@ name = "odoo_crm"
 version = "0.1.0"
 description = "Laboratorio de empresa ficticia de muebles de hogar para demostración de Odoo CRM"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-    {name = "Jorge Adán", email = "jorge.adán@kavanasystems.com"}
+    {name = "Jorge Adan", email = "jorge.adan@kavanasystems.com"}
 ]
 keywords = ["odoo", "crm", "demo", "manufacturing", "panel"]
 classifiers = [
@@ -32,6 +32,9 @@ dev = [
     "oca-odoo-pre-commit-hooks>=0.2",
     "odoorpc>=0.10",
 ]
+
+[tool.setuptools]
+py-modules = []
 
 [tool.ruff]
 line-length = 88
