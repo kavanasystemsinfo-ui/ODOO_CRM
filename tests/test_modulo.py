@@ -73,16 +73,28 @@ def test_la_plantilla_del_panel_cuelga_del_sitio(raiz):
 
 
 def test_permisos_del_modelo(raiz):
-    filas = (raiz / "security" / "ir.model.access.csv").read_text(encoding="utf-8").strip().splitlines()
+    """Permisos del catálogo en el formato de Odoo 20 (ir.access + operation CRUD).
+
+    En Odoo 20 los permisos viven en `security/ir.access.csv`: el modelo se
+    deduce del NOMBRE del fichero y las operaciones son códigos CRUD
+    (`crud`), no los `perm_read/perm_write/...` de Odoo 17.
+    """
+    filas = (raiz / "security" / "ir.access.csv").read_text(encoding="utf-8").strip().splitlines()
     cabecera = filas[0].split(",")
-    assert cabecera == [
-        "id", "name", "model_id:id", "group_id:id",
-        "perm_read", "perm_write", "perm_create", "perm_unlink",
-    ]
+    assert cabecera == ["id", "name", "model_id", "group_id/id", "operation", "domain"]
     cuerpo = filas[1]
-    assert "model_furniture_product" in cuerpo
+    assert "furniture.product" in cuerpo
     assert "base.group_user" in cuerpo
-    assert cuerpo.endswith("1,1,1,1"), "los usuarios internos deben poder leer y escribir el catálogo"
+    assert cuerpo.endswith("crud,"), "los usuarios internos deben poder leer y escribir el catálogo"
+
+
+def test_el_fichero_de_permisos_no_usa_el_nombre_antiguo(raiz):
+    """El nombre del fichero decide el modelo que Odoo carga al importar."""
+    assert not (raiz / "security" / "ir.model.access.csv").exists(), (
+        "en Odoo 20 el fichero debe llamarse ir.access.csv: con el nombre "
+        "antiguo Odoo busca el modelo inexistente ir.model.access"
+    )
+
 
 
 def test_el_modulo_carga_modelos_y_controladores(raiz):

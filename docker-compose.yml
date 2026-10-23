@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   odoo:
-    image: odoo:17
+    image: odoo:20
     container_name: furniture_odoo
     ports:
       # Solo en loopback para seguridad
@@ -14,8 +14,10 @@ services:
       - DATABASE=furniture_db
     volumes:
       - ./addons:/mnt/extra-addons
+      # Fuente única del módulo: Odoo carga el repositorio, no una copia.
+      # Antes se montaba un segundo clon (más viejo) y Odoo leía ese código.
+      - /root/ODOO_CRM:/mnt/extra-addons/ODOO_CRM
       - ./config:/etc/odoo
-      - /root/.hermes/profiles/hermes2/ODOO_CRM:/mnt/extra-addons/muebles_crm
       # Filestore de Odoo (imágenes y assets): NUNCA en la capa del contenedor
       - odoo_data:/var/lib/odoo
     depends_on:
@@ -30,6 +32,9 @@ services:
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=odoo
       - POSTGRES_INITDB_ARGS=--auth-host=md5
+    ports:
+      # Expuesto en loopback para que el panel pueda conectar desde el host
+      - "127.0.0.1:5434:5432"
     volumes:
       - furniture_db_data:/var/lib/postgresql/data
     restart: unless-stopped

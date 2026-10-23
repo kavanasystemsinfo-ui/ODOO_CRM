@@ -1,6 +1,6 @@
 {
     'name': 'Mobiliario del Hogar (laboratorio ODOO_CRM)',
-    'version': '20.0.1.0.0',
+    'version': '20.0.1.1.0',
     'category': 'Sales',
     'summary': 'Simulación de empresa española de muebles de hogar con 80 productos',
     'description': """
@@ -15,7 +15,7 @@ Incluye 80 productos de ejemplo con categorías, precios, stock y atributos.
         'views/panel_template.xml',
         'views/crm_lead_scoring_views.xml',
         'data/furniture.product.csv',
-        'security/ir.model.access.csv',
+        'security/ir.access.csv',
     ],
     'installable': True,
     'application': True,
