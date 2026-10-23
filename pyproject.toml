@@ -31,6 +31,7 @@ dev = [
     "pytest>=8.0.0",
     "oca-odoo-pre-commit-hooks>=0.2",
     "odoorpc>=0.10",
+    "psycopg2-binary>=2.9",
 ]
 
 [tool.setuptools]
