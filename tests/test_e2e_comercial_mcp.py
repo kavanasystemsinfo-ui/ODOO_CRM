@@ -31,18 +31,13 @@ def test_e2e_comercial_mcp():
         pytest.skip(f"Laboratorio no disponible: {e}")
     # Ensure mcp_sugerencia is present
     assert "mcp_sugerencia" in cifras, "Campo mcp_sugerencia falta en la salida del panel"
-    # Hardcoded lead data as used in the panel
-    lead_data = {
-        "score_kavana": 85,
-        "senales": {
-            "tipo_contrato": True,
-            "proyecto_referenciado": False,
-            "muestra_pedida": True,
-            "email_corporativo": False,
-            "contacto_reciente": False,
-        },
-        "prioridad_sugerida": "alta",
-    }
+    # La sugerencia sale de la oportunidad real del CRM: se recalcula aquí con
+    # la capa MCP y tiene que coincidir palabra por palabra.
+    lead_data = cifras.get("mcp_lead")
+    if lead_data is None:
+        assert "No hay oportunidades" in cifras["mcp_sugerencia"], (
+            "sin oportunidades el panel debe decirlo, no inventar una acción")
+        return
     expected = mcp_module.MCPService.sugerir_accion(lead_data)
     actual = cifras["mcp_sugerencia"]
     assert actual == expected, f"Se esperaba {expected!r}, se obtuvo {actual!r}"

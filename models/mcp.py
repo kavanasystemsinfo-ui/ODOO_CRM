@@ -26,10 +26,13 @@ class MCPService:
         ("alta", "proyecto_referenciado"): "Enviar propuesta detallada con plazos y presupuesto (score: {score})",
         ("alta", None): "Llamar para confirmar requisitos y cerrar la venta (score: {score})",
         # prioridad media
+        ("media", "muestra_pedida"): "Enviar catálogo y concertar una muestra en el taller (score: {score})",
+        ("media", "proyecto_referenciado"): "Enviar propuesta con plazos y presupuesto (score: {score})",
         ("media", "email_corporativo"): "Enviar catálogo digital y solicitar reunión virtual (score: {score})",
         ("media", None): "Seguimiento por email con información de productos destacados (score: {score})",
         # prioridad baja / ninguna
         ("baja", "tipo_contrato"): "Invitar a webinar sobre tendencias en contract (score: {score})",
+        ("baja", None): "Enviar el catálogo digital y mantener el seguimiento (score: {score})",
         ("ninguna", None): "Mantener en nurturing mensual con newsletter sectorial (score: {score})",
     }
 

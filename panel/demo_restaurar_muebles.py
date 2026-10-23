@@ -114,15 +114,32 @@ def comandos_restauracion() -> list[str]:
         f'{configuracion.docker()} exec {configuracion.contenedor_bd()} psql -U odoo -d postgres '
         f'-c "DROP DATABASE IF EXISTS {base} WITH (FORCE)"',
         f'{configuracion.docker()} exec {configuracion.contenedor_bd()} psql -U odoo -d postgres '
-        f'-c "CREATE DATABASE {base} OWNER odoo"',
+        f'-c "CREATE DATABASE {base} OWNER odoo TEMPLATE template0"',
         f"gunzip -c {configuracion.snapshot()} | {configuracion.docker()} exec -i "
         f"{configuracion.contenedor_bd()} psql -q -U odoo -d {base}",
         f"{configuracion.docker()} start {configuracion.contenedor_odoo()}",
-        "esperar a que Odoo responda (hasta 120 s)",
+        "esperar a que Odoo responda (hasta 600 s)",
     ]
 
 
-def odoo_responde(espera: int = 120) -> bool:
+def _refrescar_panel() -> str:
+    """Deja el panel coherente con la base recién restaurada.
+
+    El panel guarda la caché del día: si no se borra, puede seguir pintando
+    las cifras de antes de la restauración. Se borra y se reinicia el servicio
+    para que vuelva a leer de la base.
+    """
+    try:
+        subprocess.run(["/usr/bin/systemctl", "restart", "muebles-panel.service"],
+                       capture_output=True, check=False, timeout=60)
+    except Exception as exc:  # noqa: BLE001
+        return f"no se pudo reiniciar el panel: {exc}"
+    for fichero in configuracion.carpeta_cache().glob("dia_*.json"):
+        fichero.unlink(missing_ok=True)
+    return "panel reiniciado y caché del día borrada"
+
+
+def odoo_responde(espera: int = 600) -> bool:
     limite = time.time() + espera
     url = f"http://127.0.0.1:{configuracion.puerto_odoo_host()}/web/login"
     while time.time() < limite:
@@ -136,7 +153,7 @@ def odoo_responde(espera: int = 120) -> bool:
     return False
 
 
-def restaurar() -> int:
+def restaurar(sin_refrescar_panel: bool = False) -> int:
     valido, detalle = snapshot_valido()
     if not valido:
         print(f"NO SE RESTAURA: {detalle}")
@@ -151,7 +168,7 @@ def restaurar() -> int:
 
     base = configuracion.base_de_datos()
     for sql in (f"DROP DATABASE IF EXISTS {base} WITH (FORCE)",
-                f"CREATE DATABASE {base} OWNER odoo"):
+                f"CREATE DATABASE {base} OWNER odoo TEMPLATE template0"):
         salida = _psql(sql)
         if salida.returncode != 0:
             print(f"fallo en «{sql}»: {salida.stderr.decode()[:300]}")
@@ -172,9 +189,11 @@ def restaurar() -> int:
         print(f"no se pudo arrancar Odoo: {arrancar.stderr.decode()[:200]}")
         return 1
     if not odoo_responde():
-        print("Odoo no responde tras 120 s: revisar el log del contenedor")
+        print("Odoo no responde tras 600 s: revisar el log del contenedor")
         return 1
     print("Odoo en marcha")
+    if not sin_refrescar_panel:
+        print(_refrescar_panel())
     return 0
 
 
@@ -222,6 +241,8 @@ def main() -> int:
     parser.add_argument("--estado", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--restaurar", action="store_true")
+    parser.add_argument("--sin-refrescar-panel", action="store_true",
+                        help="no reinicia el servicio del panel (lo usa el propio panel)")
     parser.add_argument("--verificar", action="store_true")
     args = parser.parse_args()
 
@@ -230,7 +251,7 @@ def main() -> int:
             print(f"{i}. {comando}")
         return 0
     if args.restaurar:
-        return restaurar()
+        return restaurar(sin_refrescar_panel=args.sin_refrescar_panel)
     if args.verificar:
         return verificar()
     if args.estado:

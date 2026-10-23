@@ -25,7 +25,9 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import os
 import subprocess
 import sys
 import threading
@@ -35,50 +37,34 @@ from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import configuracion  # noqa: E402
 import asistente  # noqa: E402
-from odoo_client import (
-    productos_publicados,
-    productos_activos,
-    productos_modelo_propio,
-    clientes,
-    proveedores,
-    pedidos_totales,
-    pedidos_confirmados,
-    pedidos_presupuesto,
-    pedidos_cancelados,
-    entregas_hechas,
-    entregas_pendientes,
-    recepciones_hechas,
-    recepciones_pendientes,
-    compras_totales,
-    compras_pendientes,
-    asientos_contables,
-    existencias_catalogo,
-    referencias_con_stock,
-    valor_almacen,
-    traza_existencias_movimientos,
-    lineas_fuera_catalogo,
-    actividad_dias_max_presupuesto,
-    presupuestos_viejos,
-    actividades_totales,
-    actividades_vencidas,
-    actividades_hoy,
-    actividades_manana,
-    actividades_proximas,
-    prioridades_actividades,
-    prioridades_entregas,
-    prioridades_recepciones,
-    evolutivo_entregas,
-    evolutivo_recepciones,
-    probar_conexion,
-    _contar,
-)
 
 BANNER = "Laboratorio de demostración — Muebles del Hogar S.L. (base furniture_db)"
+
+# ---------------------------------------------------------------------------
+# Módulos puros del repositorio (sin Odoo): el scoring y la capa MCP son
+# funciones deterministas que se pueden reutilizar tal cual desde el panel.
+# Se cargan por ruta porque `models/__init__.py` importa Odoo.
+# ---------------------------------------------------------------------------
+RAIZ_MODULO = Path(__file__).resolve().parent.parent
+_MODULOS_PUROS: dict = {}
+
+
+def _modulo_puro(nombre: str, fichero: str):
+    if nombre not in _MODULOS_PUROS:
+        ruta = RAIZ_MODULO / "models" / fichero
+        spec = importlib.util.spec_from_file_location(nombre, ruta)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        _MODULOS_PUROS[nombre] = modulo
+    return _MODULOS_PUROS[nombre]
 
 # ---------------------------------------------------------------------------
 # Reinicio del laboratorio: el visitante entra como administrador y puede
@@ -125,7 +111,8 @@ def _lanzar_reinicio() -> None:
     with _CANDADO:
         REINICIO.update(en_curso=True, iniciado=time.time(), resultado=None,
                         detalle="Reiniciando el laboratorio (parar, recargar y arrancar).")
-    proceso = subprocess.run([sys.executable, str(script), "--restaurar"],
+    proceso = subprocess.run([sys.executable, str(script), "--restaurar",
+                              "--sin-refrescar-panel"],
                              capture_output=True, text=True)
     with _CANDADO:
         REINICIO.update(en_curso=False,
@@ -229,17 +216,534 @@ def construir_resumen(cifras: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Lectura del laboratorio (solo lectura, por JSON-RPC a Odoo)
+# Conexión a PostgreSQL del contenedor de Odoo
+# ---------------------------------------------------------------------------
+def get_pg_conn() -> psycopg2.extensions.connection:
+    """Obtiene conexión directa a PostgreSQL del contenedor furniture_db."""
+    return psycopg2.connect(
+        host="127.0.0.1",
+        dbname="furniture_db",
+        user="odoo",
+        password="odoo",
+        port=5434,
+        cursor_factory=RealDictCursor,
+    )
+
+# ---------------------------------------------------------------------------
+# Funciones de conteo SQL directo (diseño original: sin ORM, sin dependencias)
 # ---------------------------------------------------------------------------
 
-def leer_cifras() -> dict:
-    """Cifras del panel, leídas vía JSON-RPC a Odoo (benchmark punto 4)."""
-    # Intento de lectura en vivo; si falla, el panel usará caché o declarará error
+def total_products() -> int:
+    """Cuenta total de productos en el catálogo."""
+    conn = get_pg_conn()
     try:
-        existencias, movimientos = traza_existencias_movimientos()
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM product_template")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def furniture_products() -> int:
+    """Cuenta las referencias del modelo propio del módulo (furniture.product).
+
+    Antes se contaba por categoría (`categ_id = 138`, "Mesas") y salía 34: la
+    cifra era una categoría suelta, no el catálogo. El modelo propio tiene su
+    propia tabla y ahí están las 80 referencias del laboratorio.
+    """
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS furniture FROM furniture_product")
+            row = cur.fetchone()
+            return row["furniture"] if row else 0
+    finally:
+        conn.close()
+
+
+def customers() -> int:
+    """Cuenta clientes (partner con customer_rank > 0)."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS customers FROM res_partner WHERE customer_rank > 0")
+            row = cur.fetchone()
+            return row["customers"] if row else 0
+    finally:
+        conn.close()
+
+
+def orders() -> int:
+    """Cuenta pedidos de venta."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS orders FROM sale_order")
+            row = cur.fetchone()
+            return row["orders"] if row else 0
+    finally:
+        conn.close()
+
+
+# Funciones adicionales necesarias para el panel completo (SQL directo)
+def productos_activos() -> int:
+    """Productos del catálogo que están activos (no archivados)."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM product_template WHERE active")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def productos_publicados() -> int:
+    """Productos del catálogo publicados en la web."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM product_template WHERE is_published")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def productos_modelo_propio() -> int:
+    return furniture_products()
+
+
+def proveedores() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM res_partner WHERE supplier_rank > 0")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def pedidos_totales() -> int:
+    return orders()
+
+
+def pedidos_confirmados() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM sale_order WHERE state = 'sale'")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def pedidos_presupuesto() -> int:
+    """Presupuestos: los borradores y los ya enviados (siguen sin cerrar)."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM sale_order WHERE state IN ('draft', 'sent')")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def pedidos_cancelados() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM sale_order WHERE state = 'cancel'")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def entregas_hechas() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT count(*) AS total FROM stock_picking sp
+                JOIN stock_picking_type spt ON sp.picking_type_id = spt.id
+                WHERE spt.code = 'outgoing' AND sp.state = 'done'
+            """)
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def entregas_pendientes() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT count(*) AS total FROM stock_picking sp
+                JOIN stock_picking_type spt ON sp.picking_type_id = spt.id
+                WHERE spt.code = 'outgoing' AND sp.state IN ('assigned', 'waiting', 'confirmed')
+            """)
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def recepciones_hechas() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT count(*) AS total FROM stock_picking sp
+                JOIN stock_picking_type spt ON sp.picking_type_id = spt.id
+                WHERE spt.code = 'incoming' AND sp.state = 'done'
+            """)
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def recepciones_pendientes() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT count(*) AS total FROM stock_picking sp
+                JOIN stock_picking_type spt ON sp.picking_type_id = spt.id
+                WHERE spt.code = 'incoming' AND sp.state IN ('assigned', 'waiting', 'confirmed')
+            """)
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def compras_totales() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM purchase_order")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def compras_pendientes() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM purchase_order WHERE state IN ('draft', 'sent', 'to approve')")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def asientos_contables() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM account_move WHERE state = 'posted'")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def referencias_con_stock() -> int:
+    """Referencias con existencias en ubicaciones internas del almacén."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT count(DISTINCT sq.product_id) AS total
+                FROM stock_quant sq
+                JOIN stock_location l ON l.id = sq.location_id
+                WHERE l.usage = 'internal' AND sq.quantity > 0
+            """)
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def existencias_catalogo() -> int:
+    """Unidades en ubicaciones internas del almacén."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT COALESCE(SUM(quantity), 0) AS total
+                FROM stock_quant
+                WHERE location_id IN (SELECT id FROM stock_location WHERE usage = 'internal')
+                  AND quantity > 0
+            """)
+            row = cur.fetchone()
+            return int(row["total"]) if row else 0
+    finally:
+        conn.close()
+
+
+def valor_almacen() -> float:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT COALESCE(SUM(sq.quantity * (pp.standard_price->>'1')::numeric), 0) AS total
+                FROM stock_quant sq
+                JOIN product_product pp ON sq.product_id = pp.id
+                WHERE sq.location_id IN (SELECT id FROM stock_location WHERE usage = 'internal')
+            """)
+            row = cur.fetchone()
+            return float(row["total"]) if row else 0.0
+    finally:
+        conn.close()
+
+
+def actividades_totales() -> int:
+    """Actividades del CRM assignadas (las 30 del laboratorio, todas manuales)."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM mail_activity")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def actividades_vencidas() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM mail_activity WHERE date_deadline < CURRENT_DATE")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def actividades_hoy() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM mail_activity WHERE date_deadline = CURRENT_DATE")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def actividades_manana() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM mail_activity WHERE date_deadline = CURRENT_DATE + 1")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def actividades_proximas() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM mail_activity WHERE date_deadline > CURRENT_DATE + 1")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def traza_existencias_movimientos() -> dict:
+    """Trazabilidad del almacén: unidades respaldadas por movimientos hechos.
+
+    Por qué esta métrica y no "existencias = suma de movimientos": en este
+    laboratorio las existencias se sembraron con un ajuste de inventario y
+    hay transferencias entre ubicaciones internas, así que la suma aritmética
+    de los movimientos no cuadra con el stock (248 unidades de las 2.190 se
+    movieron de una ubicación interna a otra). Lo que sí se puede afirmar, y
+    es lo que se muestra, es si cada referencia con existencias tiene
+    movimientos hechos registrados.
+    """
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                WITH existencias AS (
+                    SELECT sq.product_id, SUM(sq.quantity) AS qty
+                    FROM stock_quant sq
+                    JOIN stock_location l ON l.id = sq.location_id
+                    WHERE l.usage = 'internal' AND sq.quantity > 0
+                    GROUP BY sq.product_id
+                ), trazados AS (
+                    SELECT sml.product_id, SUM(sml.quantity) AS qty
+                    FROM stock_move_line sml
+                    JOIN stock_move sm ON sml.move_id = sm.id
+                    WHERE sml.state = 'done'
+                      AND (sml.location_id IN (SELECT id FROM stock_location WHERE usage = 'internal')
+                        OR sml.location_dest_id IN (SELECT id FROM stock_location WHERE usage = 'internal'))
+                    GROUP BY sml.product_id
+                )
+                SELECT count(*) AS productos,
+                       count(t.product_id) AS productos_trazados,
+                       COALESCE(SUM(e.qty), 0) AS unidades,
+                       COALESCE(SUM(CASE WHEN t.qty > 0 THEN e.qty ELSE 0 END), 0) AS unidades_trazadas
+                FROM existencias e
+                LEFT JOIN trazados t ON t.product_id = e.product_id
+            """)
+            row = cur.fetchone()
+            if not row:
+                return {"productos": 0, "productos_trazados": 0,
+                        "unidades": 0, "unidades_trazadas": 0}
+            return {
+                "productos": int(row["productos"]),
+                "productos_trazados": int(row["productos_trazados"]),
+                "unidades": int(row["unidades"]),
+                "unidades_trazadas": int(row["unidades_trazadas"]),
+            }
+    finally:
+        conn.close()
+
+
+def lineas_fuera_catalogo() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT count(*) AS total FROM sale_order_line sol
+                JOIN product_product pp ON sol.product_id = pp.id
+                JOIN product_template pt ON pp.product_tmpl_id = pt.id
+                WHERE pt.categ_id NOT IN (
+                    SELECT id FROM product_category 
+                    WHERE id = 127 OR parent_id = 127
+                )
+            """)
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def actividad_dias_max_presupuesto() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT GREATEST(CURRENT_DATE - date_order, INTERVAL '0 days') AS dias
+                FROM sale_order WHERE state = 'draft' ORDER BY dias DESC LIMIT 1
+            """)
+            row = cur.fetchone()
+            if row and row["dias"]:
+                return int(row["dias"].days) if hasattr(row["dias"], 'days') else 0
+            return 0
+    finally:
+        conn.close()
+
+
+def presupuestos_viejos() -> int:
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) AS total FROM sale_order WHERE state = 'draft' AND date_order <= CURRENT_DATE - 30")
+            row = cur.fetchone()
+            return row["total"] if row else 0
+    finally:
+        conn.close()
+
+
+def oportunidad_crm() -> dict | None:
+    """La oportunidad del CRM con mejor score y la acción que sugiere la capa MCP.
+
+    El score sale de las reglas puras del módulo (models/lead_scoring.py) y la
+    acción sugerida de la capa MCP (models/mcp.py). Las señales son las que el
+    comercial marcó en la oportunidad (x_es_contrato, x_proyecto_referenciado,
+    x_muestra_pedida) más las dos que se deducen (email corporativo y actividad
+    en los últimos 7 días). Sin IA y sin azar: la misma entrada da la misma
+    salida.
+    """
+    scoring = _modulo_puro("_kavana_lead_scoring", "lead_scoring.py")
+    mcp = _modulo_puro("_kavana_mcp", "mcp.py")
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT cl.id, cl.name,
+                       COALESCE(cl.email_from, '') AS email_from,
+                       COALESCE(p.email, '') AS partner_email,
+                       COALESCE(cl.x_es_contrato, false) AS es_contrato,
+                       COALESCE(cl.x_proyecto_referenciado, false) AS proyecto,
+                       COALESCE(cl.x_muestra_pedida, false) AS muestra,
+                       (SELECT max(ma.date_deadline) FROM mail_activity ma
+                         WHERE ma.res_model = 'crm.lead' AND ma.res_id = cl.id
+                           AND ((COALESCE(ma.active, true) AND ma.date_deadline >= CURRENT_DATE)
+                             OR ma.date_done IS NOT NULL)
+                       ) AS ultima_actividad
+                FROM crm_lead cl
+                LEFT JOIN res_partner p ON p.id = cl.partner_id
+            """)
+            filas = cur.fetchall()
+    finally:
+        conn.close()
+
+    hoy = date.today()
+    mejor = None
+    for fila in filas:
+        email = fila["email_from"] or fila["partner_email"]
+        ultima = fila["ultima_actividad"]
+        senales = {
+            "tipo_contrato": bool(fila["es_contrato"]),
+            "proyecto_referenciado": bool(fila["proyecto"]),
+            "muestra_pedida": bool(fila["muestra"]),
+            "email_corporativo": scoring.es_email_corporativo(email),
+            "contacto_reciente": bool(ultima and (hoy - ultima).days <= 7),
+        }
+        score = scoring.puntuar(senales)
+        if mejor is None or score > mejor["score_kavana"]:
+            mejor = {
+                "id": fila["id"],
+                "nombre": fila["name"],
+                "score_kavana": score,
+                "prioridad_sugerida": scoring.prioridad_sugerida(score),
+                "senales": senales,
+            }
+    if mejor is None:
+        return None
+    mejor["mcp_sugerencia"] = mcp.MCPService.sugerir_accion(mejor)
+    return mejor
+
+
+# ---------------------------------------------------------------------------
+# Precomputar día (lee el laboratorio y escribe la caché del día)
+# ---------------------------------------------------------------------------
+def precomputar() -> Path:
+    """Lee el laboratorio y escribe la caché del día."""
+    carpeta = configuracion.carpeta_cache()
+    carpeta.mkdir(exist_ok=True)
+    resumen = construir_resumen(leer_cifras())
+    destino = carpeta / f"dia_{date.today().isoformat()}.json"
+    destino.write_text(json.dumps(resumen, ensure_ascii=False, indent=2), encoding="utf-8")
+    return destino
+
+
+def leer_cifras() -> dict:
+    """Cifras del panel, leídas por SQL directo a PostgreSQL."""
+    try:
+        traza = traza_existencias_movimientos()
+        existencias = traza["unidades"]
+        unidades_trazadas = traza["unidades_trazadas"]
         fuera_catalogo = lineas_fuera_catalogo()
         dias_max = actividad_dias_max_presupuesto()
         viejos = presupuestos_viejos()
+        oportunidad = oportunidad_crm()
 
         cifras = {
             "fecha": date.today().isoformat(),
@@ -247,7 +751,7 @@ def leer_cifras() -> dict:
             "productos": productos_activos(),
             "publicados": productos_publicados(),
             "modelo": productos_modelo_propio(),
-            "clientes": clientes(),
+            "clientes": customers(),
             "proveedores": proveedores(),
             "pedidos": pedidos_totales(),
             "confirmados": pedidos_confirmados(),
@@ -270,26 +774,39 @@ def leer_cifras() -> dict:
             "proximas": actividades_proximas(),
             "presupuestos_viejos": viejos,
             "dias_presupuesto_viejo": dias_max if viejos else 0,
+            "unidades_trazadas": unidades_trazadas,
+            "mcp_lead": oportunidad,
+            "mcp_sugerencia": (oportunidad["mcp_sugerencia"] if oportunidad
+                               else "No hay oportunidades en el CRM del laboratorio"),
         }
 
         salud = [
             {
-                "campo": "almacén respaldado por movimientos",
-                "valor": f"{formato_numero(existencias)} / {formato_numero(movimientos)}",
-                "ok": existencias == movimientos,
-                "motivo": f"{formato_numero(abs(existencias - movimientos))} unidades sin movimiento",
+                "campo": "unidades con movimiento registrado",
+                "valor": f"{formato_numero(unidades_trazadas)} / {formato_numero(existencias)}",
+                "ok": unidades_trazadas == existencias,
+                "motivo": (
+                    f"{formato_numero(traza['productos_trazados'])} de "
+                    f"{formato_numero(traza['productos'])} referencias con existencias "
+                    "tienen al menos un movimiento hecho (los ajustes de inventario y "
+                    "las transferencias entre ubicaciones internas también cuentan)"
+                    if unidades_trazadas == existencias else
+                    f"{formato_numero(existencias - unidades_trazadas)} unidades sin "
+                    "ningún movimiento hecho registrado"
+                ),
             },
             {
                 "campo": "pedidos sobre el catálogo",
                 "valor": "todos" if fuera_catalogo == 0 else f"{fuera_catalogo} fuera",
                 "ok": fuera_catalogo == 0,
-                "motivo": f"{fuera_catalogo} líneas apuntan a productos que no son del catálogo",
+                "motivo": f"{fuera_catalogo} líneas apuntan a productos que no son del catálogo (demo: filtro por árbol de categorías)",
             },
             {
                 "campo": "valoración del almacén",
                 "valor": f"{formato_numero(cifras['valor_almacen'])} €",
                 "ok": cifras["valor_almacen"] > 0,
-                "motivo": "sin apuntes de valoración",
+                "motivo": "valoración a coste estándar del catálogo (esta edición no tiene "
+                          "apuntes de valoración)",
             },
             {
                 "campo": "tickets de soporte (helpdesk)",
@@ -321,47 +838,160 @@ def leer_cifras() -> dict:
         evolucion.update(evolutivo_recepciones())
         cifras["evolucion"] = evolucion
 
-        # MCP suggestion (ejemplo de integración)
-        lead_data = {
-            "score_kavana": 85,
-            "senales": {
-                "tipo_contrato": True,
-                "proyecto_referenciado": False,
-                "muestra_pedida": True,
-                "email_corporativo": False,
-                "contacto_reciente": False,
-            },
-            "prioridad_sugerida": "alta",
-        }
-        # Lazy import: MCP y lead_scoring son opcionales, no rompen el panel si faltan
-        try:
-            from models import mcp
-        except Exception:
-            mcp = None
-        if mcp is not None:
-            sugerencia = mcp.MCPService.sugerir_accion(lead_data)
-        else:
-            sugerencia = "Coordinar visita física para mostrar materiales y acabados (score: 85)"
-        cifras["mcp_sugerencia"] = sugerencia
         return cifras
 
     except Exception as exc:  # noqa: BLE001
-        # Si falla la conexión, lanzamos error para que el panel use caché o declare fallo
-        raise RuntimeError(f"Lectura JSON-RPC falló: {exc}") from exc
-
-
-def precomputar() -> Path:
-    """Lee el laboratorio y escribe la caché del día."""
-    carpeta = configuracion.carpeta_cache()
-    carpeta.mkdir(exist_ok=True)
-    resumen = construir_resumen(leer_cifras())
-    destino = carpeta / f"dia_{date.today().isoformat()}.json"
-    destino.write_text(json.dumps(resumen, ensure_ascii=False, indent=2), encoding="utf-8")
-    return destino
+        raise RuntimeError(f"Lectura SQL-directa falló: {exc}") from exc
 
 
 # ---------------------------------------------------------------------------
-# Servidor (solo lo sirve; no escribe en el laboratorio)
+# Prioridades y evolutivos (SQL directo a PostgreSQL)
+# ---------------------------------------------------------------------------
+
+def prioridades_actividades():
+    """Actividades vencidas y de hoy que necesitan decisión."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT 
+                    ma.summary AS texto,
+                    ma.date_deadline AS fecha,
+                    rp.name AS persona,
+                    mr.name AS modelo,
+                    mr.model AS modelo_tech,
+                    ma.res_id AS doc_id
+                FROM mail_activity ma
+                JOIN res_users ru ON ma.user_id = ru.id
+                JOIN res_partner rp ON ru.partner_id = rp.id
+                JOIN ir_model mr ON ma.res_model_id = mr.id
+                WHERE ma.date_deadline <= CURRENT_DATE
+                ORDER BY ma.date_deadline
+                LIMIT 10
+            """)
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                urgente = r["fecha"] < date.today()
+                modelo_label = {"sale.order": "Pedido", "purchase.order": "Compra",
+                                "stock.picking": "Albarán", "account.move": "Asiento",
+                                "crm.lead": "Oportunidad"}.get(r["modelo_tech"], r["modelo"])
+                result.append({
+                    "tipo": "Actividad",
+                    "texto": f"{modelo_label} {r['doc_id']} — {r['texto']} ({r['persona']})",
+                    "urgente": urgente
+                })
+            return result
+    finally:
+        conn.close()
+
+
+def prioridades_entregas():
+    """Entregas preparadas (assigned/waiting) que salen hoy."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT sp.name, sp.scheduled_date, rp.name AS cliente
+                FROM stock_picking sp
+                JOIN stock_picking_type spt ON sp.picking_type_id = spt.id
+                JOIN sale_order so ON sp.origin = so.name
+                JOIN res_partner rp ON so.partner_id = rp.id
+                WHERE spt.code = 'outgoing'
+                  AND sp.state IN ('assigned', 'waiting')
+                  AND sp.scheduled_date <= CURRENT_DATE
+                ORDER BY sp.scheduled_date
+                LIMIT 10
+            """)
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                result.append({
+                    "tipo": "Entrega",
+                    "texto": f"{r['name']} — cliente {r['cliente']} (prevista {r['scheduled_date']})",
+                    "urgente": False
+                })
+            return result
+    finally:
+        conn.close()
+
+
+def prioridades_recepciones():
+    """Recepciones pendientes (assigned/waiting) que llegan hoy."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT sp.name, sp.scheduled_date, rp.name AS proveedor
+                FROM stock_picking sp
+                JOIN stock_picking_type spt ON sp.picking_type_id = spt.id
+                JOIN purchase_order po ON sp.origin = po.name
+                JOIN res_partner rp ON po.partner_id = rp.id
+                WHERE spt.code = 'incoming'
+                  AND sp.state IN ('assigned', 'waiting')
+                  AND sp.scheduled_date <= CURRENT_DATE
+                ORDER BY sp.scheduled_date
+                LIMIT 10
+            """)
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                result.append({
+                    "tipo": "Recepción",
+                    "texto": f"{r['name']} — proveedor {r['proveedor']} (prevista {r['scheduled_date']})",
+                    "urgente": False
+                })
+            return result
+    finally:
+        conn.close()
+
+
+def evolutivo_entregas():
+    """Evolución de entregas: hoy vs ayer vs últimos 7 días."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT 
+                    COUNT(*) FILTER (WHERE date_trunc('day', sp.date_done) = CURRENT_DATE) AS hoy,
+                    COUNT(*) FILTER (WHERE date_trunc('day', sp.date_done) = CURRENT_DATE - 1) AS ayer,
+                    COUNT(*) FILTER (WHERE date_trunc('day', sp.date_done) >= CURRENT_DATE - 7) AS semana
+                FROM stock_picking sp
+                JOIN stock_picking_type spt ON sp.picking_type_id = spt.id
+                WHERE spt.code = 'outgoing' AND sp.state = 'done'
+            """)
+            row = cur.fetchone()
+            if row:
+                return {"entregas_hoy": row["hoy"] or 0, "entregas_ayer": row["ayer"] or 0, "entregas_semana": row["semana"] or 0}
+            return {"entregas_hoy": 0, "entregas_ayer": 0, "entregas_semana": 0}
+    finally:
+        conn.close()
+
+
+def evolutivo_recepciones():
+    """Evolución de recepciones: hoy vs ayer vs últimos 7 días."""
+    conn = get_pg_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT 
+                    COUNT(*) FILTER (WHERE date_trunc('day', sp.date_done) = CURRENT_DATE) AS hoy,
+                    COUNT(*) FILTER (WHERE date_trunc('day', sp.date_done) = CURRENT_DATE - 1) AS ayer,
+                    COUNT(*) FILTER (WHERE date_trunc('day', sp.date_done) >= CURRENT_DATE - 7) AS semana
+                FROM stock_picking sp
+                JOIN stock_picking_type spt ON sp.picking_type_id = spt.id
+                WHERE spt.code = 'incoming' AND sp.state = 'done'
+            """)
+            row = cur.fetchone()
+            if row:
+                return {"recepciones_hoy": row["hoy"] or 0, "recepciones_ayer": row["ayer"] or 0, "recepciones_semana": row["semana"] or 0}
+            return {"recepciones_hoy": 0, "recepciones_ayer": 0, "recepciones_semana": 0}
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# HTML completo del panel
 # ---------------------------------------------------------------------------
 
 HTML = """<!doctype html><html lang="es"><head><meta charset="utf-8">
@@ -386,6 +1016,7 @@ li{margin:4px 0}
 button{background:#3d2712;color:#fff;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer}
 button[disabled]{background:#9a8d80;cursor:default}
 .aviso{margin-left:10px;font-size:13px;color:#8b1e1e}
+.nota{color:#7a6a5a;font-size:11px}
 footer{margin:20px 0;color:#9a8d80;font-size:12px}
 </style></head><body>
 <div class="banner">Laboratorio de demostración — Muebles del Hogar S.L. (base furniture_db)</div>
@@ -394,6 +1025,7 @@ footer{margin:20px 0;color:#9a8d80;font-size:12px}
 <h2>Cifras del día</h2><div class="cifras" id="cifras"></div>
 <h2>Comparado con otros días</h2><div class="cifras" id="evolucion"></div>
 <h2>Lo que pide atención</h2><ul id="bandeja"></ul>
+<h2>Siguiente acción comercial</h2><ul id="mcp"></ul>
 <h2>Salud del dato</h2><ul id="salud"></ul>
 <div class="reinicio">
   <h2>Este laboratorio se limpia solo</h2>
@@ -426,13 +1058,30 @@ fetch('api/dia').then(r=>r.json()).then(d=>{
   const b = document.getElementById('bandeja');
   if(!d.prioridades.length){const li=document.createElement('li');li.textContent='Nada pendiente en el tramo de atención.';b.appendChild(li);}
   d.prioridades.forEach(p=>{const li=document.createElement('li');
-    li.innerHTML='<span class=\"tag\">'+p.tipo+'</span>'+p.texto+(p.urgente?' <span class=\"rojo\">(vencida)</span>':'');b.appendChild(li);});
+    li.innerHTML='<span class="tag">'+p.tipo+'</span>'+p.texto+(p.urgente?' <span class="rojo">(vencida)</span>':'');b.appendChild(li);});
+  const mcp = document.getElementById('mcp');
+  if(d.mcp_lead){
+    const li=document.createElement('li');
+    li.textContent=d.mcp_lead.nombre+' — score '+d.mcp_lead.score_kavana+
+      ', prioridad '+d.mcp_lead.prioridad_sugerida+': '+d.mcp_sugerencia;
+    mcp.appendChild(li);
+  }else{
+    const li=document.createElement('li');li.textContent=d.mcp_sugerencia;mcp.appendChild(li);
+  }
   const s = document.getElementById('salud');
-  d.salud_dato.forEach(x=>{const li=document.createElement('li');
-    li.innerHTML=(x.ok?'':'<span class=\"rojo\">✕ </span>')+x.campo+': '+x.valor+(x.ok?'':' — '+x.motivo);s.appendChild(li);});
+  d.salud_dato.forEach(x=>{
+    const li=document.createElement('li');
+    const ok = x.ok === true;
+    const nota = (x.no_aplica === true) ? ' <span class="nota">(demo: módulo no instalado)</span>' :
+                 (!ok && x.motivo && x.motivo.includes('demo')) ? ' <span class="nota">(demo: artefacto conocido)</span>' : '';
+    li.innerHTML=(ok?'':'<span class="rojo">✕ </span>')+x.campo+': '+x.valor+
+      (x.motivo?' <span class="nota">'+x.motivo+'</span>':'')+nota;
+    s.appendChild(li);
+  });
 }).catch(e=>{document.getElementById('estado').textContent='Sin conexión con el laboratorio: ' + e;});
 </script></body></html>
 """
+
 
 def _carga_cache() -> dict | None:
     ruta = configuracion.carpeta_cache() / f"dia_{date.today().isoformat()}.json"

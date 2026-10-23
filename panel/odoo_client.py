@@ -44,12 +44,31 @@ def _cliente() -> odoorpc.ODOO:
     return odoo
 
 
+def _cerrar_cliente() -> None:
+    """Olvida la sesión cacheada (caducó o el servidor se reinició)."""
+    _cliente.cache_clear()
+
+
 def _ejecutar(modelo: str, metodo: str, *args, **kwargs) -> Any:
-    """Ejecuta un método en un modelo de Odoo con manejo de errores."""
+    """Ejecuta un método en un modelo de Odoo con manejo de errores.
+
+    La sesión de Odoo caduca: si eso pasa, se abre una sesión nueva y se
+    reintenta una vez. Sin ese reintento, el primer fallo dejaría el panel
+    sin datos hasta el siguiente reinicio del servicio.
+    """
     try:
         cliente = _cliente()
         return cliente.execute_kw(modelo, metodo, args, kwargs)
     except odoorpc.error.RPCError as exc:
+        mensaje = str(exc).lower()
+        if "session" in mensaje or "expired" in mensaje or "invalid" in mensaje:
+            try:
+                _cerrar_cliente()
+                cliente = _cliente()
+                return cliente.execute_kw(modelo, metodo, args, kwargs)
+            except Exception as exc_retry:  # noqa: BLE001
+                raise OdooClientError(
+                    f"Odoo RPC error en {modelo}.{metodo}: {exc_retry}") from exc_retry
         raise OdooClientError(f"Odoo RPC error en {modelo}.{metodo}: {exc}") from exc
     except ConnectionError as exc:
         raise OdooClientError(
@@ -185,32 +204,65 @@ def referencias_con_stock() -> int:
 
 
 def valor_almacen() -> float:
-    """Valoración total del almacén (stock_valuation_layer)."""
+    """Valoración del almacén: existencias x coste estándar.
+
+    Por qué: los apuntes de valoración (stock.valuation.layer) no existen en
+    esta edición, así que esa vía daría 0 y el panel publicaría una cifra
+    falsa. El coste estándar está en el catálogo y es determinista: cada
+    lector puede reproducir la cifra con una consulta.
+    """
     try:
-        layers = _buscar("stock.valuation.layer", [], ["value"])
-        return round(sum(l["value"] for l in layers), 2)
+        quants = _buscar("stock.quant", [["location_id.usage", "=", "internal"],
+                                         ["quantity", ">", 0]],
+                         ["quantity", "product_id"])
+        if not quants:
+            return 0.0
+        productos = _buscar("product.product", [["id", "in",
+                                                 [q["product_id"][0] for q in quants]]],
+                            ["standard_price"])
+        coste = {p["id"]: p["standard_price"] or 0 for p in productos}
+        return round(sum(q["quantity"] * coste.get(q["product_id"][0], 0)
+                         for q in quants), 2)
     except OdooClientError:
-        # No access to stock.valuation.layer (e.g., visita user lacks permissions)
-        # Return 0.0 to indicate no value could be read
+        # Sin acceso a las existencias: 0.0 indica que no se pudo valorar.
         return 0.0
 
 
-def traza_existencias_movimientos() -> tuple[int, int]:
-    """Compara existencias por quants vs suma de movimientos done."""
-    existencias = existencias_catalogo()
-    # Movimientos: entradas a interno menos salidas de interno
-    moves_in = _buscar(
-        "stock.move",
-        [("state", "=", "done"), ("location_dest_id.usage", "=", "internal"), ("product_id.categ_id.complete_name", "=ilike", "Muebles de Hogar%")],
-        ["quantity"],
+def traza_existencias_movimientos() -> dict:
+    """Trazabilidad del almacén: unidades con al menos un movimiento hecho.
+
+    Misma métrica que la versión SQL-directo del panel: no se compara la suma
+    de movimientos con el stock (en esta demo no cuadra porque el almacén se
+    sembró con un ajuste y hay transferencias internas), sino si cada
+    referencia con existencias tiene movimientos hechos registrados.
+    """
+    quants = _buscar(
+        "stock.quant",
+        [["location_id.usage", "=", "internal"], ["quantity", ">", 0]],
+        ["quantity", "product_id"],
     )
-    moves_out = _buscar(
-        "stock.move",
-        [("state", "=", "done"), ("location_id.usage", "=", "internal"), ("product_id.categ_id.complete_name", "=ilike", "Muebles de Hogar%")],
-        ["quantity"],
-    )
-    movimientos = int(round(sum(m["quantity"] for m in moves_in) - sum(m["quantity"] for m in moves_out)))
-    return existencias, movimientos
+    existencias_por_producto: dict[int, float] = {}
+    for quant in quants:
+        producto = quant["product_id"][0]
+        existencias_por_producto[producto] = (
+            existencias_por_producto.get(producto, 0) + quant["quantity"]
+        )
+    movidos: set[int] = set()
+    for campo in ("location_id.usage", "location_dest_id.usage"):
+        lineas = _buscar(
+            "stock.move.line",
+            [["state", "=", "done"], [campo, "=", "internal"]],
+            ["product_id"],
+        )
+        for linea in lineas:
+            movidos.add(linea["product_id"][0])
+    trazados = {p for p in existencias_por_producto if p in movidos}
+    return {
+        "productos": len(existencias_por_producto),
+        "productos_trazados": len(trazados),
+        "unidades": int(round(sum(existencias_por_producto.values()))),
+        "unidades_trazadas": int(round(sum(existencias_por_producto[p] for p in trazados))),
+    }
 
 
 def lineas_fuera_catalogo() -> int:
