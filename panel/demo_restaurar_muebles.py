@@ -117,6 +117,8 @@ def comandos_restauracion() -> list[str]:
         f'-c "CREATE DATABASE {base} OWNER odoo TEMPLATE template0"',
         f"gunzip -c {configuracion.snapshot()} | {configuracion.docker()} exec -i "
         f"{configuracion.contenedor_bd()} psql -q -U odoo -d {base}",
+        f'{configuracion.docker()} exec {configuracion.contenedor_bd()} psql -U odoo -d {base} '
+        f'-c "DELETE FROM ir_attachment WHERE url LIKE \'/web/assets/%\'"',
         f"{configuracion.docker()} start {configuracion.contenedor_odoo()}",
         "esperar a que Odoo responda (hasta 600 s)",
     ]
@@ -153,6 +155,17 @@ def odoo_responde(espera: int = 600) -> bool:
     return False
 
 
+def _calentar_assets() -> None:
+    """Pide las páginas públicas para que Odoo regenere los bundles antes que un visitante."""
+    for ruta in ("/web/login", "/shop"):
+        try:
+            with urllib.request.urlopen(
+                    f"http://127.0.0.1:{configuracion.puerto_odoo_host()}{ruta}", timeout=120) as r:
+                r.read()
+        except Exception:  # noqa: BLE001  (si falla, el primer visitante los regenera)
+            pass
+
+
 def restaurar(sin_refrescar_panel: bool = False) -> int:
     valido, detalle = snapshot_valido()
     if not valido:
@@ -184,6 +197,17 @@ def restaurar(sin_refrescar_panel: bool = False) -> int:
         return 1
     print("instantánea cargada")
 
+    # El filestore del volumen de Odoo no viaja en la instantánea: los bundles de
+    # CSS y JS que trae apuntan a ficheros que no existen y se sirven vacíos (la
+    # web sale sin estilos). Se borran para que Odoo los regenere y los escriba.
+    limpieza = _ejecutar([configuracion.docker(), "exec", configuracion.contenedor_bd(),
+                          "psql", "-v", "ON_ERROR_STOP=1", "-U", "odoo", "-d", base, "-c",
+                          "DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%'"])
+    if limpieza.returncode != 0:
+        print(f"fallo al limpiar los bundles de assets: {limpieza.stderr.decode()[:300]}")
+        return 1
+    print("bundles de assets borrados (Odoo los regenera)")
+
     arrancar = _ejecutar([configuracion.docker(), "start", configuracion.contenedor_odoo()])
     if arrancar.returncode != 0:
         print(f"no se pudo arrancar Odoo: {arrancar.stderr.decode()[:200]}")
@@ -192,6 +216,7 @@ def restaurar(sin_refrescar_panel: bool = False) -> int:
         print("Odoo no responde tras 600 s: revisar el log del contenedor")
         return 1
     print("Odoo en marcha")
+    _calentar_assets()
     if not sin_refrescar_panel:
         print(_refrescar_panel())
     return 0
