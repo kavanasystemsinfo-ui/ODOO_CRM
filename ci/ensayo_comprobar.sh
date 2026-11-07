@@ -31,10 +31,10 @@ PY
     "SELECT count(*) FROM res_users WHERE login = 'visita'" | grep -q 1
   test -s /root/copias/odoo_crm/visita_password.txt
   # La instantánea nueva es de la v2
-  gunzip -c "$MUEBLES_SNAPSHOT" | grep -q furniture_material
+  gunzip -c "$MUEBLES_SNAPSHOT" | grep -c furniture_material > /dev/null
 else
   [ "$version_pg" = "15" ]
   [ "$(version_mod furniture_db)" = "20.0.1.1.0" ]
-  gunzip -c "$MUEBLES_SNAPSHOT" | grep -q "CREATE TABLE public.furniture_product "
+  gunzip -c "$MUEBLES_SNAPSHOT" | grep -c "CREATE TABLE public.furniture_product " > /dev/null
 fi
 echo "ESTADO_${ESPERADO}_OK"
