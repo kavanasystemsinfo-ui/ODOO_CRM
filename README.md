@@ -57,6 +57,13 @@ python scripts/lint_oca.py      # linter OCA del módulo
 docker compose up -d            # Odoo 20 + PostgreSQL 17, solo en 127.0.0.1
 ```
 
+> **Si ya tienes un laboratorio creado con PostgreSQL 15** (la v1 del
+> compose), no lo levantes tal cual: PostgreSQL 17 no abre un volumen de la 15
+> y la base no arrancará. Antes, haz una copia (`pg_dumpall`) y restáurala en
+> un volumen nuevo, o fija `POSTGRES_IMAGE=postgres:15` en `.env` mientras
+> tanto, sabiendo que Odoo 20 necesita la 16 o superior para crear bases o
+> grupos nuevos.
+
 1. Entra en <http://127.0.0.1:8070>, crea la base `furniture_db` e instala
    **Mobiliario del Hogar (laboratorio ODOO_CRM)**.
 2. Siembra el laboratorio (catálogo, stock, clientes y pedidos):

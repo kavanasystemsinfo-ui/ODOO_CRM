@@ -118,6 +118,8 @@ jobs:
             odoo -d migracion -u ODOO_CRM --stop-after-init 2>&1 | tee v2.log
           bash v2/ODOO_CRM/ci/comprobar_log_odoo.sh v2.log
           grep "ODOO_CRM 2.0" v2.log
+          # La ficha duplicada sembrada debe aparecer avisada en el log.
+          grep "WARNING .*ODOO_CRM 2.0: nombre repetido en el catálogo v1" v2.log
       - name: Verificar que no se perdió ni se duplicó nada
         run: |
           docker run --rm -i $ODOO_DOCKER_ENV --network host -v "$PWD/v2:/mnt/extra-addons:ro" "$ODOO_IMAGE" \

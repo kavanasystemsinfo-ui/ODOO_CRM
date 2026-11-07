@@ -9,8 +9,25 @@ env.cr.execute("SELECT to_regclass('furniture_product_v1_backup') IS NOT NULL")
 if not env.cr.fetchone()[0]:
     errores.append('no existe la copia furniture_product_v1_backup')
 
-env.cr.execute('SELECT count(*), count(material) FROM furniture_product_v1_backup')
-total_v1, con_material_v1 = env.cr.fetchone()
+# Por nombre distinto: dos fichas con el mismo nombre van al mismo producto.
+env.cr.execute("""SELECT count(DISTINCT name),
+                         count(DISTINCT name) FILTER (WHERE material IS NOT NULL),
+                         count(*) FROM furniture_product_v1_backup""")
+total_v1, con_material_v1, filas_v1 = env.cr.fetchone()
+if filas_v1 != total_v1 + 1:
+    errores.append(f'la copia tiene {filas_v1} filas; se esperaban {total_v1} + 1 duplicada')
+
+# El caso ambiguo sembrado: el producto se queda con la ficha más antigua.
+env.cr.execute("""SELECT name, min(id) FROM furniture_product_v1_backup
+                  GROUP BY name HAVING count(*) > 1""")
+for nombre, id_antiguo in env.cr.fetchall():
+    env.cr.execute('SELECT material FROM furniture_product_v1_backup WHERE id = %s',
+                   (id_antiguo,))
+    esperado = env.cr.fetchone()[0]
+    producto = env['product.template'].search([('name', '=', nombre)], limit=1)
+    if producto.furniture_material != esperado:
+        errores.append(f'«{nombre}»: material {producto.furniture_material!r}, '
+                       f'se esperaba el de la ficha más antigua {esperado!r}')
 
 con_ficha = env['product.template'].search_count([('furniture_material', '!=', False)])
 if con_ficha != con_material_v1:

@@ -7,6 +7,8 @@ Copia material, medidas, estilo y garantía desde la copia del catálogo v1
 - El nombre de product.template es traducible (jsonb): se compara con
   cualquiera de sus traducciones.
 - Deja en el log cuántas fichas se emparejaron y cuántas no, para conciliar.
+- Si varias fichas v1 comparten nombre, usa la más antigua y avisa (WARNING)
+  con los ids de las demás, que siguen en la copia.
 """
 import logging
 
@@ -50,3 +52,26 @@ def migrate(cr, version):
     _logger.info('ODOO_CRM 2.0: %s productos nativos con ficha de mobiliario; '
                  '%s fichas v1 sin producto con el mismo nombre (siguen en %s)',
                  actualizados, sin_pareja, BACKUP)
+    _avisar_nombres_repetidos(cr)
+
+
+def _avisar_nombres_repetidos(cr):
+    """Varias fichas v1 con el mismo nombre solo pueden ir a un producto.
+
+    Se usa la de id más bajo (la más antigua); las demás no se pierden, siguen
+    en la copia, pero hay que revisarlas a mano. Se avisa con su nombre e ids.
+    """
+    cr.execute(f"""
+        SELECT fp.name, array_agg(fp.id ORDER BY fp.id)
+          FROM {BACKUP} fp
+         WHERE EXISTS (
+            SELECT 1 FROM product_template pt
+             WHERE EXISTS (SELECT 1 FROM jsonb_each_text(pt.name) t WHERE t.value = fp.name))
+         GROUP BY fp.name
+        HAVING count(*) > 1
+         ORDER BY fp.name
+    """)
+    for nombre, ids in cr.fetchall():
+        _logger.warning('ODOO_CRM 2.0: nombre repetido en el catálogo v1 «%s» (fichas %s): '
+                        'se ha usado la ficha %s; revisar las demás en %s',
+                        nombre, ids, ids[0], BACKUP)

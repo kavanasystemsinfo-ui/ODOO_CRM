@@ -12,5 +12,9 @@ for ficha in fichas:
         'list_price': ficha.list_price,
         'standard_price': ficha.standard_price,
     })
+# Caso ambiguo a propósito: una segunda ficha con el nombre de la primera.
+# La migración debe quedarse con la más antigua y avisar en el log.
+primera = fichas.sorted('id')[0]
+primera.copy({'name': primera.name, 'material': 'MATERIAL DE LA FICHA DUPLICADA'})
 env.cr.commit()
-print('SIEMBRA_V1_OK', len(fichas))
+print('SIEMBRA_V1_OK', len(fichas), '| ficha duplicada:', primera.name, '| material esperado:', primera.material)

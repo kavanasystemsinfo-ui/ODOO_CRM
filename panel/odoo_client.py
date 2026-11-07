@@ -226,7 +226,13 @@ def existencias_catalogo() -> int:
 
 
 def valor_almacen() -> float:
-    """Existencias internas a coste estándar (esta edición no tiene apuntes de valoración)."""
+    """Existencias internas a coste estándar (esta edición no tiene apuntes de valoración).
+
+    standard_price depende de la empresa. La versión SQL leía la clave '1' del
+    jsonb (la empresa con id 1); la API devuelve el coste de la empresa activa
+    del usuario de integración. Con una sola empresa, como en el laboratorio,
+    es la misma cifra; con varias habría que fijar la empresa en el contexto.
+    """
     quants = _existencias_internas(solo_positivas=False)
     ids = sorted({q["product_id"][0] for q in quants if q.get("product_id")})
     if not ids:
