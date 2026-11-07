@@ -7,5 +7,8 @@
         <field name="name">Panel del día: solo lectura</field>
         <field name="comment">Lectura de catálogo, ventas, compras, almacén, CRM y
 actividades para el panel externo. No permite crear, modificar ni borrar.</field>
+        <!-- Odoo 20 limita la vida de las API keys de usuarios no administradores
+             (1 día por defecto). La del panel se rota cada trimestre. -->
+        <field name="api_key_duration">90</field>
     </record>
 </odoo>

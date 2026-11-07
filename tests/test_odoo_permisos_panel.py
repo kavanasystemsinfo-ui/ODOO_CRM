@@ -4,7 +4,10 @@ El panel ya no entra por PostgreSQL: lee por JSON-RPC con un usuario que solo
 tiene el grupo «Panel del día: solo lectura». Aquí se prueba que ese usuario
 puede leer todo lo que el panel consulta y que no puede escribir nada.
 """
-from odoo.exceptions import AccessError
+from datetime import timedelta
+
+from odoo import fields
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import TransactionCase, new_test_user, tagged
 
 MODELOS_DEL_PANEL = [
@@ -35,6 +38,16 @@ class TestUsuarioPanel(TransactionCase):
         filas = env['crm.lead'].search_read(
             [('id', '=', self.lead.id)], ['x_score_kavana', 'x_prioridad_sugerida'])
         self.assertEqual(len(filas), 1)
+
+    def test_la_clave_de_integracion_sirve_para_json2_y_dura_un_trimestre(self):
+        """Odoo 20: JSON-2 solo acepta claves 'rpc' y limita su vida por grupo."""
+        claves = self.env['res.users.apikeys'].with_user(self.usuario)
+        clave = claves._generate('rpc', 'panel', fields.Datetime.now() + timedelta(days=60))
+        self.assertEqual(
+            self.env['res.users.apikeys']._check_credentials(scope='rpc', key=clave),
+            self.usuario.id)
+        with self.assertRaises(ValidationError):
+            claves._generate('rpc', 'panel', fields.Datetime.now() + timedelta(days=200))
 
     def test_no_puede_crear_ni_modificar(self):
         env = self.env(user=self.usuario)

@@ -13,8 +13,10 @@ usuario = env['res.users'].create({
     'group_ids': [(6, 0, [env.ref('base.group_user').id,
                           env.ref('ODOO_CRM.group_panel_lectura').id])],
 })
+# Odoo 20: la API JSON-2 exige scope 'rpc'; la duración máxima la marca el
+# grupo del módulo (90 días), así que se pide como el propio usuario.
 clave = env['res.users.apikeys'].with_user(usuario)._generate(
-    None, 'panel del día (CI)', fields.Datetime.now() + timedelta(days=1))
+    'rpc', 'panel del día (CI)', fields.Datetime.now() + timedelta(days=60))
 
 raiz = env.ref('ODOO_CRM.categoria_muebles_hogar')
 mesas = env['product.category'].create({'name': 'Mesas', 'parent_id': raiz.id})
