@@ -33,7 +33,7 @@ from typing import Any
 RAIZ = Path(__file__).resolve().parent.parent
 
 FICHEROS_SUELTOS = ("README.md", "DECISIONS.md", "SECURITY.md", "pytest.ini", "requirements-dev.txt")
-CARPETAS = ("tests", "panel", "scripts", "models", "controllers", "views", "security", "data")
+CARPETAS = ("tests", "tests_estaticos", "migrations", "ci", "docs", "panel", "scripts", "models", "controllers", "views", "security", "data")
 EXTENSIONES = (".md", ".py", ".xml", ".csv", ".ini", ".txt", ".json")
 IGNORAR = ("__pycache__", "cache_panel", "demo/landing", "demo/video", "districthome_products.json")
 

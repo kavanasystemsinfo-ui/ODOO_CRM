@@ -1,6 +1,6 @@
 # ADR-001: Migración a Odoo 18
 
-- **Estado**: Aceptado (documentación; la migración real no se ejecuta ahora)
+- **Estado**: Superado por [ADR-002](ADR-002-modelo-nativo-y-api.md) (el laboratorio pasó directamente a Odoo 20; se conserva como historia)
 - **Fecha**: 2026-10-09
 - **Decisor**: Hermes Agent (gabinete de IT, $ideas) con mandato autónomo de Jorge
 

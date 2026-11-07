@@ -6,3 +6,5 @@ panel/cache_panel/
 video/segmentos/
 video/verif_*.png
 video/verificacion.png
+.env
+addons/

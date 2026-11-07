@@ -16,6 +16,7 @@
                         <field name="x_es_contrato"/>
                         <field name="x_proyecto_referenciado"/>
                         <field name="x_muestra_pedida"/>
+                        <field name="x_fecha_ultimo_contacto" readonly="1"/>
                         <field name="x_contacto_reciente" readonly="1"/>
                         <field name="x_email_corporativo" readonly="1"/>
                     </group>

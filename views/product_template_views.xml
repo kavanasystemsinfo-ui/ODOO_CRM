@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Pestaña de mobiliario dentro de la ficha nativa de producto -->
+    <record id="product_template_form_view_furniture" model="ir.ui.view">
+        <field name="name">product.template.form.furniture</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Mobiliario" name="furniture">
+                    <group>
+                        <group>
+                            <field name="furniture_material"/>
+                            <field name="furniture_dimensions"/>
+                        </group>
+                        <group>
+                            <field name="furniture_style"/>
+                            <field name="furniture_warranty_months"/>
+                            <field name="is_furniture" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Buscar y agrupar por los atributos de mobiliario -->
+    <record id="product_template_search_view_furniture" model="ir.ui.view">
+        <field name="name">product.template.search.furniture</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="furniture_material"/>
+                <field name="furniture_style"/>
+                <filter string="Muebles del catálogo" name="filter_is_furniture"
+                        domain="[('is_furniture', '=', True)]"/>
+                <filter string="Material" name="group_furniture_material"
+                        context="{'group_by': 'furniture_material'}"/>
+                <filter string="Estilo" name="group_furniture_style"
+                        context="{'group_by': 'furniture_style'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- El menú del módulo abre los productos nativos filtrados, no un catálogo aparte -->
+    <record id="action_furniture_product" model="ir.actions.act_window">
+        <field name="name">Muebles del catálogo</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="context">{'search_default_filter_is_furniture': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea un producto dentro de la categoría «Muebles de Hogar»
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_furniture_root" name="Muebles de Hogar" sequence="10"/>
+    <menuitem id="menu_furniture_products" name="Productos" parent="menu_furniture_root"
+              action="action_furniture_product" sequence="10"/>
+</odoo>

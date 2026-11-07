@@ -1,0 +1,177 @@
+name: odoo
+
+# Pruebas sobre un Odoo 20 de verdad (imagen oficial), no sobre el texto del
+# código: el módulo se instala en una base vacía, se ejecutan sus pruebas
+# TransactionCase y se ensaya la actualización desde la versión 1.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "demo/**"]
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash  # -eo pipefail: un fallo de Odoo no queda tapado por `tee`
+
+env:
+  ODOO_IMAGE: odoo:20
+  # El entrypoint de la imagen oficial añade --db_host/--db_user a partir de
+  # estas variables (por defecto apunta a un host llamado "db").
+  ODOO_DOCKER_ENV: -e HOST=127.0.0.1 -e PORT=5432 -e USER=odoo -e PASSWORD=odoo
+
+jobs:
+  instalacion-limpia:
+    name: Instalación limpia y pruebas del módulo
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:17
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: addons/ODOO_CRM
+      - name: Instalar ODOO_CRM en una base vacía y ejecutar sus pruebas
+        run: |
+          docker run --rm $ODOO_DOCKER_ENV --network host -v "$PWD/addons:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo -d limpia -i ODOO_CRM --test-tags /ODOO_CRM \
+            --stop-after-init --log-level=test 2>&1 | tee instalacion.log
+      - name: Comprobar el log (errores y pruebas)
+        run: bash addons/ODOO_CRM/ci/comprobar_log_odoo.sh instalacion.log si
+      - name: Crear el usuario de integración y datos de negocio conocidos
+        run: |
+          docker run --rm -i $ODOO_DOCKER_ENV --network host -v "$PWD/addons:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo shell -d limpia --no-http < addons/ODOO_CRM/ci/preparar_integracion.py 2>&1 | tee integracion.log
+          echo "ESPERADO=$(grep '^ESPERADO=' integracion.log | cut -d= -f2-)" >> "$GITHUB_ENV"
+          clave="$(grep '^API_KEY=' integracion.log | cut -d= -f2-)"
+          test -n "$clave"
+          echo "::add-mask::$clave"
+          echo "MUEBLES_ODOO_API_KEY=$clave" >> "$GITHUB_ENV"
+      - name: Arrancar Odoo
+        run: |
+          docker run -d --name odoo_ci $ODOO_DOCKER_ENV --network host -v "$PWD/addons:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo -d limpia --db-filter '^limpia$' --http-port 8069
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8069/web/health && break
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8069/web/health
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: El panel lee por la API JSON-2 con el usuario de solo lectura
+        env:
+          MUEBLES_ODOO_URL: http://127.0.0.1:8069
+          MUEBLES_DB: limpia
+        run: python addons/ODOO_CRM/ci/probar_panel_api.py
+      - name: Log del servidor Odoo
+        if: always()
+        run: docker logs odoo_ci > servidor.log 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: log-instalacion
+          path: "*.log"
+
+  migracion-v1-a-v2:
+    name: Actualización desde la versión 1 (catálogo paralelo)
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:17
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: v2/ODOO_CRM
+      - uses: actions/checkout@v4
+        with:
+          # Último commit con el catálogo paralelo furniture.product (v1).
+          ref: 5ec6960ab157d3790f97986a3b74713a29bf0a5c
+          path: v1/ODOO_CRM
+      - name: Instalar la v1
+        run: |
+          docker run --rm $ODOO_DOCKER_ENV --network host -v "$PWD/v1:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo -d migracion -i ODOO_CRM --stop-after-init 2>&1 | tee v1.log
+      - name: Sembrar datos como en el laboratorio público
+        run: |
+          docker run --rm -i $ODOO_DOCKER_ENV --network host -v "$PWD/v1:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo shell -d migracion --no-http < v2/ODOO_CRM/ci/sembrar_v1.py 2>&1 | tee siembra.log
+          grep -q SIEMBRA_V1_OK siembra.log
+      - name: Actualizar a la v2
+        run: |
+          docker run --rm $ODOO_DOCKER_ENV --network host -v "$PWD/v2:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo -d migracion -u ODOO_CRM --stop-after-init 2>&1 | tee v2.log
+          bash v2/ODOO_CRM/ci/comprobar_log_odoo.sh v2.log
+          grep "ODOO_CRM 2.0" v2.log
+          # La ficha duplicada sembrada debe aparecer avisada en el log.
+          grep "WARNING .*ODOO_CRM 2.0: nombre repetido en el catálogo v1" v2.log
+      - name: Verificar que no se perdió ni se duplicó nada
+        run: |
+          docker run --rm -i $ODOO_DOCKER_ENV --network host -v "$PWD/v2:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo shell -d migracion --no-http < v2/ODOO_CRM/ci/verificar_migracion.py 2>&1 | tee verificacion.log
+          grep -q MIGRACION_OK verificacion.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs-migracion
+          path: "*.log"
+
+  ensayo-despliegue:
+    name: Ensayo del despliegue en la demo (PG 15 → 17, v1 → v2 y vuelta atrás)
+    runs-on: ubuntu-latest
+    env:
+      MUEBLES_SNAPSHOT: /root/instantanea/snapshot_muebles_demo_canonico.sql.gz
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: pr
+          fetch-depth: 0
+      - name: Montar la demo como está hoy (v1 sobre PostgreSQL 15)
+        run: sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" bash pr/ci/ensayo_preparar_demo_v1.sh "$PWD/pr" 2>&1 | tee preparar.log
+      - name: comprobar (solo lectura)
+        run: |
+          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ REF_V2=pr/head \
+            bash pr/scripts/despliegue/desplegar_v2.sh comprobar 2>&1 | tee comprobar.log
+      - name: desplegar
+        run: |
+          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ REF_V2=pr/head \
+            bash pr/scripts/despliegue/desplegar_v2.sh desplegar 2>&1 | tee desplegar.log
+      - name: La demo queda en la v2 y funciona
+        run: sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" bash /root/ODOO_CRM/ci/ensayo_comprobar.sh v2 2>&1 | tee estado_v2.log
+      - name: Un segundo «desplegar» se niega (ya hay PostgreSQL 17)
+        run: |
+          if sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ bash /root/ODOO_CRM/scripts/despliegue/desplegar_v2.sh desplegar > repetir.log 2>&1; then
+            echo "::error::desplegar dos veces no debería pasar"; exit 1
+          fi
+          grep "se esperaba PostgreSQL 15" repetir.log
+      - name: volver_atras
+        run: |
+          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 bash /root/ODOO_CRM/scripts/despliegue/desplegar_v2.sh volver_atras 2>&1 | tee volver.log
+      - name: La demo vuelve a la v1 sobre PostgreSQL 15
+        run: sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" bash pr/ci/ensayo_comprobar.sh v1 2>&1 | tee estado_v1.log
+      - name: Recoger logs
+        if: always()
+        run: |
+          sudo bash -c 'cp /root/copias/odoo_crm/*/actualizar_*.log . 2>/dev/null || true'
+          sudo docker logs furniture_odoo > servidor_odoo.log 2>&1 || true
+          sudo chmod a+r ./*.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs-ensayo-despliegue
+          path: "*.log"

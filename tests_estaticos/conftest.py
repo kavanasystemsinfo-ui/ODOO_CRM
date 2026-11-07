@@ -18,7 +18,7 @@ import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
 PANEL = RAIZ / "panel"
-CSV_CATALOGO = RAIZ / "data" / "furniture.product.csv"
+CSV_CATALOGO = RAIZ / "data" / "catalogo_muebles.csv"
 
 COLUMNAS_CSV = (
     "id", "name", "category", "list_price", "standard_price", "qty_available",
@@ -63,6 +63,14 @@ def verificador():
 @pytest.fixture(scope="session")
 def configuracion():
     return _cargar("configuracion", PANEL / "configuracion.py")
+
+
+@pytest.fixture()
+def cliente_odoo():
+    """Cliente de la API de Odoo del panel, sin ejecutor fijado al terminar."""
+    modulo = _cargar("odoo_client", PANEL / "odoo_client.py")
+    yield modulo
+    modulo.usar(None)
 
 
 @pytest.fixture(scope="session")

@@ -1,22 +1,27 @@
-version: '3.8'
+# Laboratorio ODOO_CRM: Odoo 20 + PostgreSQL y, opcionalmente, el panel del día.
+#
+#   docker compose up -d                      # Odoo y base de datos
+#   docker compose --profile panel up -d      # además, el panel (necesita .env)
+#
+# Todo se publica solo en 127.0.0.1: para exponerlo hace falta un proxy (Caddy).
+# Las contraseñas de este fichero son las de un laboratorio local; en un
+# servidor se cambian con variables de entorno (ver .env.example).
 
 services:
   odoo:
     image: odoo:20
     container_name: furniture_odoo
     ports:
-      # Solo en loopback para seguridad
       - "127.0.0.1:8070:8069"
     environment:
       - HOST=db
-      - USER=odoo
-      - PASSWORD=odoo
-      - DATABASE=furniture_db
+      - USER=${POSTGRES_USER:-odoo}
+      - PASSWORD=${POSTGRES_PASSWORD:-odoo}
     volumes:
+      # Módulos extra del servidor, si los hay (la v1 ya montaba esta carpeta).
       - ./addons:/mnt/extra-addons
-      # Fuente única del módulo: Odoo carga el repositorio, no una copia.
-      # Antes se montaba un segundo clon (más viejo) y Odoo leía ese código.
-      - /root/ODOO_CRM:/mnt/extra-addons/ODOO_CRM
+      # El repositorio ES el módulo: Odoo carga esta carpeta, no una copia.
+      - .:/mnt/extra-addons/ODOO_CRM:ro
       - ./config:/etc/odoo
       # Filestore de Odoo (imágenes y assets): NUNCA en la capa del contenedor
       - odoo_data:/var/lib/odoo
@@ -25,20 +30,43 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:15
+    # Odoo 20 necesita PostgreSQL 16 o superior (usa any_value()). Para pasar
+    # una demo existente de la 15 a la 17: scripts/despliegue/desplegar_v2.sh.
+    image: ${POSTGRES_IMAGE:-postgres:17}
     container_name: furniture_db
     environment:
       - POSTGRES_DB=postgres
-      - POSTGRES_USER=odoo
-      - POSTGRES_PASSWORD=odoo
-      - POSTGRES_INITDB_ARGS=--auth-host=md5
-    ports:
-      # Expuesto en loopback para que el panel pueda conectar desde el host
-      - "127.0.0.1:5434:5432"
+      - POSTGRES_USER=${POSTGRES_USER:-odoo}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-odoo}
+    # Sin puerto publicado: nadie fuera de la red de Docker habla con la base.
+    # El panel lee por la API de Odoo, no por SQL.
     volumes:
-      - furniture_db_data:/var/lib/postgresql/data
+      # Volumen propio de PostgreSQL 17. El de la v1 (furniture_db_data, con
+      # PostgreSQL 15) no se toca: es la vuelta atrás del despliegue.
+      - furniture_db_pg17:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  panel:
+    profiles: ["panel"]
+    image: python:3.11-slim
+    container_name: furniture_panel
+    working_dir: /app/panel
+    command: ["python", "panel_muebles.py", "--puerto", "8081"]
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      - MUEBLES_ODOO_URL=http://odoo:8069
+      - MUEBLES_DB=${MUEBLES_DB:-furniture_db}
+      - MUEBLES_ODOO_API_KEY=${MUEBLES_ODOO_API_KEY:-}
+      # Dentro del contenedor escucha en todas sus interfaces; fuera solo se
+      # publica en 127.0.0.1 (línea ports).
+      - MUEBLES_PANEL_HOST=0.0.0.0
+    volumes:
+      - .:/app:ro
+    depends_on:
+      - odoo
     restart: unless-stopped
 
 volumes:
-  furniture_db_data:
+  furniture_db_pg17:
   odoo_data:

@@ -3,13 +3,13 @@
 Muebles, fase 3: alinear el modelo del modulo con el catalogo real y poner los
 textos en espanol.
 
-  1. El modelo propio `furniture.product` (el que ve el panel del laboratorio)
-     se rellena con los mismos 80 productos que el catalogo real, con sus
-     precios, material, medidas y estilo deducidos de la ficha original.
+  1. La ficha de mobiliario de cada producto nativo (campos furniture_* de
+     product.template, desde la v2 del modulo) se rellena con el material,
+     las medidas y el estilo deducidos de la ficha original.
   2. Se reescriben las descripciones de venta en espanol, para que la tienda no
      mezcle ingles y espanol.
-  3. Se genera de nuevo `data/furniture.product.csv` del modulo con estos datos,
-     para que al reinstalar el modulo se cree exactamente esto.
+  3. Se genera de nuevo `data/catalogo_muebles.csv` (referencia versionada del
+     catalogo; Odoo no lo carga, lo usa create_lab_data.py para sembrar).
   4. Se bautiza el almacen.
 """
 
@@ -72,9 +72,6 @@ catalogo = env['product.template'].search([
     ('active', '=', True)], order='name')
 paso("productos del catalogo real: %d" % len(catalogo))
 
-modelo = env['furniture.product']
-borrados = modelo.search([]).unlink()
-paso("registros previos del modelo propio borrados: %d" % (borrados or 0))
 
 filas = []
 creados = 0
@@ -112,7 +109,12 @@ for indice, plantilla in enumerate(catalogo, start=1):
     }
     try:
         with env.cr.savepoint():
-            modelo.create(valores)
+            plantilla.write({
+                'furniture_material': valores['material'],
+                'furniture_dimensions': valores['dimensions'],
+                'furniture_style': valores['style'],
+                'furniture_warranty_months': valores['warranty_months'],
+            })
             creados += 1
             filas.append(('furniture_product_%03d' % indice, valores))
     except Exception as exc:
@@ -124,10 +126,10 @@ for indice, plantilla in enumerate(catalogo, start=1):
     except Exception as exc:
         paso("  aviso descripcion %s: %s" % (plantilla.name, str(exc)[:60]))
 env.cr.commit()
-paso("registros creados en el modelo propio: %d" % creados)
+paso("fichas de mobiliario escritas en product.template: %d" % creados)
 
 # ------------------------------------------------------------- el CSV
-ruta = '/mnt/extra-addons/ODOO_CRM/data/furniture.product.csv'
+ruta = '/mnt/extra-addons/ODOO_CRM/data/catalogo_muebles.csv'
 with open(ruta, 'w', newline='', encoding='utf-8') as fichero:
     escritor = csv.writer(fichero, lineterminator='\r\n')
     escritor.writerow(['id', 'name', 'category', 'list_price', 'standard_price',
@@ -149,8 +151,9 @@ env.cr.commit()
 
 paso("")
 paso("=== MUESTRA ===")
-for registro in modelo.search([], limit=4):
+for registro in env['product.template'].search([('is_furniture', '=', True)], limit=4):
     paso("  %-34s %-12s %8.2f EUR  stock %3d  %s" % (
-        registro.name, registro.category, registro.list_price,
-        registro.qty_available, registro.description[:60]))
-paso("total en el modelo propio: %d" % modelo.search_count([]))
+        registro.name, registro.furniture_material or '', registro.list_price,
+        registro.qty_available, registro.furniture_style or ''))
+paso("productos con ficha de mobiliario: %d" % env['product.template'].search_count(
+    [('furniture_material', '!=', False)]))

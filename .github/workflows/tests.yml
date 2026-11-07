@@ -28,7 +28,7 @@ jobs:
       - name: Lint OCA del módulo (linter oficial de la OCA)
         run: python scripts/lint_oca.py
       - name: Comprobar el catálogo, el módulo y la lógica del panel
-        run: python -m pytest tests -v
+        run: python -m pytest tests_estaticos -v
       - name: Resumen
         if: always()
         run: echo "Este job corre la suite autocontenida (sin Odoo). El job 'vivo' ejecuta las pruebas contra la demo pública en cada push y cron."
@@ -45,7 +45,7 @@ jobs:
       - name: Instalar dependencias de test
         run: pip install -r requirements-dev.txt
       - name: Ejecutar tests vivo contra la demo pública
-        run: python -m pytest tests/test_laboratorio_vivo.py -v
+        run: python -m pytest tests_estaticos/test_laboratorio_vivo.py -v
         env:
           MUEBLES_LAB: "1"
           MUEBLES_LAB_PANEL: "https://odoocrm.kavanasystems.com/panel"
