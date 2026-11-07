@@ -16,7 +16,7 @@ if [ "$ESPERADO" = "v2" ]; then
   docker exec -i furniture_odoo odoo shell -d furniture_db --no-http \
     < /root/ODOO_CRM/ci/verificar_migracion.py | grep MIGRACION_OK
   # El panel lee por la API con la clave que dejó el despliegue
-  set -a; . /etc/kavana/muebles-panel.env; set +a
+  set -a; . /etc/muebles/panel.env; set +a
   python3 - <<'PY'
 import sys
 sys.path.insert(0, '/root/ODOO_CRM/panel')

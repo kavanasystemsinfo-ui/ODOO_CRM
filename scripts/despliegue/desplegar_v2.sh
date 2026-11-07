@@ -32,7 +32,8 @@ CONT_ODOO="${MUEBLES_ODOO_CONTAINER:-furniture_odoo}"
 PUERTO_ODOO="${MUEBLES_ODOO_PORT:-8070}"
 PUERTO_PANEL="${MUEBLES_PANEL_PORT:-8081}"
 SIN_SYSTEMD="${SIN_SYSTEMD:-0}"          # 1 en el ensayo del CI
-PANEL_ENV="${PANEL_ENV:-/etc/kavana/muebles-panel.env}"
+# Fichero de entorno que ya leen muebles-panel.service y muebles-restore.service
+PANEL_ENV="${PANEL_ENV:-/etc/muebles/panel.env}"
 PANEL_DROPIN="/etc/systemd/system/muebles-panel.service.d/odoo-api.conf"
 PY="${PY:-python3}"
 DISCO="${DISCO:-/root}"                  # carpeta cuyo disco recibe las copias
@@ -145,6 +146,12 @@ desplegar() {
 
   paso "Parar la limpieza automática y el panel; dejar la demo en su estado canónico"
   systemd stop muebles-restore.timer || true
+  if [ "$SIN_SYSTEMD" != "1" ]; then
+    # El temporizador salta a :00 y :30: si hay una restauración en marcha, se espera.
+    while systemctl is-active --quiet muebles-restore.service; do
+      echo "  restauración automática en curso: esperando"; sleep 10
+    done
+  fi
   systemd stop muebles-panel.service || true
   MUEBLES_SNAPSHOT="$SNAPSHOT" "$PY" "$REPO_DIR/panel/demo_restaurar_muebles.py" --restaurar --sin-refrescar-panel
 
@@ -162,6 +169,7 @@ desplegar() {
   docker run --rm --user root --volumes-from "$CONT_ODOO" -v "$copias:/copia" --entrypoint tar \
     odoo:20 czf /copia/filestore.tgz -C /var/lib/odoo .
   cp "$SNAPSHOT" "$copias/instantanea_v1.sql.gz"
+  if [ -f "$PANEL_ENV" ]; then cp -p "$PANEL_ENV" "$copias/panel.env.v1"; fi
   echo "  copias verificadas (pg_restore -l) y filestore guardado"
 
   paso "Repositorio a la v2 ($REF_V2)"
@@ -201,8 +209,14 @@ desplegar() {
   echo "$salida" | grep INTEGRACION_OK | sed 's/^/  /'
   mkdir -p "$(dirname "$PANEL_ENV")"
   umask 077
-  printf 'MUEBLES_ODOO_API_KEY=%s\nMUEBLES_ODOO_URL=http://127.0.0.1:%s\nMUEBLES_DB=%s\n' "$clave" "$PUERTO_ODOO" "$BASE" > "$PANEL_ENV"
-  if [ "$SIN_SYSTEMD" != "1" ]; then
+  # Se conserva lo que hubiera salvo las variables de la v1 (usuario y
+  # contraseña JSON-RPC, que la v2 ya no usa) y las que se escriben ahora.
+  { grep -vE '^(MUEBLES_JSONRPC_[A-Z]+|MUEBLES_ODOO_API_KEY|MUEBLES_ODOO_URL|MUEBLES_DB)=' "$PANEL_ENV" 2>/dev/null || true
+    printf 'MUEBLES_ODOO_API_KEY=%s\nMUEBLES_ODOO_URL=http://127.0.0.1:%s\nMUEBLES_DB=%s\n' "$clave" "$PUERTO_ODOO" "$BASE"
+  } > "$PANEL_ENV.nuevo"
+  mv "$PANEL_ENV.nuevo" "$PANEL_ENV"
+  echo "  clave guardada en $PANEL_ENV (permisos 600)"
+  if [ "$SIN_SYSTEMD" != "1" ] && ! systemctl cat muebles-panel.service | grep -q "EnvironmentFile=-\?$PANEL_ENV"; then
     mkdir -p "$(dirname "$PANEL_DROPIN")"
     printf '[Service]\nEnvironmentFile=%s\n' "$PANEL_ENV" > "$PANEL_DROPIN"
     systemctl daemon-reload
@@ -229,8 +243,11 @@ desplegar() {
   if [ "$SIN_SYSTEMD" != "1" ]; then
     systemctl restart muebles-panel.service
     for _ in $(seq 1 30); do curl -sf -o /dev/null "http://127.0.0.1:$PUERTO_PANEL/api/dia" && break; sleep 2; done
-    curl -sf "http://127.0.0.1:$PUERTO_PANEL/api/dia" | grep -q fichas_mobiliario \
-      || falla "el panel no responde con las cifras de la v2 (journalctl -u muebles-panel)"
+    local dia; dia="$(curl -sf "http://127.0.0.1:$PUERTO_PANEL/api/dia" || true)"
+    case "$dia" in
+      *fichas_mobiliario*) ;;
+      *) falla "el panel no responde con las cifras de la v2 (journalctl -u muebles-panel)" ;;
+    esac
     echo "  panel leyendo por la API"
     MUEBLES_SNAPSHOT="$SNAPSHOT" "$PY" "$REPO_DIR/panel/demo_restaurar_muebles.py" --verificar
   fi
@@ -253,6 +270,7 @@ volver_atras() {
   git -C "$REPO_DIR" checkout -q "$(cat "$copias/head_anterior")"
   echo "  repo en $(git -C "$REPO_DIR" rev-parse --short HEAD) (detached; main sigue en la v2)"
   cp "$copias/instantanea_v1.sql.gz" "$SNAPSHOT"
+  if [ -f "$copias/panel.env.v1" ]; then cp -p "$copias/panel.env.v1" "$PANEL_ENV"; fi
   if [ "$SIN_SYSTEMD" != "1" ]; then
     rm -f "$PANEL_DROPIN"; systemctl daemon-reload
   fi
