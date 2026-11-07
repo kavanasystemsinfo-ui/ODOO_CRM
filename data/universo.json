@@ -96,7 +96,8 @@
       "arreglar_socios_heredados.py",
       "arreglar_textos_y_hueco.py",
       "espanolizar_laboratorio.py",
-      "alinear_modelo.py"
+      "alinear_modelo.py",
+      "arreglar_demo_20261107.py"
     ],
     "modo": "docker exec -i <contenedor_odoo> odoo shell -d <base> --no-http < scripts/<paso>",
     "nota": "Regenerar la base completa desde cero (drop + replay de los 11 pasos) no está automatizado en un solo comando: hoy el lab público se restaura desde la instantánea canónica (panel/demo_restaurar_muebles.py). El replay de un comando es la evolución natural; ver docs/adr/ADR-001-migracion-odoo-18.md, apartado de fricciones."
