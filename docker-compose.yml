@@ -18,6 +18,8 @@ services:
       - USER=${POSTGRES_USER:-odoo}
       - PASSWORD=${POSTGRES_PASSWORD:-odoo}
     volumes:
+      # Módulos extra del servidor, si los hay (la v1 ya montaba esta carpeta).
+      - ./addons:/mnt/extra-addons
       # El repositorio ES el módulo: Odoo carga esta carpeta, no una copia.
       - .:/mnt/extra-addons/ODOO_CRM:ro
       - ./config:/etc/odoo
@@ -28,10 +30,8 @@ services:
     restart: unless-stopped
 
   db:
-    # Odoo 20 necesita PostgreSQL 16 o superior (usa any_value()). Un volumen
-    # creado con PostgreSQL 15 no arranca con 17: antes hay que migrarlo
-    # (pg_dump + restauración, o pg_upgrade) o fijar POSTGRES_IMAGE=postgres:15
-    # mientras tanto, sabiendo que crear grupos o bases nuevas fallará.
+    # Odoo 20 necesita PostgreSQL 16 o superior (usa any_value()). Para pasar
+    # una demo existente de la 15 a la 17: scripts/despliegue/desplegar_v2.sh.
     image: ${POSTGRES_IMAGE:-postgres:17}
     container_name: furniture_db
     environment:
@@ -41,7 +41,9 @@ services:
     # Sin puerto publicado: nadie fuera de la red de Docker habla con la base.
     # El panel lee por la API de Odoo, no por SQL.
     volumes:
-      - furniture_db_data:/var/lib/postgresql/data
+      # Volumen propio de PostgreSQL 17. El de la v1 (furniture_db_data, con
+      # PostgreSQL 15) no se toca: es la vuelta atrás del despliegue.
+      - furniture_db_pg17:/var/lib/postgresql/data
     restart: unless-stopped
 
   panel:
@@ -66,5 +68,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  furniture_db_data:
+  furniture_db_pg17:
   odoo_data:

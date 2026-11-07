@@ -130,3 +130,48 @@ jobs:
         with:
           name: logs-migracion
           path: "*.log"
+
+  ensayo-despliegue:
+    name: Ensayo del despliegue en la demo (PG 15 → 17, v1 → v2 y vuelta atrás)
+    runs-on: ubuntu-latest
+    env:
+      MUEBLES_SNAPSHOT: /root/instantanea/snapshot_muebles_demo_canonico.sql.gz
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: pr
+          fetch-depth: 0
+      - name: Montar la demo como está hoy (v1 sobre PostgreSQL 15)
+        run: sudo -E bash pr/ci/ensayo_preparar_demo_v1.sh "$PWD/pr" 2>&1 | tee preparar.log
+      - name: comprobar (solo lectura)
+        run: |
+          sudo -E env SIN_SYSTEMD=1 DISCO=/ REF_V2=$(git -C pr rev-parse HEAD) \
+            bash pr/scripts/despliegue/desplegar_v2.sh comprobar 2>&1 | tee comprobar.log
+      - name: desplegar
+        run: |
+          sudo -E env SIN_SYSTEMD=1 DISCO=/ REF_V2=$(git -C pr rev-parse HEAD) \
+            bash pr/scripts/despliegue/desplegar_v2.sh desplegar 2>&1 | tee desplegar.log
+      - name: La demo queda en la v2 y funciona
+        run: sudo -E bash /root/ODOO_CRM/ci/ensayo_comprobar.sh v2 2>&1 | tee estado_v2.log
+      - name: Un segundo «desplegar» se niega (ya hay PostgreSQL 17)
+        run: |
+          if sudo -E env SIN_SYSTEMD=1 DISCO=/ bash /root/ODOO_CRM/scripts/despliegue/desplegar_v2.sh desplegar > repetir.log 2>&1; then
+            echo "::error::desplegar dos veces no debería pasar"; exit 1
+          fi
+          grep "se esperaba PostgreSQL 15" repetir.log
+      - name: volver_atras
+        run: |
+          sudo -E env SIN_SYSTEMD=1 bash /root/ODOO_CRM/scripts/despliegue/desplegar_v2.sh volver_atras 2>&1 | tee volver.log
+      - name: La demo vuelve a la v1 sobre PostgreSQL 15
+        run: sudo -E bash pr/ci/ensayo_comprobar.sh v1 2>&1 | tee estado_v1.log
+      - name: Recoger logs
+        if: always()
+        run: |
+          sudo bash -c 'cp /root/copias/odoo_crm/*/actualizar_*.log . 2>/dev/null || true'
+          sudo docker logs furniture_odoo > servidor_odoo.log 2>&1 || true
+          sudo chmod a+r ./*.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs-ensayo-despliegue
+          path: "*.log"

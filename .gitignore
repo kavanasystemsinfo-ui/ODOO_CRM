@@ -7,3 +7,4 @@ video/segmentos/
 video/verif_*.png
 video/verificacion.png
 .env
+addons/
