@@ -27,6 +27,9 @@ Laboratorio de una empresa de muebles de hogar sobre Odoo 20.
         'views/crm_lead_scoring_views.xml',
         'views/panel_template.xml',
     ],
+    # Catálogo de referencia que siembra scripts/create_lab_data.py; Odoo no lo
+    # carga (convención del linter OCA para ficheros cargados a mano).
+    'oca_data_manual': ['data/catalogo_muebles.csv'],
     'installable': True,
     'application': True,
     'license': 'LGPL-3',

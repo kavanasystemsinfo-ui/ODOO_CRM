@@ -11,9 +11,15 @@ on:
   pull_request:
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: bash  # -eo pipefail: un fallo de Odoo no queda tapado por `tee`
+
 env:
   ODOO_IMAGE: odoo:20
-  ODOO_DB_ARGS: --db_host 127.0.0.1 --db_port 5432 --db_user odoo --db_password odoo
+  # El entrypoint de la imagen oficial añade --db_host/--db_user a partir de
+  # estas variables (por defecto apunta a un host llamado "db").
+  ODOO_DOCKER_ENV: -e HOST=127.0.0.1 -e PORT=5432 -e USER=odoo -e PASSWORD=odoo
 
 jobs:
   instalacion-limpia:
@@ -35,8 +41,8 @@ jobs:
           path: addons/ODOO_CRM
       - name: Instalar ODOO_CRM en una base vacía y ejecutar sus pruebas
         run: |
-          docker run --rm --network host -v "$PWD/addons:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
-            odoo $ODOO_DB_ARGS -d limpia -i ODOO_CRM --test-tags /ODOO_CRM \
+          docker run --rm $ODOO_DOCKER_ENV --network host -v "$PWD/addons:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo -d limpia -i ODOO_CRM --test-tags /ODOO_CRM \
             --stop-after-init --log-level=test 2>&1 | tee instalacion.log
       - name: Comprobar el log (errores y pruebas)
         run: bash addons/ODOO_CRM/ci/comprobar_log_odoo.sh instalacion.log si
@@ -70,23 +76,23 @@ jobs:
           path: v1/ODOO_CRM
       - name: Instalar la v1
         run: |
-          docker run --rm --network host -v "$PWD/v1:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
-            odoo $ODOO_DB_ARGS -d migracion -i ODOO_CRM --stop-after-init 2>&1 | tee v1.log
+          docker run --rm $ODOO_DOCKER_ENV --network host -v "$PWD/v1:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo -d migracion -i ODOO_CRM --stop-after-init 2>&1 | tee v1.log
       - name: Sembrar datos como en el laboratorio público
         run: |
-          docker run --rm -i --network host -v "$PWD/v1:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
-            odoo shell $ODOO_DB_ARGS -d migracion --no-http < v2/ODOO_CRM/ci/sembrar_v1.py 2>&1 | tee siembra.log
+          docker run --rm -i $ODOO_DOCKER_ENV --network host -v "$PWD/v1:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo shell -d migracion --no-http < v2/ODOO_CRM/ci/sembrar_v1.py 2>&1 | tee siembra.log
           grep -q SIEMBRA_V1_OK siembra.log
       - name: Actualizar a la v2
         run: |
-          docker run --rm --network host -v "$PWD/v2:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
-            odoo $ODOO_DB_ARGS -d migracion -u ODOO_CRM --stop-after-init 2>&1 | tee v2.log
+          docker run --rm $ODOO_DOCKER_ENV --network host -v "$PWD/v2:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo -d migracion -u ODOO_CRM --stop-after-init 2>&1 | tee v2.log
           bash v2/ODOO_CRM/ci/comprobar_log_odoo.sh v2.log
           grep "ODOO_CRM 2.0" v2.log
       - name: Verificar que no se perdió ni se duplicó nada
         run: |
-          docker run --rm -i --network host -v "$PWD/v2:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
-            odoo shell $ODOO_DB_ARGS -d migracion --no-http < v2/ODOO_CRM/ci/verificar_migracion.py 2>&1 | tee verificacion.log
+          docker run --rm -i $ODOO_DOCKER_ENV --network host -v "$PWD/v2:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo shell -d migracion --no-http < v2/ODOO_CRM/ci/verificar_migracion.py 2>&1 | tee verificacion.log
           grep -q MIGRACION_OK verificacion.log
       - uses: actions/upload-artifact@v4
         if: always()
