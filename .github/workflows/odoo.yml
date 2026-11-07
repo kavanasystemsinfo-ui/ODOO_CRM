@@ -142,28 +142,28 @@ jobs:
           path: pr
           fetch-depth: 0
       - name: Montar la demo como está hoy (v1 sobre PostgreSQL 15)
-        run: sudo -E bash pr/ci/ensayo_preparar_demo_v1.sh "$PWD/pr" 2>&1 | tee preparar.log
+        run: sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" bash pr/ci/ensayo_preparar_demo_v1.sh "$PWD/pr" 2>&1 | tee preparar.log
       - name: comprobar (solo lectura)
         run: |
-          sudo -E env SIN_SYSTEMD=1 DISCO=/ REF_V2=$(git -C pr rev-parse HEAD) \
+          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ REF_V2=$(git -C pr rev-parse HEAD) \
             bash pr/scripts/despliegue/desplegar_v2.sh comprobar 2>&1 | tee comprobar.log
       - name: desplegar
         run: |
-          sudo -E env SIN_SYSTEMD=1 DISCO=/ REF_V2=$(git -C pr rev-parse HEAD) \
+          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ REF_V2=$(git -C pr rev-parse HEAD) \
             bash pr/scripts/despliegue/desplegar_v2.sh desplegar 2>&1 | tee desplegar.log
       - name: La demo queda en la v2 y funciona
-        run: sudo -E bash /root/ODOO_CRM/ci/ensayo_comprobar.sh v2 2>&1 | tee estado_v2.log
+        run: sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" bash /root/ODOO_CRM/ci/ensayo_comprobar.sh v2 2>&1 | tee estado_v2.log
       - name: Un segundo «desplegar» se niega (ya hay PostgreSQL 17)
         run: |
-          if sudo -E env SIN_SYSTEMD=1 DISCO=/ bash /root/ODOO_CRM/scripts/despliegue/desplegar_v2.sh desplegar > repetir.log 2>&1; then
+          if sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ bash /root/ODOO_CRM/scripts/despliegue/desplegar_v2.sh desplegar > repetir.log 2>&1; then
             echo "::error::desplegar dos veces no debería pasar"; exit 1
           fi
           grep "se esperaba PostgreSQL 15" repetir.log
       - name: volver_atras
         run: |
-          sudo -E env SIN_SYSTEMD=1 bash /root/ODOO_CRM/scripts/despliegue/desplegar_v2.sh volver_atras 2>&1 | tee volver.log
+          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 bash /root/ODOO_CRM/scripts/despliegue/desplegar_v2.sh volver_atras 2>&1 | tee volver.log
       - name: La demo vuelve a la v1 sobre PostgreSQL 15
-        run: sudo -E bash pr/ci/ensayo_comprobar.sh v1 2>&1 | tee estado_v1.log
+        run: sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" bash pr/ci/ensayo_comprobar.sh v1 2>&1 | tee estado_v1.log
       - name: Recoger logs
         if: always()
         run: |

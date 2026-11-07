@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Comprueba el estado de la demo del ensayo tras desplegar o tras volver atrás.
-#   uso: sudo -E ci/ensayo_comprobar.sh v2|v1
+#   uso: sudo env MUEBLES_SNAPSHOT=... bash ci/ensayo_comprobar.sh v2|v1
 set -euo pipefail
 ESPERADO="$1"
 version_pg="$(docker exec furniture_db postgres --version | grep -oE '[0-9]+' | head -1)"

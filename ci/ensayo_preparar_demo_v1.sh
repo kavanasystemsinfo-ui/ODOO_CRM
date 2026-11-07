@@ -7,7 +7,7 @@
 # Odoo 20 no puede CREAR una base sobre PostgreSQL 15 (usa any_value()), así
 # que la base v1 se crea en un PostgreSQL 17 de paso y se vuelca a la 15, que
 # es como quedó la demo real: creada antes y servida por Odoo 20 sobre la 15.
-#   uso: sudo -E ci/ensayo_preparar_demo_v1.sh <carpeta del checkout de la PR>
+#   uso: sudo env MUEBLES_SNAPSHOT=... bash ci/ensayo_preparar_demo_v1.sh <carpeta del checkout de la PR>
 set -euo pipefail
 PR_SRC="$1"
 REF_V1=5ec6960ab157d3790f97986a3b74713a29bf0a5c
