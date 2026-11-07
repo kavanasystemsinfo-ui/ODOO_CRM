@@ -145,11 +145,11 @@ jobs:
         run: sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" bash pr/ci/ensayo_preparar_demo_v1.sh "$PWD/pr" 2>&1 | tee preparar.log
       - name: comprobar (solo lectura)
         run: |
-          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ REF_V2=$(git -C pr rev-parse HEAD) \
+          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ REF_V2=pr/head \
             bash pr/scripts/despliegue/desplegar_v2.sh comprobar 2>&1 | tee comprobar.log
       - name: desplegar
         run: |
-          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ REF_V2=$(git -C pr rev-parse HEAD) \
+          sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" SIN_SYSTEMD=1 DISCO=/ REF_V2=pr/head \
             bash pr/scripts/despliegue/desplegar_v2.sh desplegar 2>&1 | tee desplegar.log
       - name: La demo queda en la v2 y funciona
         run: sudo env MUEBLES_SNAPSHOT="$MUEBLES_SNAPSHOT" bash /root/ODOO_CRM/ci/ensayo_comprobar.sh v2 2>&1 | tee estado_v2.log

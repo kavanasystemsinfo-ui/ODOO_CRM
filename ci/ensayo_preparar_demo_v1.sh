@@ -17,7 +17,7 @@ echo "==> Repositorio en /root/ODOO_CRM, rama main en la v1"
 git clone -q "https://github.com/kavanasystemsinfo-ui/ODOO_CRM.git" /root/ODOO_CRM
 git -C /root/ODOO_CRM checkout -q -B main "$REF_V1"
 git -C /root/ODOO_CRM remote add pr "$PR_SRC"
-git -C /root/ODOO_CRM fetch -q pr
+git -C /root/ODOO_CRM fetch -q pr HEAD:refs/remotes/pr/head   # lo que se despliega: REF_V2=pr/head
 
 echo "==> Base v1 creada en un PostgreSQL 17 de paso"
 docker network create ensayo >/dev/null
