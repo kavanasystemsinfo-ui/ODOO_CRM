@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       db:
-        image: postgres:15
+        image: postgres:17
         env:
           POSTGRES_USER: odoo
           POSTGRES_PASSWORD: odoo
@@ -46,18 +46,47 @@ jobs:
             --stop-after-init --log-level=test 2>&1 | tee instalacion.log
       - name: Comprobar el log (errores y pruebas)
         run: bash addons/ODOO_CRM/ci/comprobar_log_odoo.sh instalacion.log si
+      - name: Crear el usuario de integración y datos de negocio conocidos
+        run: |
+          docker run --rm -i $ODOO_DOCKER_ENV --network host -v "$PWD/addons:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo shell -d limpia --no-http < addons/ODOO_CRM/ci/preparar_integracion.py 2>&1 | tee integracion.log
+          echo "ESPERADO=$(grep '^ESPERADO=' integracion.log | cut -d= -f2-)" >> "$GITHUB_ENV"
+          clave="$(grep '^API_KEY=' integracion.log | cut -d= -f2-)"
+          test -n "$clave"
+          echo "::add-mask::$clave"
+          echo "MUEBLES_ODOO_API_KEY=$clave" >> "$GITHUB_ENV"
+      - name: Arrancar Odoo
+        run: |
+          docker run -d --name odoo_ci $ODOO_DOCKER_ENV --network host -v "$PWD/addons:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo -d limpia --db-filter '^limpia$' --http-port 8069
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8069/web/health && break
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8069/web/health
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: El panel lee por la API JSON-2 con el usuario de solo lectura
+        env:
+          MUEBLES_ODOO_URL: http://127.0.0.1:8069
+          MUEBLES_DB: limpia
+        run: python addons/ODOO_CRM/ci/probar_panel_api.py
+      - name: Log del servidor Odoo
+        if: always()
+        run: docker logs odoo_ci > servidor.log 2>&1 || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: log-instalacion
-          path: instalacion.log
+          path: "*.log"
 
   migracion-v1-a-v2:
     name: Actualización desde la versión 1 (catálogo paralelo)
     runs-on: ubuntu-latest
     services:
       db:
-        image: postgres:15
+        image: postgres:17
         env:
           POSTGRES_USER: odoo
           POSTGRES_PASSWORD: odoo

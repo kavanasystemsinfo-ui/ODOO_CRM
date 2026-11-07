@@ -65,6 +65,14 @@ def configuracion():
     return _cargar("configuracion", PANEL / "configuracion.py")
 
 
+@pytest.fixture()
+def cliente_odoo():
+    """Cliente de la API de Odoo del panel, sin ejecutor fijado al terminar."""
+    modulo = _cargar("odoo_client", PANEL / "odoo_client.py")
+    yield modulo
+    modulo.usar(None)
+
+
 @pytest.fixture(scope="session")
 def asistente():
     return _cargar("asistente", PANEL / "asistente.py")

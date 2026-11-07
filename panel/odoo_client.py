@@ -1,116 +1,152 @@
 #!/usr/bin/env python3
-"""Cliente JSON-RPC de Odoo para el panel del día (benchmark punto 4).
+"""Lectura del laboratorio a través de la API externa de Odoo (JSON-2).
 
-Reemplaza las consultas SQL directas contra PostgreSQL por llamadas a la API
-oficial JSON-RPC de Odoo usando odoorpc (biblioteca oficial de la OCA).
+Por qué así y no con SQL: Odoo no es solo una base de datos. Permisos por
+grupo, reglas de registro, campos calculados (el score comercial no existe
+como columna) y multiempresa viven en el ORM; una consulta SQL se los salta.
+Hasta la v1 el panel leía PostgreSQL con usuario y contraseña fijos aunque la
+documentación decía lo contrario. Ahora solo hay un camino:
 
-Esto desacopla el panel del esquema interno de la base de datos: actualizaciones
-de Odoo (incluyendo cambios de versión) no rompen el panel, porque la API
-pública es el contrato estable.
+    POST {url}/json/2/{modelo}/{método}
+    Authorization: bearer <API key del usuario de integración>
+
+- El usuario de integración solo tiene el grupo «Panel del día: solo lectura»
+  del módulo: si el panel intentase escribir, Odoo respondería 403.
+- La API key va en el entorno (MUEBLES_ODOO_API_KEY), nunca en el código.
+- Sin dependencias: librería estándar (urllib + json).
+
+Las funciones de lectura reproducen las cifras que publicaba la versión SQL
+(mismos estados y umbrales) para que el panel no cambie de significado.
+Cuando la versión SQL contaba algo que el ORM no considera vigente (registros
+archivados, líneas de sección sin producto), se sigue el criterio del ORM.
 """
 
 from __future__ import annotations
 
-import logging
-from functools import lru_cache
-from typing import Any
-
-import odoorpc
+import json
+import urllib.error
+import urllib.request
+from datetime import date, datetime, timedelta
+from typing import Any, Callable
 
 import configuracion
 
-log = logging.getLogger(__name__)
+# Estados de albarán que la versión SQL contaba como "pendientes".
+ESTADOS_PICKING_PENDIENTE = ["assigned", "waiting", "confirmed"]
+ESTADOS_PICKING_PRIORIDAD = ["assigned", "waiting"]
+ESTADOS_COMPRA_PENDIENTE = ["draft", "sent", "to approve"]
+DIAS_PRESUPUESTO_VIEJO = 30
+ETIQUETAS_MODELO = {
+    "sale.order": "Pedido", "purchase.order": "Compra", "stock.picking": "Albarán",
+    "account.move": "Asiento", "crm.lead": "Oportunidad",
+}
 
 
 class OdooClientError(Exception):
-    """Excepción cuando el cliente Odoo falla de forma recuperable."""
-
-    pass
+    """La API de Odoo no respondió o respondió con un error."""
 
 
-@lru_cache(maxsize=1)
-def _cliente() -> odoorpc.ODOO:
-    """Crea y cachea el cliente JSON-RPC contra Odoo."""
-    odoo = odoorpc.ODOO(
-        configuracion.odoo_jsonrpc_host(),
-        port=configuracion.odoo_jsonrpc_port(),
-        protocol="jsonrpc",
-    )
-    odoo.login(
-        configuracion.odoo_jsonrpc_db(),
-        configuracion.odoo_jsonrpc_user(),
-        configuracion.odoo_jsonrpc_password(),
-    )
-    return odoo
+# ---------------------------------------------------------------------------
+# Transporte
+# ---------------------------------------------------------------------------
+
+class OdooJson2:
+    """Cliente mínimo de la API JSON-2 de Odoo (Odoo 19 o posterior)."""
+
+    def __init__(self, url: str, base: str, clave: str, timeout: float = 30.0):
+        self.url = url.rstrip("/")
+        self.base = base
+        self.clave = clave
+        self.timeout = timeout
+
+    def __call__(self, modelo: str, metodo: str, **parametros: Any) -> Any:
+        peticion = urllib.request.Request(
+            f"{self.url}/json/2/{modelo}/{metodo}",
+            data=json.dumps(parametros).encode("utf-8"),
+            method="POST",
+            headers={
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": f"bearer {self.clave}",
+                "X-Odoo-Database": self.base,
+                "User-Agent": "kavana-panel-muebles/2.0",
+            },
+        )
+        try:
+            with urllib.request.urlopen(peticion, timeout=self.timeout) as respuesta:
+                return json.loads(respuesta.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            raise OdooClientError(
+                f"{modelo}.{metodo}: HTTP {exc.code} {_mensaje_de_error(exc)}") from exc
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            raise OdooClientError(f"sin conexión con Odoo en {self.url}: {exc}") from exc
 
 
-def _cerrar_cliente() -> None:
-    """Olvida la sesión cacheada (caducó o el servidor se reinició)."""
-    _cliente.cache_clear()
-
-
-def _ejecutar(modelo: str, metodo: str, *args, **kwargs) -> Any:
-    """Ejecuta un método en un modelo de Odoo con manejo de errores.
-
-    La sesión de Odoo caduca: si eso pasa, se abre una sesión nueva y se
-    reintenta una vez. Sin ese reintento, el primer fallo dejaría el panel
-    sin datos hasta el siguiente reinicio del servicio.
-    """
+def _mensaje_de_error(exc: urllib.error.HTTPError) -> str:
+    """Solo el mensaje: la traza que Odoo adjunta no se reenvía al visitante."""
     try:
-        cliente = _cliente()
-        return cliente.execute_kw(modelo, metodo, args, kwargs)
-    except odoorpc.error.RPCError as exc:
-        mensaje = str(exc).lower()
-        if "session" in mensaje or "expired" in mensaje or "invalid" in mensaje:
-            try:
-                _cerrar_cliente()
-                cliente = _cliente()
-                return cliente.execute_kw(modelo, metodo, args, kwargs)
-            except Exception as exc_retry:  # noqa: BLE001
-                raise OdooClientError(
-                    f"Odoo RPC error en {modelo}.{metodo}: {exc_retry}") from exc_retry
-        raise OdooClientError(f"Odoo RPC error en {modelo}.{metodo}: {exc}") from exc
-    except ConnectionError as exc:
-        raise OdooClientError(
-            f"No se puede conectar a Odoo JSON-RPC en "
-            f"{configuracion.odoo_jsonrpc_host()}:{configuracion.odoo_jsonrpc_port()}"
-        ) from exc
-    except Exception as exc:  # noqa: BLE001
-        raise OdooClientError(f"Error inesperado en {modelo}.{metodo}: {exc}") from exc
+        return json.loads(exc.read().decode("utf-8")).get("message", "")
+    except Exception:  # noqa: BLE001
+        return exc.reason or ""
 
 
-def _buscar(modelo: str, dominio: list, campos: list[str] | None = None, **kwargs) -> list:
-    """Busca y lee registros (search_read)."""
-    return _ejecutar(modelo, "search_read", dominio, campos or [], **kwargs)
+Ejecutor = Callable[..., Any]
+_ejecutor: Ejecutor | None = None
+
+
+def usar(ejecutor: Ejecutor | None) -> None:
+    """Fija el ejecutor (las pruebas inyectan uno falso; None = el del entorno)."""
+    global _ejecutor
+    _ejecutor = ejecutor
+
+
+def _llamar(modelo: str, metodo: str, **parametros: Any) -> Any:
+    global _ejecutor
+    if _ejecutor is None:
+        _ejecutor = OdooJson2(configuracion.odoo_url(), configuracion.odoo_base(),
+                              configuracion.odoo_api_key())
+    return _ejecutor(modelo, metodo, **parametros)
 
 
 def _contar(modelo: str, dominio: list) -> int:
-    """Cuenta registros (search_count)."""
-    return _ejecutar(modelo, "search_count", dominio)
+    return int(_llamar(modelo, "search_count", domain=dominio))
 
 
-def _leer(modelo: str, ids: list[int], campos: list[str]) -> list:
-    """Lee registros por IDs (read)."""
-    return _ejecutar(modelo, "read", ids, campos)
+def _buscar(modelo: str, dominio: list, campos: list[str], **opciones: Any) -> list[dict]:
+    return _llamar(modelo, "search_read", domain=dominio, fields=campos, **opciones)
+
+
+def _hoy() -> date:
+    return date.today()
+
+
+def _fecha(valor: str | bool) -> date | None:
+    if not valor:
+        return None
+    return datetime.fromisoformat(str(valor)).date()
+
+
+def _nombre(valor: Any, por_defecto: str = "") -> str:
+    """Nombre de un many2one tal como llega por la API ([id, nombre] o False)."""
+    if isinstance(valor, (list, tuple)) and len(valor) > 1:
+        return str(valor[1])
+    return por_defecto
 
 
 # ---------------------------------------------------------------------------
-# Funciones de alto nivel que reemplazan las consultas SQL de panel_muebles.py
+# Catálogo, terceros y pedidos
 # ---------------------------------------------------------------------------
 
-CATALOGO_DOMINIO = [("categ_id.complete_name", "=ilike", "Muebles de Hogar%")]
+def productos_activos() -> int:
+    return _contar("product.template", [("active", "=", True)])
 
 
 def productos_publicados() -> int:
     return _contar("product.template", [("is_published", "=", True)])
 
 
-def productos_activos() -> int:
-    return _contar("product.template", [("active", "=", True)])
-
-
-def productos_modelo_propio() -> int:
-    return _contar("furniture.product", [])
+def productos_con_ficha() -> int:
+    """Productos nativos con ficha de mobiliario (sustituye al modelo propio v1)."""
+    return _contar("product.template", [("furniture_material", "!=", False)])
 
 
 def clientes() -> int:
@@ -137,326 +173,260 @@ def pedidos_cancelados() -> int:
     return _contar("sale.order", [("state", "=", "cancel")])
 
 
-def entregas_hechas() -> int:
-    return _contar(
-        "stock.picking",
-        [("picking_type_id.code", "=", "outgoing"), ("state", "=", "done")],
-    )
-
-
-def entregas_pendientes() -> int:
-    return _contar(
-        "stock.picking",
-        [("picking_type_id.code", "=", "outgoing"), ("state", "not in", ["done", "cancel"])],
-    )
-
-
-def recepciones_hechas() -> int:
-    return _contar(
-        "stock.picking",
-        [("picking_type_id.code", "=", "incoming"), ("state", "=", "done")],
-    )
-
-
-def recepciones_pendientes() -> int:
-    return _contar(
-        "stock.picking",
-        [("picking_type_id.code", "=", "incoming"), ("state", "not in", ["done", "cancel"])],
-    )
-
-
 def compras_totales() -> int:
     return _contar("purchase.order", [])
 
 
 def compras_pendientes() -> int:
-    # Pedidos de compra con líneas que tienen movimientos no terminados
-    ordenes = _buscar(
-        "purchase.order.line",
-        [("move_ids.state", "not in", ["done", "cancel"])],
-        ["order_id"],
-    )
-    return len({o["order_id"][0] for o in ordenes if o.get("order_id")})
+    return _contar("purchase.order", [("state", "in", ESTADOS_COMPRA_PENDIENTE)])
 
 
 def asientos_contables() -> int:
-    return _contar("account.move", [])
+    return _contar("account.move", [("state", "=", "posted")])
 
 
-def existencias_catalogo() -> int:
-    """Unidades en stock interno de productos del catálogo."""
-    quants = _buscar(
-        "stock.quant",
-        [("location_id.usage", "=", "internal"), ("quantity", ">", 0), ("product_id.categ_id.complete_name", "=ilike", "Muebles de Hogar%")],
-        ["quantity"],
-    )
-    return int(round(sum(q["quantity"] for q in quants)))
+# ---------------------------------------------------------------------------
+# Almacén
+# ---------------------------------------------------------------------------
+
+def _albaranes(codigo: str, estados: list[str]) -> int:
+    return _contar("stock.picking", [("picking_type_id.code", "=", codigo),
+                                     ("state", "in", estados)])
+
+
+def entregas_hechas() -> int:
+    return _albaranes("outgoing", ["done"])
+
+
+def entregas_pendientes() -> int:
+    return _albaranes("outgoing", ESTADOS_PICKING_PENDIENTE)
+
+
+def recepciones_hechas() -> int:
+    return _albaranes("incoming", ["done"])
+
+
+def recepciones_pendientes() -> int:
+    return _albaranes("incoming", ESTADOS_PICKING_PENDIENTE)
+
+
+def _existencias_internas(solo_positivas: bool = True) -> list[dict]:
+    dominio = [("location_id.usage", "=", "internal")]
+    if solo_positivas:
+        dominio.append(("quantity", ">", 0))
+    return _buscar("stock.quant", dominio, ["product_id", "quantity"])
 
 
 def referencias_con_stock() -> int:
-    """Referencias distintas con stock > 0 en ubicaciones internas del catálogo."""
-    quants = _buscar(
-        "stock.quant",
-        [("location_id.usage", "=", "internal"), ("quantity", ">", 0), ("product_id.categ_id.complete_name", "=ilike", "Muebles de Hogar%")],
-        ["product_id"],
-    )
-    return len({q["product_id"][0] for q in quants if q.get("product_id")})
+    return len({q["product_id"][0] for q in _existencias_internas() if q.get("product_id")})
+
+
+def existencias_catalogo() -> int:
+    return int(sum(q["quantity"] for q in _existencias_internas()))
 
 
 def valor_almacen() -> float:
-    """Valoración del almacén: existencias x coste estándar.
-
-    Por qué: los apuntes de valoración (stock.valuation.layer) no existen en
-    esta edición, así que esa vía daría 0 y el panel publicaría una cifra
-    falsa. El coste estándar está en el catálogo y es determinista: cada
-    lector puede reproducir la cifra con una consulta.
-    """
-    try:
-        quants = _buscar("stock.quant", [["location_id.usage", "=", "internal"],
-                                         ["quantity", ">", 0]],
-                         ["quantity", "product_id"])
-        if not quants:
-            return 0.0
-        productos = _buscar("product.product", [["id", "in",
-                                                 [q["product_id"][0] for q in quants]]],
-                            ["standard_price"])
-        coste = {p["id"]: p["standard_price"] or 0 for p in productos}
-        return round(sum(q["quantity"] * coste.get(q["product_id"][0], 0)
-                         for q in quants), 2)
-    except OdooClientError:
-        # Sin acceso a las existencias: 0.0 indica que no se pudo valorar.
+    """Existencias internas a coste estándar (esta edición no tiene apuntes de valoración)."""
+    quants = _existencias_internas(solo_positivas=False)
+    ids = sorted({q["product_id"][0] for q in quants if q.get("product_id")})
+    if not ids:
         return 0.0
+    coste = {p["id"]: p["standard_price"] or 0.0
+             for p in _buscar("product.product", [("id", "in", ids)], ["standard_price"])}
+    return round(sum(q["quantity"] * coste.get(q["product_id"][0], 0.0)
+                     for q in quants if q.get("product_id")), 2)
 
 
 def traza_existencias_movimientos() -> dict:
-    """Trazabilidad del almacén: unidades con al menos un movimiento hecho.
+    """Unidades en almacén respaldadas por al menos un movimiento hecho.
 
-    Misma métrica que la versión SQL-directo del panel: no se compara la suma
-    de movimientos con el stock (en esta demo no cuadra porque el almacén se
-    sembró con un ajuste y hay transferencias internas), sino si cada
-    referencia con existencias tiene movimientos hechos registrados.
+    No se compara la suma de movimientos con el stock (en esta demo no cuadra:
+    el almacén se sembró con un ajuste y hay transferencias internas); se mira
+    si cada referencia con existencias tiene movimientos hechos registrados.
     """
-    quants = _buscar(
-        "stock.quant",
-        [["location_id.usage", "=", "internal"], ["quantity", ">", 0]],
-        ["quantity", "product_id"],
-    )
-    existencias_por_producto: dict[int, float] = {}
-    for quant in quants:
+    por_producto: dict[int, float] = {}
+    for quant in _existencias_internas():
         producto = quant["product_id"][0]
-        existencias_por_producto[producto] = (
-            existencias_por_producto.get(producto, 0) + quant["quantity"]
-        )
+        por_producto[producto] = por_producto.get(producto, 0.0) + quant["quantity"]
     movidos: set[int] = set()
     for campo in ("location_id.usage", "location_dest_id.usage"):
-        lineas = _buscar(
-            "stock.move.line",
-            [["state", "=", "done"], [campo, "=", "internal"]],
-            ["product_id"],
-        )
-        for linea in lineas:
-            movidos.add(linea["product_id"][0])
-    trazados = {p for p in existencias_por_producto if p in movidos}
+        for linea in _buscar("stock.move.line", [("state", "=", "done"), (campo, "=", "internal")],
+                             ["product_id"]):
+            if linea.get("product_id"):
+                movidos.add(linea["product_id"][0])
+    trazados = [p for p in por_producto if p in movidos]
     return {
-        "productos": len(existencias_por_producto),
+        "productos": len(por_producto),
         "productos_trazados": len(trazados),
-        "unidades": int(round(sum(existencias_por_producto.values()))),
-        "unidades_trazadas": int(round(sum(existencias_por_producto[p] for p in trazados))),
+        "unidades": int(sum(por_producto.values())),
+        "unidades_trazadas": int(sum(por_producto[p] for p in trazados)),
     }
 
 
 def lineas_fuera_catalogo() -> int:
-    """Líneas de pedido que apuntan a productos fuera del catálogo."""
-    # Buscar líneas cuyo product_id no está en el catálogo
-    lineas = _buscar(
-        "sale.order.line",
-        [("product_id.categ_id.complete_name", "not ilike", "Muebles de Hogar%")],
-        ["id"],
-    )
-    return len(lineas)
+    """Líneas de venta con producto que no cuelga de «Muebles de Hogar».
+
+    La versión SQL comparaba con el id 127 escrito a mano; ahora se usa el
+    campo is_furniture del módulo, que sigue a la categoría aunque cambie de id.
+    """
+    return _contar("sale.order.line", [("product_id", "!=", False),
+                                       ("product_id.is_furniture", "=", False)])
+
+
+def _presupuestos_borrador() -> list[dict]:
+    return _buscar("sale.order", [("state", "=", "draft")], ["date_order"])
 
 
 def actividad_dias_max_presupuesto() -> int:
-    """Días máximos de antigüedad de presupuestos (draft/sent)."""
-    # Odoo no permite MAX en search_read fácilmente; leer y calcular en Python
-    pedidos = _buscar(
-        "sale.order",
-        [("state", "in", ["draft", "sent"])],
-        ["date_order"],
-    )
-    if not pedidos:
-        return 0
-    from datetime import date, datetime
-    hoy = date.today()
-    return max((hoy - datetime.strptime(p["date_order"], "%Y-%m-%d %H:%M:%S").date()).days for p in pedidos)
+    hoy = _hoy()
+    dias = [(hoy - _fecha(p["date_order"])).days for p in _presupuestos_borrador()
+            if p.get("date_order")]
+    return max([0, *dias])
 
 
 def presupuestos_viejos() -> int:
-    """Presupuestos con más de 7 días."""
-    pedidos = _buscar(
-        "sale.order",
-        [("state", "in", ["draft", "sent"])],
-        ["date_order"],
-    )
-    if not pedidos:
-        return 0
-    from datetime import date, datetime
-    hace_7 = date.fromordinal(date.today().toordinal() - 6)
-    return sum(1 for p in pedidos if datetime.strptime(p["date_order"], "%Y-%m-%d %H:%M:%S").date() < hace_7)
+    limite = _hoy() - timedelta(days=DIAS_PRESUPUESTO_VIEJO)
+    return sum(1 for p in _presupuestos_borrador()
+               if p.get("date_order") and _fecha(p["date_order"]) <= limite)
 
+
+# ---------------------------------------------------------------------------
+# Actividades
+# ---------------------------------------------------------------------------
 
 def actividades_totales() -> int:
     return _contar("mail.activity", [])
 
 
 def actividades_vencidas() -> int:
-    from datetime import date
-    return _contar("mail.activity", [("date_deadline", "<", date.today().isoformat())])
+    return _contar("mail.activity", [("date_deadline", "<", _hoy().isoformat())])
 
 
 def actividades_hoy() -> int:
-    from datetime import date
-    return _contar("mail.activity", [("date_deadline", "=", date.today().isoformat())])
+    return _contar("mail.activity", [("date_deadline", "=", _hoy().isoformat())])
 
 
 def actividades_manana() -> int:
-    from datetime import date
-    manana = date.fromordinal(date.today().toordinal() + 1)
+    manana = _hoy() + timedelta(days=1)
     return _contar("mail.activity", [("date_deadline", "=", manana.isoformat())])
 
 
 def actividades_proximas() -> int:
-    from datetime import date
-    manana = date.fromordinal(date.today().toordinal() + 1)
+    manana = _hoy() + timedelta(days=1)
     return _contar("mail.activity", [("date_deadline", ">", manana.isoformat())])
 
 
+# ---------------------------------------------------------------------------
+# Bandeja de prioridades y evolución
+# ---------------------------------------------------------------------------
+
 def prioridades_actividades() -> list[dict]:
-    """Top 4 actividades vencidas o de hoy/mañana con usuario y resumen."""
-    from datetime import date
-    hoy = date.today()
-    manana = date.fromordinal(hoy.toordinal() + 1)
-    actividades = _buscar(
-        "mail.activity",
-        [
-            ("date_deadline", "<=", manana.isoformat()),
-            ("user_id", "!=", False),
-        ],
-        ["user_id", "summary", "res_model", "res_id", "date_deadline"],
-        order="date_deadline",
-        limit=4,
+    """Actividades vencidas y de hoy (las 10 más antiguas)."""
+    hoy = _hoy()
+    filas = _buscar(
+        "mail.activity", [("date_deadline", "<=", hoy.isoformat())],
+        ["summary", "activity_type_id", "date_deadline", "user_id", "res_model", "res_id"],
+        order="date_deadline", limit=10,
     )
-    res = []
-    for a in actividades:
-        login = a["user_id"][1].split("@")[0] if a.get("user_id") else "?"
-        res.append(
-            {
-                "tipo": "actividad",
-                "etiqueta": login,
-                "texto": f"{a['summary']} ({a['res_model']} #{a['res_id']})",
-                "urgente": a["date_deadline"] <= hoy.isoformat(),
-            }
-        )
-    return res
+    resultado = []
+    for fila in filas:
+        etiqueta = ETIQUETAS_MODELO.get(fila["res_model"], fila["res_model"])
+        resumen = fila.get("summary") or _nombre(fila.get("activity_type_id"), "actividad")
+        persona = _nombre(fila.get("user_id"), "sin asignar")
+        resultado.append({
+            "tipo": "Actividad",
+            "texto": f"{etiqueta} {fila['res_id']} — {resumen} ({persona})",
+            "urgente": _fecha(fila["date_deadline"]) < hoy,
+        })
+    return resultado
+
+
+def _prioridades_albaranes(codigo: str, origen: str, tipo: str, rol: str) -> list[dict]:
+    fin_de_hoy = f"{_hoy().isoformat()} 23:59:59"
+    filas = _buscar(
+        "stock.picking",
+        [("picking_type_id.code", "=", codigo), ("state", "in", ESTADOS_PICKING_PRIORIDAD),
+         ("scheduled_date", "<=", fin_de_hoy), (origen, "!=", False)],
+        ["name", "partner_id", "scheduled_date"], order="scheduled_date", limit=10,
+    )
+    return [{
+        "tipo": tipo,
+        "texto": f"{f['name']} — {rol} {_nombre(f.get('partner_id'), '(sin nombre)')} "
+                 f"(prevista {f['scheduled_date']})",
+        "urgente": False,
+    } for f in filas]
 
 
 def prioridades_entregas() -> list[dict]:
-    """Top 3 entregas pendientes preparadas."""
-    entregas = _buscar(
-        "stock.picking",
-        [("picking_type_id.code", "=", "outgoing"), ("state", "not in", ["done", "cancel"])],
-        ["name", "partner_id", "sale_id", "scheduled_date"],
-        order="scheduled_date",
-        limit=3,
-    )
-    res = []
-    for d in entregas:
-        cliente = d["partner_id"][1] if d.get("partner_id") else (d["sale_id"][1] if d.get("sale_id") else "(sin cliente)")
-        res.append(
-            {"tipo": "entrega", "etiqueta": d["name"], "texto": f"Entrega preparada para {cliente}", "urgente": False}
-        )
-    return res
+    return _prioridades_albaranes("outgoing", "sale_id", "Entrega", "cliente")
 
 
 def prioridades_recepciones() -> list[dict]:
-    """Top 3 recepciones pendientes."""
-    recepciones = _buscar(
-        "stock.picking",
-        [("picking_type_id.code", "=", "incoming"), ("state", "not in", ["done", "cancel"])],
-        ["name", "partner_id", "scheduled_date"],
-        order="scheduled_date",
-        limit=3,
-    )
-    res = []
-    for r in recepciones:
-        proveedor = r["partner_id"][1] if r.get("partner_id") else "(sin proveedor)"
-        res.append(
-            {"tipo": "recepción", "etiqueta": r["name"], "texto": f"Recepción pendiente de {proveedor}", "urgente": False}
-        )
-    return res
+    return _prioridades_albaranes("incoming", "purchase_id", "Recepción", "proveedor")
+
+
+def _hechos_desde(codigo: str, desde: date, hasta: date) -> int:
+    return _contar("stock.picking", [
+        ("picking_type_id.code", "=", codigo), ("state", "=", "done"),
+        ("date_done", ">=", f"{desde.isoformat()} 00:00:00"),
+        ("date_done", "<=", f"{hasta.isoformat()} 23:59:59"),
+    ])
+
+
+def _evolutivo(codigo: str, prefijo: str) -> dict[str, int]:
+    hoy = _hoy()
+    ayer = hoy - timedelta(days=1)
+    return {
+        f"{prefijo}_hoy": _hechos_desde(codigo, hoy, hoy),
+        f"{prefijo}_ayer": _hechos_desde(codigo, ayer, ayer),
+        f"{prefijo}_semana": _hechos_desde(codigo, hoy - timedelta(days=7), hoy),
+    }
 
 
 def evolutivo_entregas() -> dict[str, int]:
-    """Entregas hechas: hoy, ayer, últimos 7 días."""
-    from datetime import date
-
-    hoy = date.today()
-    ayer = date.fromordinal(hoy.toordinal() - 1)
-    hace_7 = date.fromordinal(hoy.toordinal() - 6)
-
-    def hechas(desde: date, hasta: date) -> int:
-        return _contar(
-            "stock.picking",
-            [
-                ("picking_type_id.code", "=", "outgoing"),
-                ("state", "=", "done"),
-                ("date_done", ">=", desde.isoformat()),
-                ("date_done", "<=", hasta.isoformat()),
-            ],
-        )
-
-    return {
-        "entregas_hoy": hechas(hoy, hoy),
-        "entregas_ayer": hechas(ayer, ayer),
-        "entregas_semana": hechas(hace_7, hoy),
-    }
+    return _evolutivo("outgoing", "entregas")
 
 
 def evolutivo_recepciones() -> dict[str, int]:
-    """Recepciones hechas: hoy, ayer, últimos 7 días."""
-    from datetime import date
+    return _evolutivo("incoming", "recepciones")
 
-    hoy = date.today()
-    ayer = date.fromordinal(hoy.toordinal() - 1)
-    hace_7 = date.fromordinal(hoy.toordinal() - 6)
 
-    def hechas(desde: date, hasta: date) -> int:
-        return _contar(
-            "stock.picking",
-            [
-                ("picking_type_id.code", "=", "incoming"),
-                ("state", "=", "done"),
-                ("date_done", ">=", desde.isoformat()),
-                ("date_done", "<=", hasta.isoformat()),
-            ],
-        )
+# ---------------------------------------------------------------------------
+# CRM: el score lo calcula el módulo en Odoo; el panel solo lo lee
+# ---------------------------------------------------------------------------
 
+CAMPOS_SENALES = {
+    "tipo_contrato": "x_es_contrato",
+    "proyecto_referenciado": "x_proyecto_referenciado",
+    "muestra_pedida": "x_muestra_pedida",
+    "email_corporativo": "x_email_corporativo",
+    "contacto_reciente": "x_contacto_reciente",
+}
+
+
+def oportunidades_crm() -> list[dict]:
+    """Leads y oportunidades activos con el score y las señales del módulo."""
+    campos = ["name", "x_score_kavana", "x_prioridad_sugerida", *CAMPOS_SENALES.values()]
+    return _buscar("crm.lead", [], campos)
+
+
+def mejor_oportunidad() -> dict | None:
+    """La oportunidad con más score (a igualdad, la de id menor)."""
+    filas = oportunidades_crm()
+    if not filas:
+        return None
+    mejor = max(filas, key=lambda f: (f.get("x_score_kavana") or 0, -f["id"]))
     return {
-        "recepciones_hoy": hechas(hoy, hoy),
-        "recepciones_ayer": hechas(ayer, ayer),
-        "recepciones_semana": hechas(hace_7, hoy),
+        "id": mejor["id"],
+        "nombre": mejor["name"],
+        "score_kavana": mejor.get("x_score_kavana") or 0,
+        "prioridad_sugerida": mejor.get("x_prioridad_sugerida") or "ninguna",
+        "senales": {senal: bool(mejor.get(campo)) for senal, campo in CAMPOS_SENALES.items()},
     }
 
 
-# ---------------------------------------------------------------------------
-# Función de prueba de conexión
-# ---------------------------------------------------------------------------
-
 def probar_conexion() -> tuple[bool, str]:
-    """Prueba la conexión JSON-RPC y devuelve (ok, mensaje)."""
     try:
-        cliente = _cliente()
-        version = cliente.version
-        return True, f"Odoo {version.get('server_version', '?')} conectado via JSON-RPC"
+        return True, f"API de Odoo accesible: {productos_activos()} productos activos"
     except Exception as exc:  # noqa: BLE001
         return False, str(exc)
