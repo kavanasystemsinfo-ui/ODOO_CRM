@@ -90,7 +90,9 @@ el código de la v1 y pasan con el de la v2.
 
 ## Consecuencias
 
-- **Desplegar en la demo pública no es un `git pull`**: hay que actualizar el
+- **Desplegar en la demo pública no es un `git pull`**: lo hace
+  `scripts/despliegue/desplegar_v2.sh` (comprobar / desplegar / volver_atras),
+  ensayado de principio a fin en el CI (job `ensayo-despliegue`). Sin el script: hay que actualizar el
   módulo (`-u ODOO_CRM`), crear el usuario de integración y su clave, poner la
   clave en el entorno del panel y **regenerar la instantánea canónica** de la
   restauración (la actual es de la v1 y restaurarla deshace la migración).

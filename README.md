@@ -74,6 +74,14 @@ docker compose up -d            # Odoo 20 + PostgreSQL 17, solo en 127.0.0.1
    `MUEBLES_ODOO_API_KEY` (ver [`.env.example`](.env.example)).
 4. `docker compose --profile panel up -d panel` y abre <http://127.0.0.1:8081>.
 
+## Desplegar la v2 en la demo
+
+`sudo scripts/despliegue/desplegar_v2.sh comprobar` dice, sin tocar nada, si se
+puede; `desplegar` hace copia de todas las bases, pasa PostgreSQL de la 15 a la
+17 en un volumen nuevo, actualiza el módulo, crea el usuario de integración y la
+nueva instantánea; `volver_atras` devuelve la v1 sobre el volumen original. El
+job `ensayo-despliegue` del CI lo ejecuta entero sobre una copia de la demo.
+
 ## Decisiones
 
 - [ADR-002](docs/adr/ADR-002-modelo-nativo-y-api.md): por qué la v2 amplía
