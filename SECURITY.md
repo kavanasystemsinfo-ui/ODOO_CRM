@@ -1,76 +1,65 @@
-# Política de Seguridad - ODOO_CRM
+# Seguridad — ODOO_CRM
 
-## Alcance
-Este documento describe las prácticas de seguridad para el módulo ODOO_CRM (laboratorio de empresa ficticia de muebles sobre Odoo 17).
+Alcance: el módulo `ODOO_CRM` (Odoo 20), el panel del día (`panel/`) y el
+laboratorio público. Este documento describe lo que hace el código hoy; si
+algo de aquí deja de ser cierto, es un fallo y se corrige el código o el texto.
 
-## Manejo de Credenciales y Secrets
+## Credenciales
 
-### Principio Fundamental
-**NUNCA se commitean credenciales, passwords, tokens o claves API al repositorio.**
+- En el repositorio no hay claves, tokens ni contraseñas de servicios reales.
+  Las de `docker-compose.yml` y `config/odoo.conf` (`odoo`/`odoo`) son las de un
+  laboratorio local y la base no se publica fuera de la red de Docker.
+- El panel se autentica con la **API key** de un usuario de integración, en la
+  variable `MUEBLES_ODOO_API_KEY`. No tiene valor por defecto: si falta, el
+  panel lo dice y no lee nada (`panel/configuracion.py`).
+- `.env` está en `.gitignore`; `.env.example` lista las variables.
+- Hasta la versión 1 el README publicaba la contraseña del usuario de visita de
+  la demo. Se ha quitado, pero **sigue en el historial de git**: esa contraseña
+  debe rotarse en la demo pública.
 
-### Variables de Entorno Obligatorias
-Las siguientes variables DEBEN configurarse en el entorno de ejecución (no tienen defaults en el código):
+## Usuario de integración del panel
 
-| Variable | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `MUEBLES_JSONRPC_USER` | Usuario para conexión JSON-RPC a Odoo | `visita` |
-| `MUEBLES_JSONRPC_PASSWORD` | Password para conexión JSON-RPC a Odoo | `password-seguro` |
-| `MUEBLES_DB` | Nombre de la base de datos PostgreSQL | `furniture_db` |
-| `MUEBLES_JSONRPC_HOST` | Host del servidor Odoo JSON-RPC | `127.0.0.1` |
-| `MUEBLES_JSONRPC_PORT` | Puerto del servidor Odoo JSON-RPC | `8070` |
-| `MUEBLES_JSONRPC_DB` | Base de datos para JSON-RPC | `furniture_db` |
-| `MUEBLES_SNAPSHOT` | Ruta al snapshot SQL canónico | `/ruta/al/snapshot.sql.gz` |
+| Qué | Cómo |
+|---|---|
+| Grupos | *Usuario interno* + *Panel del día: solo lectura* (`security/groups.xml`). |
+| Permisos | Solo lectura (`r`) sobre los modelos que consulta el panel (`security/ir.access.csv`). |
+| Clave | Alcance `rpc` (el único que acepta la API JSON-2 de Odoo 20) y caducidad máxima de 90 días, fijada en el grupo. Se rota cada trimestre. |
+| Prueba | `tests/test_odoo_permisos_panel.py` comprueba que lee todo lo que necesita y que no puede crear, modificar ni borrar; el CI intenta escribir por la API con su clave y exige un 403. |
 
-### En Desarrollo Local
-- Usar archivo `.env` (NO commiteado, en `.gitignore`)
-- Ejemplo `.env.example` incluido para referencia
+## Acceso a los datos
 
-### En CI/CD (GitHub Actions)
-- Configurar como **Repository Secrets** en Settings > Secrets and variables > Actions
-- NUNCA escribir secrets en logs de Actions
-- Usar `env:` en el workflow para inyectar desde secrets
+- El panel lee Odoo **solo** por la API JSON-2 (`POST /json/2/<modelo>/<método>`
+  con `Authorization: bearer`). No importa ningún driver de base de datos ni
+  ejecuta SQL; una prueba (`tests_estaticos/test_odoo_client.py`) lo vigila.
+- Los errores de Odoo se resumen a su mensaje: la traza que Odoo adjunta a las
+  respuestas de error no se reenvía al visitante.
+- Excepción documentada: la restauración de la demo
+  (`panel/demo_restaurar_muebles.py`) carga una instantánea con `psql` dentro
+  del contenedor de la base. Es una tarea de operación del servidor, no parte
+  de la integración, y no la puede lanzar un visitante.
 
-### En Producción / Demo Pública
-- Configurar en el sistema de despliegue (Docker env, systemd EnvironmentFile, etc.)
-- Rotar credenciales periódicamente
-- Usar usuarios con privilegios mínimos (usuario `visita` solo lectura)
+## Exposición
 
-## Acceso a Datos
+- Odoo y el panel se publican solo en `127.0.0.1`; fuera llegan a través del
+  proxy (Caddy) del servidor. El panel escucha en `127.0.0.1` salvo que
+  `MUEBLES_PANEL_HOST` diga otra cosa (en Docker, dentro del contenedor).
+- PostgreSQL no publica puerto en `docker-compose.yml`.
 
-### Panel del Día
-- **Solo lectura**: El panel no escribe en la base de datos
-- Conexión vía **JSON-RPC oficial** (biblioteca `odoorpc` de OCA)
-- No hay SQL directo contra PostgreSQL (desacopla de esquema interno)
+## Sandbox por visitante
 
-### Sandbox por Visitante
-- Cada visitante recibe su propia BD clonada de plantilla
-- Cookie firmada con HMAC-SHA256 (secreto configurable por `MUEBLES_SECRETO`)
-- TTL configurable (default 4 horas) y tope de BDs concurrentes
-- Plantilla `muebles_plantilla` no servida nunca (filtrada por Odoo)
+`panel/sandbox.py` clona una base por visitante desde una plantilla, con cookie
+firmada HMAC-SHA256 (`MUEBLES_SECRETO`), caducidad y tope de bases simultáneas;
+los nombres de base se validan con `muebles_demo_[a-z0-9]{4,12}`.
 
-## Dependencias
-- `odoorpc>=0.10` (cliente JSON-RPC oficial de OCA)
-- `pytest>=8` (solo tests)
-- `oca-odoo-pre-commit-hooks>=0.2` (lint OCA)
-- Sin dependencias con vulnerabilidades conocidas (verificar con `pip audit`)
+## Pendiente
 
-## Validación de Entradas
-- Validación de nombres de BD en sandbox (`muebles_demo_[a-z0-9]{4,12}`)
-- Validación de cookies HMAC antes de usar
-- Sanitización de entradas en panel y asistente
+- Rotar la contraseña del usuario de visita de la demo (ver arriba).
+- La demo pública devuelve trazas de Python en las respuestas de error de la
+  API (modo desarrollador o `--dev` en el servidor). Conviene desactivarlo.
+- La demo pública corre sobre PostgreSQL 15; Odoo 20 necesita 16 o superior.
 
-## Auditoría y Logs
-- Logs de acceso al panel (IP, timestamp, acción)
-- No se loguean credenciales ni datos sensibles
-- Logs rotados con retención configurable
+## Si se filtra una credencial
 
-## Incidencias
-Si se detecta una fuga de credenciales:
-1. Rotar inmediatamente las credenciales comprometidas
-2. Revisar logs de acceso
-3. Actualizar este documento si hay cambios en procedimientos
-
-## Referencias
-- Benchmark punto 4: Panel por API JSON-RPC en vez de SQL directo
-- Benchmark punto 6: Scoring determinista, explicable, sin IA
-- ADR-001: Migración a Odoo 18 (docs/adr/ADR-001-migracion-odoo-18.md)
+1. Revocarla o rotarla en Odoo (Preferencias → Seguridad de la cuenta → claves API).
+2. Revisar el registro de accesos del proxy.
+3. Si estaba en git, asumir que es pública aunque se borre del fichero.

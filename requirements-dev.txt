@@ -1,10 +1,4 @@
-# Dependencias de la suite de tests (el módulo en sí no necesita ninguna).
+# Dependencias de la suite sin Odoo (tests_estaticos/) y del linter OCA.
+# El módulo no necesita ninguna y el panel solo usa la librería estándar.
 pytest>=8
 oca-odoo-pre-commit-hooks>=0.2
-# Cliente JSON-RPC de OCA para Odoo (benchmark punto 4: panel por API en vez de SQL)
-odoorpc>=0.10
-# Driver de PostgreSQL: el panel lee la base directamente y los tests importan
-# el panel. Sin esto, la suite falla en un entorno limpio.
-psycopg2-binary>=2.9
-
-# Cache busting 2026-10-18

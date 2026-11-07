@@ -7,8 +7,8 @@ name = "odoo_crm"
 version = "0.1.0"
 description = "Laboratorio de empresa ficticia de muebles de hogar para demostración de Odoo CRM"
 readme = "README.md"
-requires-python = ">=3.9"
-license = {text = "MIT"}
+requires-python = ">=3.10"
+license = {text = "LGPL-3.0-only"}
 authors = [
     {name = "Jorge Adan", email = "jorge.adan@kavanasystems.com"}
 ]
@@ -16,7 +16,7 @@ keywords = ["odoo", "crm", "demo", "manufacturing", "panel"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Operating System :: OS Independent",
 ]
 # The module itself does not have runtime dependencies (it's an Odoo addon)
@@ -30,8 +30,6 @@ dev = [
     "pre-commit>=3.6.0",
     "pytest>=8.0.0",
     "oca-odoo-pre-commit-hooks>=0.2",
-    "odoorpc>=0.10",
-    "psycopg2-binary>=2.9",
 ]
 
 [tool.setuptools]
@@ -39,7 +37,7 @@ py-modules = []
 
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py310"
 select = ["E", "F", "W", "C90"]
 ignore = [
     "E501",  # line length too long (handled by Black)
@@ -54,7 +52,7 @@ extend-ignore = [
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py310']
 include = '\.py$'
 exclude = '''
 /(
@@ -71,7 +69,7 @@ exclude = '''
 '''
 
 [tool.mypy]
-python_version = 3.8
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
