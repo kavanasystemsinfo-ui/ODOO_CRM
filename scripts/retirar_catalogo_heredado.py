@@ -287,10 +287,10 @@ paso("archivados que quedan: %d" % env['product.template'].with_context(active_t
 # comprobacion final de coherencia del catalogo
 fuera = env['sale.order.line'].search([('product_id.categ_id.parent_id.name', '!=', 'Muebles de Hogar')])
 paso("lineas de pedido fuera del catalogo: %d" % len(fuera))
-paso("catalogo: %d activos | %d publicados | %d en el modelo propio" % (
+paso("catalogo: %d activos | %d publicados | %d con ficha de mobiliario" % (
     env['product.template'].search_count([('active', '=', True)]),
     env['product.template'].search_count([('is_published', '=', True)]),
-    env['furniture.product'].search_count([]),
+    env['product.template'].search_count([('furniture_material', '!=', False)]),
 ))
 paso("almacen: %d albaranes (%d hechos) | existencias: %.0f" % (
     env['stock.picking'].search_count([]),
@@ -344,10 +344,10 @@ for pid, error in problemas:
 
 archivados = env['product.template'].with_context(active_test=False).search([('active', '=', False)])
 paso("archivados que quedan: %d -> %s" % (len(archivados), archivados.mapped('name')))
-paso("catalogo: %d activos | %d publicados | %d en el modelo propio" % (
+paso("catalogo: %d activos | %d publicados | %d con ficha de mobiliario" % (
     env['product.template'].search_count([('active', '=', True)]),
     env['product.template'].search_count([('is_published', '=', True)]),
-    env['furniture.product'].search_count([]),
+    env['product.template'].search_count([('furniture_material', '!=', False)]),
 ))
 paso("almacen: %d albaranes (%d hechos) | unidades en catalogo: %.0f" % (
     env['stock.picking'].search_count([]),

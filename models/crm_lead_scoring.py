@@ -4,12 +4,25 @@ El score NO se guarda: se recalcula al leer (campo computed no stored), así
 una oportunidad con contacto de hace un mes no conserva el punto de
 "contacto reciente". La prioridad se sugiere en un campo; aplicarla
 (cambiar priority de la oportunidad) sigue siendo decisión del comercial.
+
+Cada campo calculado declara sus dependencias (`@api.depends`): si cambia una
+señal dentro de la misma transacción, Odoo invalida la caché y el score se
+recalcula. Sin ellas el formulario y el código veían el score viejo.
+
+"Contacto reciente" significa que se habló con el cliente, no que haya una
+tarea apuntada: cuenta el último correo, el último mensaje enviado desde el
+chatter y la última actividad marcada como hecha. Una llamada planificada para
+mañana o una nota interna no son contacto.
 """
 from __future__ import annotations
 
-from odoo import fields, models
+from datetime import timedelta
+
+from odoo import api, fields, models
 
 from . import lead_scoring
+
+DIAS_CONTACTO_RECIENTE = 7
 
 
 class CrmLeadScoring(models.Model):
@@ -27,10 +40,16 @@ class CrmLeadScoring(models.Model):
         string='Muestra pedida',
         help='El cliente pidió ver catálogo físico o muestra de material.',
     )
+    x_fecha_ultimo_contacto = fields.Datetime(
+        string='Último contacto real',
+        compute='_compute_x_fecha_ultimo_contacto',
+        help='Último correo, mensaje enviado al cliente o actividad hecha. '
+             'Las notas internas y las actividades pendientes no cuentan.',
+    )
     x_contacto_reciente = fields.Boolean(
-        string='Contacto en 7 días',
+        string=f'Contacto en {DIAS_CONTACTO_RECIENTE} días',
         compute='_compute_x_contacto_reciente',
-        help='Hubo actividad con el cliente en los últimos 7 días.',
+        help=f'Hubo contacto real con el cliente en los últimos {DIAS_CONTACTO_RECIENTE} días.',
     )
     x_email_corporativo = fields.Boolean(
         string='Email corporativo',
@@ -64,26 +83,40 @@ class CrmLeadScoring(models.Model):
             'contacto_reciente': bool(self.x_contacto_reciente),
         }
 
-    def _compute_x_contacto_reciente(self):
-        hoy = fields.Date.context_today(self)
+    @api.model
+    def _es_contacto_real(self, mensaje) -> bool:
+        """Un mensaje cuenta como contacto si llegó o salió hacia el cliente."""
+        if mensaje.mail_activity_type_id:  # actividad marcada como hecha
+            return True
+        if mensaje.message_type == 'email':
+            return True
+        nota_interna = self.env.ref('mail.mt_note', raise_if_not_found=False)
+        return mensaje.message_type == 'comment' and mensaje.subtype_id != nota_interna
+
+    @api.depends('message_ids.date', 'message_ids.message_type',
+                 'message_ids.subtype_id', 'message_ids.mail_activity_type_id')
+    def _compute_x_fecha_ultimo_contacto(self):
         for lead in self:
-            actividades = lead.activity_ids.filtered(
-                lambda a: a.state in ('today', 'planned') or a.date_done
-            )
-            fecha = max(
-                (a.date_deadline for a in actividades if a.date_deadline),
-                default=None,
-            )
+            fechas = [m.date for m in lead.message_ids if m.date and self._es_contacto_real(m)]
+            lead.x_fecha_ultimo_contacto = max(fechas, default=False)
+
+    @api.depends('x_fecha_ultimo_contacto')
+    def _compute_x_contacto_reciente(self):
+        limite = fields.Datetime.now() - timedelta(days=DIAS_CONTACTO_RECIENTE)
+        for lead in self:
             lead.x_contacto_reciente = bool(
-                fecha and (hoy - fecha).days <= 7
+                lead.x_fecha_ultimo_contacto and lead.x_fecha_ultimo_contacto >= limite
             )
 
+    @api.depends('partner_id.email', 'email_from')
     def _compute_x_email_corporativo(self):
         for lead in self:
             lead.x_email_corporativo = lead_scoring.es_email_corporativo(
                 lead.partner_id.email or lead.email_from
             )
 
+    @api.depends('x_es_contrato', 'x_proyecto_referenciado', 'x_muestra_pedida',
+                 'x_email_corporativo', 'x_contacto_reciente')
     def _compute_x_score_kavana(self):
         for lead in self:
             score = lead_scoring.puntuar(lead._senales())

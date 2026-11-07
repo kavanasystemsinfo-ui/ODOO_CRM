@@ -11,7 +11,8 @@ import re
 import xml.etree.ElementTree as ET
 
 DEPENDENCIAS = {
-    "base", "product", "stock", "sale_management", "website", "crm", "purchase", "contacts",
+    "base", "mail", "product", "stock", "account", "sale_management", "website",
+    "website_sale", "crm", "purchase", "contacts",
 }
 
 
@@ -28,7 +29,7 @@ def test_manifiesto_con_las_claves_obligatorias(raiz):
     assert manifiesto["installable"] is True
 
 
-def test_version_para_odoo_17(raiz):
+def test_version_para_odoo_20(raiz):
     assert _manifiesto(raiz)["version"].startswith("20.0.")
 
 
@@ -58,10 +59,14 @@ def test_las_vistas_siguen_las_convenciones_oca(raiz):
         assert "t-esc=" not in contenido, f"{ruta.name}: t-esc deprecado desde Odoo 15, usar t-out"
 
 
-def test_la_vista_del_catalogo_usa_el_modelo_propio(raiz):
-    contenido = (raiz / "views" / "furniture_product_views.xml").read_text(encoding="utf-8")
-    assert contenido.count('name="model">furniture.product') >= 3  # lista, formulario y búsqueda
-    for campo in ("category", "list_price", "standard_price", "material", "style", "warranty_months"):
+def test_la_ficha_de_mobiliario_hereda_el_producto_nativo(raiz):
+    """Sin catálogo paralelo: las vistas amplían la ficha nativa de producto."""
+    assert not (raiz / "views" / "furniture_product_views.xml").exists()
+    contenido = (raiz / "views" / "product_template_views.xml").read_text(encoding="utf-8")
+    assert 'ref="product.product_template_form_view"' in contenido
+    assert 'name="res_model">product.template' in contenido
+    for campo in ("furniture_material", "furniture_dimensions", "furniture_style",
+                  "furniture_warranty_months"):
         assert f'name="{campo}"' in contenido, f"la vista no muestra {campo}"
 
 
@@ -72,20 +77,24 @@ def test_la_plantilla_del_panel_cuelga_del_sitio(raiz):
         assert variable in contenido, f"la plantilla no pinta {variable}"
 
 
-def test_permisos_del_modelo(raiz):
-    """Permisos del catálogo en el formato de Odoo 20 (ir.access + operation CRUD).
+def test_permisos_del_usuario_de_integracion(raiz):
+    """Permisos en el formato de Odoo 20 (ir.access + operation CRUD).
 
     En Odoo 20 los permisos viven en `security/ir.access.csv`: el modelo se
-    deduce del NOMBRE del fichero y las operaciones son códigos CRUD
-    (`crud`), no los `perm_read/perm_write/...` de Odoo 17.
+    deduce del NOMBRE del fichero y las operaciones son códigos CRUD. El grupo
+    del panel solo lee (`r`): nunca crea, modifica ni borra.
     """
     filas = (raiz / "security" / "ir.access.csv").read_text(encoding="utf-8").strip().splitlines()
     cabecera = filas[0].split(",")
     assert cabecera == ["id", "name", "model_id", "group_id/id", "operation", "domain"]
-    cuerpo = filas[1]
-    assert "furniture.product" in cuerpo
-    assert "base.group_user" in cuerpo
-    assert cuerpo.endswith("crud,"), "los usuarios internos deben poder leer y escribir el catálogo"
+    cuerpo = [fila.split(",") for fila in filas[1:]]
+    assert cuerpo, "el grupo del panel necesita permisos de lectura"
+    for fila in cuerpo:
+        assert fila[3] == "group_panel_lectura", fila
+        assert fila[4] == "r", f"{fila[2]}: el grupo del panel solo puede leer"
+    modelos = {fila[2] for fila in cuerpo}
+    assert {"crm.lead", "sale.order", "stock.quant", "product.template"} <= modelos
+    assert "furniture.product" not in modelos
 
 
 def test_el_fichero_de_permisos_no_usa_el_nombre_antiguo(raiz):
@@ -113,12 +122,36 @@ def test_controlador_del_panel(raiz):
         assert variable in codigo
 
 
-def test_el_modelo_declara_los_campos_del_catalogo(raiz):
+def test_la_ficha_de_mobiliario_amplia_product_template(raiz):
     fuentes = "\n".join(ruta.read_text(encoding="utf-8") for ruta in (raiz / "models").glob("*.py"))
-    assert "_name = 'furniture.product'" in fuentes
-    for campo in ("name", "category", "list_price", "standard_price", "qty_available",
-                  "material", "dimensions", "style", "warranty_months", "description"):
-        assert re.search(rf"\b{campo}\s*=\s*fields\.", fuentes), f"el modelo no declara {campo}"
+    assert "_name = 'furniture.product'" not in fuentes, "no debe volver el catálogo paralelo"
+    codigo = (raiz / "models" / "product_template.py").read_text(encoding="utf-8")
+    assert "_inherit = 'product.template'" in codigo
+    for campo in ("furniture_material", "furniture_dimensions", "furniture_style",
+                  "furniture_warranty_months", "is_furniture"):
+        assert re.search(rf"\b{campo}\s*=\s*fields\.", codigo), f"falta {campo}"
+    # precio, coste y stock son los nativos: el módulo no los redefine
+    for nativo in ("list_price", "standard_price", "qty_available"):
+        assert not re.search(rf"\b{nativo}\s*=\s*fields\.", codigo), nativo
+
+
+def test_hay_migracion_de_datos_desde_la_v1(raiz):
+    version = _manifiesto(raiz)["version"]
+    carpeta = raiz / "migrations" / version
+    assert (carpeta / "pre-migrate.py").exists()
+    assert (carpeta / "post-migrate.py").exists()
+    pre = (carpeta / "pre-migrate.py").read_text(encoding="utf-8")
+    assert "furniture_product_v1_backup" in pre, "la tabla v1 se conserva como copia"
+
+
+def test_los_campos_calculados_declaran_dependencias(raiz):
+    """Sin @api.depends la caché del ORM no se invalida (hallazgo de la auditoría)."""
+    for fichero in ("crm_lead_scoring.py", "product_template.py"):
+        codigo = (raiz / "models" / fichero).read_text(encoding="utf-8")
+        computes = set(re.findall(r"compute='(_compute_\w+)'", codigo))
+        for metodo in computes:
+            assert re.search(rf"@api\.depends\([^)]*\)\s*\n\s*def {metodo}\(", codigo), (
+                f"{fichero}: {metodo} sin @api.depends")
 
 
 def test_hereda_crm_lead_con_scoring_determinista(raiz):

@@ -18,7 +18,7 @@ import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
 PANEL = RAIZ / "panel"
-CSV_CATALOGO = RAIZ / "data" / "furniture.product.csv"
+CSV_CATALOGO = RAIZ / "data" / "catalogo_muebles.csv"
 
 COLUMNAS_CSV = (
     "id", "name", "category", "list_price", "standard_price", "qty_available",

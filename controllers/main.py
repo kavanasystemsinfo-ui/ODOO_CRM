@@ -13,7 +13,7 @@ class FurnitureLabController(http.Controller):
         env = request.env
         total_products = env['product.template'].search_count([])
         furniture_products = env['product.template'].search_count([
-            ('categ_id.parent_id.name', '=', 'Muebles de Hogar')
+            ('is_furniture', '=', True)
         ])
         customers = env['res.partner'].search_count([('customer_rank', '>', 0)])
         orders = env['sale.order'].search_count([])

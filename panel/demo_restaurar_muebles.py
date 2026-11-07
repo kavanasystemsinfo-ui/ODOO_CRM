@@ -37,7 +37,8 @@ BANNER = "Muebles del Hogar S.L. — laboratorio de demostración"
 MANIFIESTO = {
     "productos activos": "SELECT count(*) FROM product_template WHERE active",
     "productos publicados": "SELECT count(*) FROM product_template WHERE is_published",
-    "referencias del modelo propio": "SELECT count(*) FROM furniture_product",
+    "productos con ficha de mobiliario": (
+        "SELECT count(*) FROM product_template WHERE furniture_material IS NOT NULL"),
     "clientes": "SELECT count(*) FROM res_partner WHERE customer_rank > 0",
     "proveedores": "SELECT count(*) FROM res_partner WHERE supplier_rank > 0",
     "pedidos de venta": "SELECT count(*) FROM sale_order",
@@ -56,7 +57,7 @@ MANIFIESTO = {
 ESPERADO = {
     "productos activos": 80,
     "productos publicados": 80,
-    "referencias del modelo propio": 80,
+    "productos con ficha de mobiliario": 80,
     "clientes": 34,
     "proveedores": 5,
     "pedidos de venta": 56,

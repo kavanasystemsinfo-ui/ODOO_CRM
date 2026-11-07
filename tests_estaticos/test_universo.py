@@ -31,7 +31,7 @@ def test_el_universo_declara_los_recuentos_canonicos_del_restaurador():
 
 
 def test_el_universo_cuadra_con_el_catalogo_csv():
-    with (RAIZ / "data" / "furniture.product.csv").open(encoding="utf-8") as f:
+    with (RAIZ / "data" / "catalogo_muebles.csv").open(encoding="utf-8") as f:
         filas = list(csv.DictReader(f))
     universo = _universo()["catalogo"]
     assert universo["referencias"] == len(filas)

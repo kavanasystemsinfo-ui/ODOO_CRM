@@ -59,7 +59,7 @@ Este documento resume las decisiones técnicas clave del proyecto, con enlaces a
 - `models/lead_scoring.py` - Lógica pura + tests
 - `models/crm_lead_scoring.py` - Integración Odoo (campos computed)
 - `views/crm_lead_scoring_views.xml` - UI en formulario y tree
-- `tests/test_lead_scoring.py` - 7 tests de la lógica pura
+- `tests_estaticos/test_lead_scoring.py` - 7 tests de la lógica pura
 
 ---
 
@@ -76,7 +76,7 @@ Este documento resume las decisiones técnicas clave del proyecto, con enlaces a
 - `scripts/import_districthome_products.py` - Importación de productos
 - `scripts/load_product_images.py` - Carga de imágenes
 - `panel/demo_restaurar_muebles.py` - Restauración con manifiesto de 14 recuentos
-- `tests/test_verificador.py` - Tests de verificación de recuentos
+- `tests_estaticos/test_verificador.py` - Tests de verificación de recuentos
 
 ---
 
@@ -90,7 +90,7 @@ Este documento resume las decisiones técnicas clave del proyecto, con enlaces a
 
 **Referencias:**
 - `panel/panel_muebles.py` - `construir_resumen()`, `formato_numero()`, `_porcentaje()`
-- `tests/test_panel_logica.py` - 21 tests de formato y frases
+- `tests_estaticos/test_panel_logica.py` - 21 tests de formato y frases
 
 ---
 
@@ -120,8 +120,8 @@ Este documento resume las decisiones técnicas clave del proyecto, con enlaces a
 
 **Referencias:**
 - `models/mcp.py` - `MCPService`, plantillas por prioridad/señal
-- `tests/test_mcp.py` - Tests deterministas
-- `tests/test_e2e_comercial_mcp.py` - Test E2E panel → MCP
+- `tests_estaticos/test_mcp.py` - Tests deterministas
+- `tests_estaticos/test_e2e_comercial_mcp.py` - Test E2E panel → MCP
 
 ---
 
@@ -133,7 +133,7 @@ Este documento resume las decisiones técnicas clave del proyecto, con enlaces a
 
 **Referencias:**
 - `panel/panel_muebles.py` - `formato_numero()`, `_porcentaje()`
-- `tests/test_panel_logica.py` - Tests de formato
+- `tests_estaticos/test_panel_logica.py` - Tests de formato
 
 ---
 
@@ -197,7 +197,7 @@ Este documento resume las decisiones técnicas clave del proyecto, con enlaces a
 **Razón:** Confianza real. Mocks ocultan problemas de integración.
 
 **Referencias:**
-- `tests/conftest.py` - Fixtures compartidas
+- `tests_estaticos/conftest.py` - Fixtures compartidas
 - `pytest.ini` - Marcador `vivo` para tests que necesitan lab
 
 ---

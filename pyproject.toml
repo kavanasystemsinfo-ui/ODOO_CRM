@@ -85,7 +85,7 @@ follow_imports = "silent"
 minversion = "6.0"
 addopts = "-ra -q"
 testpaths = [
-    "tests",
+    "tests_estaticos",
 ]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]

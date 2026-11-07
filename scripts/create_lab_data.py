@@ -21,7 +21,8 @@ print('Company updated:', company.name)
 # ------------------------------------------------------------
 # 2. Product categories
 # ------------------------------------------------------------
-parent_categ = env['product.category'].search([('name', '=', 'Muebles de Hogar')], limit=1)
+parent_categ = (env.ref('ODOO_CRM.categoria_muebles_hogar', raise_if_not_found=False)
+                or env['product.category'].search([('name', '=', 'Muebles de Hogar')], limit=1))
 if not parent_categ:
     parent_categ = env['product.category'].create({'name': 'Muebles de Hogar'})
 
@@ -52,25 +53,41 @@ print('Categories ready:', len(categ_ids))
 # ------------------------------------------------------------
 # 3. Standard products from furniture catalog
 # ------------------------------------------------------------
-furniture_products = env['furniture.product'].search([])
+import csv
+import os
+
+# El catalogo de referencia vive en el repositorio (data/catalogo_muebles.csv).
+# Desde la v2 del modulo no hay modelo propio: cada fila crea o completa un
+# producto NATIVO con su ficha de mobiliario (campos furniture_*).
+RUTA_CATALOGO = os.environ.get(
+    'MUEBLES_CATALOGO_CSV', '/mnt/extra-addons/ODOO_CRM/data/catalogo_muebles.csv')
+with open(RUTA_CATALOGO, encoding='utf-8') as fichero:
+    furniture_products = list(csv.DictReader(fichero))
 print(f'Furniture products found: {len(furniture_products)}')
 
 created = 0
 for fp in furniture_products:
-    existing = env['product.template'].search([('name', '=', fp.name)], limit=1)
+    ficha = {
+        'furniture_material': fp['material'] or False,
+        'furniture_dimensions': fp['dimensions'] or False,
+        'furniture_style': fp['style'] or False,
+        'furniture_warranty_months': int(fp['warranty_months'] or 0),
+    }
+    existing = env['product.template'].search([('name', '=', fp['name'])], limit=1)
     if existing:
+        existing.write({k: v for k, v in ficha.items() if not existing[k]})
         continue
     vals = {
-        'name': fp.name,
-        'list_price': fp.list_price,
-        'standard_price': fp.standard_price,
-        'categ_id': categ_ids.get(fp.category, parent_categ.id),
+        'name': fp['name'],
+        'list_price': float(fp['list_price'] or 0),
+        'standard_price': float(fp['standard_price'] or 0),
+        'categ_id': categ_ids.get(fp['category'], parent_categ.id),
         'type': 'consu',
         'is_storable': True,
         'sale_ok': True,
         'purchase_ok': True,
-        'description_sale': f"{fp.description or ''} | Material: {fp.material or ''} | Dimensiones: {fp.dimensions or ''} | Estilo: {fp.style or ''} | Garantía: {fp.warranty_months or 0} meses".strip(),
-        'description': fp.description or '',
+        'description_sale': fp['description'] or '',
+        **ficha,
     }
     env['product.template'].create(vals)
     created += 1
@@ -85,24 +102,24 @@ if not stock_location:
 if stock_location:
     quants_set = 0
     for fp in furniture_products:
-        product = env['product.product'].search([('product_tmpl_id.name', '=', fp.name)], limit=1)
+        product = env['product.product'].search([('product_tmpl_id.name', '=', fp['name'])], limit=1)
         if not product:
             continue
         try:
             existing_quant = env['stock.quant'].search([('product_id', '=', product.id), ('location_id', '=', stock_location.id)], limit=1)
             if existing_quant:
-                existing_quant.inventory_quantity = fp.qty_available
+                existing_quant.inventory_quantity = float(fp['qty_available'] or 0)
                 existing_quant.action_apply_inventory()
             else:
                 quant = env['stock.quant'].create({
                     'product_id': product.id,
                     'location_id': stock_location.id,
-                    'inventory_quantity': fp.qty_available,
+                    'inventory_quantity': float(fp['qty_available'] or 0),
                 })
                 quant.action_apply_inventory()
             quants_set += 1
         except Exception as e:
-            print(f'Could not set stock for {fp.name}: {e}')
+            print(f"Could not set stock for {fp['name']}: {e}")
     print(f'Stock quants set for {quants_set} products')
 else:
     print('No internal stock location found; skipping stock setup')

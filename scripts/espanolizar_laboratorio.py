@@ -274,15 +274,12 @@ for viejo, nuevo in NOMBRES.items():
         continue
     pt.with_context(lang='en_US').write({'name': nuevo})
     renombrados += 1
-    ficha = env['furniture.product'].with_context(active_test=False).search([('name', '=', viejo)], limit=1)
-    if ficha:
-        ficha.write({'name': nuevo})
 print("productos renombrados:", renombrados, "| no encontrados:", len(sin_encontrar))
 
 # --- Categorias de eCommerce (product.public.category ya no existe en Odoo 20)
 # En Odoo 20 la categorizacion web se gestiona via product.category y website.
 # Esta seccion se comenta por ser solo cosmética de escaparate; el lab usa
-# su propio campo 'category' en furniture.product. Se puede rehacer luego
+# las categorias de product.category (raiz «Muebles de Hogar»). Se puede rehacer luego
 # con product.category si se desea categorizacion en la tienda.
 # 
 # CATEGORIAS = { ... }
@@ -323,10 +320,6 @@ if pt:
 else:
     print("no encontrado el producto:", VIEJO)
 
-ficha = env['furniture.product'].with_context(active_test=False).search([('name', '=', VIEJO)], limit=1)
-if ficha:
-    ficha.write({'name': NUEVO})
-    print("ficha del modelo %s -> %s" % (ficha.id, NUEVO))
 
 env.cr.commit()
 

@@ -26,7 +26,7 @@ def test_cada_comprobacion_tiene_su_consulta(verificador):
 def test_los_tres_catalogos_cuentan_lo_mismo(verificador):
     esperado = verificador.ESPERADO
     assert esperado["productos activos"] == esperado["productos publicados"]
-    assert esperado["productos publicados"] == esperado["referencias del modelo propio"]
+    assert esperado["productos publicados"] == esperado["productos con ficha de mobiliario"]
 
 
 def test_los_pedidos_cuadran_con_sus_estados(verificador):

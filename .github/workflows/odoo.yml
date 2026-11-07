@@ -1,0 +1,95 @@
+name: odoo
+
+# Pruebas sobre un Odoo 20 de verdad (imagen oficial), no sobre el texto del
+# código: el módulo se instala en una base vacía, se ejecutan sus pruebas
+# TransactionCase y se ensaya la actualización desde la versión 1.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "demo/**"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  ODOO_IMAGE: odoo:20
+  ODOO_DB_ARGS: --db_host 127.0.0.1 --db_port 5432 --db_user odoo --db_password odoo
+
+jobs:
+  instalacion-limpia:
+    name: Instalación limpia y pruebas del módulo
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: addons/ODOO_CRM
+      - name: Instalar ODOO_CRM en una base vacía y ejecutar sus pruebas
+        run: |
+          docker run --rm --network host -v "$PWD/addons:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo $ODOO_DB_ARGS -d limpia -i ODOO_CRM --test-tags /ODOO_CRM \
+            --stop-after-init --log-level=test 2>&1 | tee instalacion.log
+      - name: Comprobar el log (errores y pruebas)
+        run: bash addons/ODOO_CRM/ci/comprobar_log_odoo.sh instalacion.log si
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: log-instalacion
+          path: instalacion.log
+
+  migracion-v1-a-v2:
+    name: Actualización desde la versión 1 (catálogo paralelo)
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: v2/ODOO_CRM
+      - uses: actions/checkout@v4
+        with:
+          # Último commit con el catálogo paralelo furniture.product (v1).
+          ref: 5ec6960ab157d3790f97986a3b74713a29bf0a5c
+          path: v1/ODOO_CRM
+      - name: Instalar la v1
+        run: |
+          docker run --rm --network host -v "$PWD/v1:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo $ODOO_DB_ARGS -d migracion -i ODOO_CRM --stop-after-init 2>&1 | tee v1.log
+      - name: Sembrar datos como en el laboratorio público
+        run: |
+          docker run --rm -i --network host -v "$PWD/v1:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo shell $ODOO_DB_ARGS -d migracion --no-http < v2/ODOO_CRM/ci/sembrar_v1.py 2>&1 | tee siembra.log
+          grep -q SIEMBRA_V1_OK siembra.log
+      - name: Actualizar a la v2
+        run: |
+          docker run --rm --network host -v "$PWD/v2:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo $ODOO_DB_ARGS -d migracion -u ODOO_CRM --stop-after-init 2>&1 | tee v2.log
+          bash v2/ODOO_CRM/ci/comprobar_log_odoo.sh v2.log
+          grep "ODOO_CRM 2.0" v2.log
+      - name: Verificar que no se perdió ni se duplicó nada
+        run: |
+          docker run --rm -i --network host -v "$PWD/v2:/mnt/extra-addons:ro" "$ODOO_IMAGE" \
+            odoo shell $ODOO_DB_ARGS -d migracion --no-http < v2/ODOO_CRM/ci/verificar_migracion.py 2>&1 | tee verificacion.log
+          grep -q MIGRACION_OK verificacion.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs-migracion
+          path: "*.log"

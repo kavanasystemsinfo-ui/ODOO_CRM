@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Usuario de integración del panel del día: solo lee. Se asigna a un
+         usuario técnico (sin contraseña de persona) cuya clave vive en el
+         entorno del panel, nunca en el repositorio. -->
+    <record id="group_panel_lectura" model="res.groups">
+        <field name="name">Panel del día: solo lectura</field>
+        <field name="comment">Lectura de catálogo, ventas, compras, almacén, CRM y
+actividades para el panel externo. No permite crear, modificar ni borrar.</field>
+    </record>
+</odoo>

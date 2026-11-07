@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo noupdate="1">
+    <!-- Raíz del catálogo de mobiliario. En bases que ya la tenían creada a
+         mano, la migración 20.0.2.0.0 le pone este identificador en vez de
+         crear una segunda categoría con el mismo nombre. -->
+    <record id="categoria_muebles_hogar" model="product.category">
+        <field name="name">Muebles de Hogar</field>
+    </record>
+</odoo>

@@ -31,7 +31,7 @@
     ]
   },
   "catalogo": {
-    "fuente_de_verdad": "data/furniture.product.csv",
+    "fuente_de_verdad": "data/catalogo_muebles.csv",
     "origen": "District Home (Green Front Furniture), extraído con scripts/import_districthome_products.py",
     "referencias": 80,
     "categorias": [
@@ -105,7 +105,7 @@
     "fuente": "panel/demo_restaurar_muebles.py (ESPERADO), medidos con SQL antes de publicar",
     "productos activos": 80,
     "productos publicados": 80,
-    "referencias del modelo propio": 80,
+    "productos con ficha de mobiliario": 80,
     "clientes": 34,
     "proveedores": 5,
     "pedidos de venta": 56,
