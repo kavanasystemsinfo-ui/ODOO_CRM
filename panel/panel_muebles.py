@@ -485,6 +485,10 @@ class PanelHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/api/restaurar":
+            # Defensa CSRF: un formulario de otra web no puede añadir esta cabecera.
+            if self.headers.get("X-Kavana-Restaurar") != "1":
+                self._responder_json(403, {"error": "falta la cabecera de confirmación"})
+                return
             permitido, motivo = _sesion_es_admin(self.headers)
             if not permitido:
                 self._responder_json(403, {"error": motivo})

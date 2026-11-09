@@ -57,3 +57,17 @@ class TestUsuarioPanel(TransactionCase):
             env['crm.lead'].browse(self.lead.id).write({'name': 'Cambiado'})
         with self.assertRaises(AccessError):
             env['crm.lead'].browse(self.lead.id).unlink()
+
+    def test_no_puede_escribir_en_ningun_modelo_del_panel(self):
+        """La denegación vale para todos los modelos que el grupo lee, no solo crm.lead."""
+        env = self.env(user=self.usuario)
+        for modelo in MODELOS_DEL_PANEL:
+            with self.subTest(modelo=modelo):
+                with self.assertRaises(AccessError):
+                    env[modelo].create({})
+                existentes = self.env[modelo].search([], limit=1)
+                if existentes:
+                    with self.assertRaises(AccessError):
+                        env[modelo].browse(existentes.id).write({})
+                    with self.assertRaises(AccessError):
+                        env[modelo].browse(existentes.id).unlink()
