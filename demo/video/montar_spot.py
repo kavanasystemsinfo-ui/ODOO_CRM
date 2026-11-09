@@ -60,7 +60,7 @@ def tarjeta_cierre():
     dib.rounded_rectangle([ANCHO / 2 - 62, 300, ANCHO / 2 + 62, 424], radius=26, fill=(255, 112, 32))
     dib.text((ANCHO / 2, 360), "MH", font=fuente_marca, fill=(12, 12, 18), anchor="mm")
     dib.text((ANCHO / 2, 520), "Muebles del Hogar S.L.", font=fuente_titulo, fill=(240, 240, 245), anchor="mm")
-    dib.text((ANCHO / 2, 590), "Laboratorio Odoo 17 · empresa ficticia, datos de ejemplo",
+    dib.text((ANCHO / 2, 590), "Laboratorio Odoo 20 · empresa ficticia, datos de ejemplo",
              font=fuente_texto, fill=(144, 144, 168), anchor="mm")
     # regla naranja
     dib.rectangle([ANCHO / 2 - 60, 660, ANCHO / 2 + 60, 665], fill=(255, 112, 32))
@@ -77,7 +77,7 @@ def tarjeta_cierre():
 ESCENAS = [
     dict(nombre='01_landing', imagen=os.path.join(CAPTURAS, 'landing_hero.png'),
          narracion='narracion_1.ogg', respiro=1.2,
-         titulo='Una empresa de muebles, entera, sobre Odoo 17',
+         titulo='Una empresa de muebles, entera, sobre Odoo 20',
          subtitulo='Laboratorio de demostración · Kavana Systems',
          movimiento='zoom'),
     dict(nombre='02_tienda', imagen=os.path.join(CAPTURAS, 'tienda.png'),
