@@ -23,8 +23,9 @@ algo de aquí deja de ser cierto, es un fallo y se corrige el código o el texto
 |---|---|
 | Grupos | *Usuario interno* + *Panel del día: solo lectura* (`security/groups.xml`). |
 | Permisos | Solo lectura (`r`) sobre los modelos que consulta el panel (`security/ir.access.csv`). |
+| Restricciones | Los permisos de Odoo se suman entre grupos y «Usuario interno» ya puede escribir en algunos modelos (actividades, líneas de movimiento de stock). Por eso hay 17 restricciones `ir.access` sin grupo, activas solo para el grupo del panel, que cierran crear, modificar y borrar en cada modelo que lee (`security/panel_reglas.xml`). Verificado en producción el 9-nov-2026: la clave del panel recibe 403 al escribir en los 10 modelos probados. |
 | Clave | Alcance `rpc` (el único que acepta la API JSON-2 de Odoo 20) y caducidad máxima de 90 días, fijada en el grupo. Se rota cada trimestre. |
-| Prueba | `tests/test_odoo_permisos_panel.py` comprueba que lee todo lo que necesita y que no puede crear, modificar ni borrar; el CI intenta escribir por la API con su clave y exige un 403. |
+| Prueba | `tests/test_odoo_permisos_panel.py` comprueba que lee todo lo que necesita y que no puede crear, modificar ni borrar en ninguno de los 17 modelos; el CI intenta escribir por la API con su clave y exige un 403. |
 
 ## Acceso a los datos
 
