@@ -102,6 +102,7 @@ modelo nativo, permisos mínimos para una integración, migración de datos entr
 versiones y pruebas contra una instancia real.
 
 No demuestra (ver también el README): facturación y cobros, devoluciones,
-entregas parciales, fiscalidad española completa (el IVA del 21 % está
-pendiente), varios almacenes o empresas, ni la toma de requisitos, formación
+entregas parciales, la fiscalidad española completa (solo está cargado el IVA
+general del 21 %, verificado con una factura de prueba; faltan tipos reducidos,
+modelos fiscales y factura electrónica), varios almacenes o empresas, ni la toma de requisitos, formación
 y soporte propios de una implantación con usuarios reales.
