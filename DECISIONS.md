@@ -96,6 +96,14 @@ porcentajes). Si no hay clave de modelo de IA, el panel lo declara. La sección
 `muebles_plantilla`, con cookie firmada HMAC-SHA256, caducidad de 4 horas y tope
 de 3 bases simultáneas.
 
+**Estado (9-nov-2026): implementado y probado, pero no conectado a `/demo`.**
+`/demo` sigue abriendo la sesión compartida del usuario `visita`. No se conecta
+por ahora: el servidor tiene 4 GB de RAM compartidos con otros servicios (unos
+1,7 GB libres) y clonar y arrancar una base por visitante es caro; el riesgo que
+cubriría es bajo, porque `visita` no es administrador del sistema y la demo se
+restaura sola cada 30 minutos desde la instantánea. Se reabre si la demo pasa a
+tener datos que no deban compartirse o a tener tráfico real.
+
 **Código y pruebas:** `panel/sandbox.py`, `tests_estaticos/test_sandbox.py`.
 
 ---
@@ -163,10 +171,9 @@ valor por defecto. La base de datos no publica puerto. Ver
 ## Pendiente
 
 1. Renombrar los campos `x_` del CRM (migración de columnas).
-2. Llevar la v2 a la demo pública (actualizar módulo, usuario de integración,
-   nueva instantánea canónica; antes, PostgreSQL 15 → 17).
-3. Rotar la contraseña del usuario de visita, que estuvo publicada en el README.
-4. Modelar el ciclo completo (facturas, cobros, devoluciones) y una migración
+2. ~~Llevar la v2 a la demo pública~~ Hecho el 7-nov-2026 (PostgreSQL 17,
+   usuario de integración y contraseña de visita rotada).
+3. Modelar el ciclo completo (facturas, cobros, devoluciones) y una migración
    desde Excel con datos sucios.
 
-*Última actualización: 2026-11-07*
+*Última actualización: 2026-11-09*
