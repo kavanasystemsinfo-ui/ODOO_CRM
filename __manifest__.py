@@ -22,6 +22,7 @@ Laboratorio de una empresa de muebles de hogar sobre Odoo 20.
     'data': [
         'security/groups.xml',
         'security/ir.access.csv',
+        'security/panel_reglas.xml',
         'data/product_category.xml',
         'views/product_template_views.xml',
         'views/crm_lead_scoring_views.xml',

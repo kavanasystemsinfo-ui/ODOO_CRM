@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Solo lectura de verdad. Los permisos de Odoo se suman entre grupos: el usuario
+         de integración es «Usuario interno», y ese grupo ya puede escribir en algunos
+         modelos (actividades, líneas de movimiento de stock). Una regla global que
+         solo se activa para el grupo del panel cierra crear, modificar y borrar sin
+         tocar a nadie más. -->
+    <record id="regla_panel_solo_lectura_product_template" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en product.template</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_product_product" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en product.product</field>
+        <field name="model_id" ref="product.model_product_product"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_product_category" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en product.category</field>
+        <field name="model_id" ref="product.model_product_category"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_res_partner" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en res.partner</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_sale_order" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en sale.order</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_sale_order_line" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en sale.order.line</field>
+        <field name="model_id" ref="sale.model_sale_order_line"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_purchase_order" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en purchase.order</field>
+        <field name="model_id" ref="purchase.model_purchase_order"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_purchase_order_line" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en purchase.order.line</field>
+        <field name="model_id" ref="purchase.model_purchase_order_line"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_stock_picking" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en stock.picking</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_stock_picking_type" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en stock.picking.type</field>
+        <field name="model_id" ref="stock.model_stock_picking_type"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_stock_quant" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en stock.quant</field>
+        <field name="model_id" ref="stock.model_stock_quant"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_stock_location" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en stock.location</field>
+        <field name="model_id" ref="stock.model_stock_location"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_stock_move" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en stock.move</field>
+        <field name="model_id" ref="stock.model_stock_move"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_stock_move_line" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en stock.move.line</field>
+        <field name="model_id" ref="stock.model_stock_move_line"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_account_move" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en account.move</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_crm_lead" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en crm.lead</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <record id="regla_panel_solo_lectura_mail_activity" model="ir.rule">
+        <field name="name">Panel del día: solo lectura en mail.activity</field>
+        <field name="model_id" ref="mail.model_mail_activity"/>
+        <field name="domain_force">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+</odoo>
