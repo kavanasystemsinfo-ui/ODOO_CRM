@@ -163,3 +163,9 @@ def test_resumen_sin_datos_de_evolucion_no_menciona_periodos(panel):
     texto = " ".join(panel.construir_resumen(dict(CIFRAS))["frases"])
     assert "ayer" not in texto
 
+
+
+def test_la_pagina_no_pinta_datos_de_odoo_como_html(raiz):
+    """Los textos que vienen de Odoo (actividades, nombres) nunca van a innerHTML."""
+    codigo = (raiz / "panel" / "panel_muebles.py").read_text(encoding="utf-8")
+    assert "innerHTML" not in codigo

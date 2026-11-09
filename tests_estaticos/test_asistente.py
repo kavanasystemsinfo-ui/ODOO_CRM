@@ -71,3 +71,45 @@ def test_los_documentos_pesados_quedan_fuera(asistente):
 def test_la_busqueda_prioriza_el_fichero_adecuado(asistente, pregunta, esperado):
     fuentes = [f["fichero"] for f in asistente.buscar(pregunta)]
     assert any(esperado in fuente for fuente in fuentes), fuentes
+
+
+# --- Límites y secretos del asistente público (fase 1) ---
+
+def test_el_asistente_no_lee_claves_de_rutas_personales(raiz):
+    codigo = (raiz / "panel" / "asistente.py").read_text(encoding="utf-8")
+    assert "/root/.hermes" not in codigo
+
+
+def test_sin_variable_de_entorno_no_hay_clave(asistente, monkeypatch):
+    monkeypatch.delenv("MUEBLES_LLM_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    assert asistente._clave() == ""
+
+
+def test_limitador_corta_por_ip_y_se_recupera(asistente):
+    t = [1000.0]
+    lim = asistente.Limitador(por_ip_hora=2, global_dia=100, concurrentes=5, reloj=lambda: t[0])
+    for _ in range(2):
+        assert lim.pedir("1.1.1.1")[0]
+        lim.soltar()
+    assert not lim.pedir("1.1.1.1")[0]
+    assert lim.pedir("2.2.2.2")[0]  # otra IP no se ve afectada
+    lim.soltar()
+    t[0] += 3601
+    assert lim.pedir("1.1.1.1")[0]
+
+
+def test_limitador_tope_global_diario(asistente):
+    lim = asistente.Limitador(por_ip_hora=99, global_dia=2, concurrentes=5, reloj=lambda: 1.0)
+    for ip in ("a", "b"):
+        assert lim.pedir(ip)[0]
+        lim.soltar()
+    assert not lim.pedir("c")[0]
+
+
+def test_limitador_tope_de_concurrencia(asistente):
+    lim = asistente.Limitador(por_ip_hora=99, global_dia=99, concurrentes=1, reloj=lambda: 1.0)
+    assert lim.pedir("a")[0]
+    assert not lim.pedir("b")[0]  # la plaza sigue ocupada
+    lim.soltar()
+    assert lim.pedir("b")[0]

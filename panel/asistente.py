@@ -46,14 +46,57 @@ _CACHE: dict[str, Any] = {"documentos": None, "frecuencias": None}
 
 URL_MODELO = "https://openrouter.ai/api/v1/chat/completions"
 MODELO_POR_DEFECTO = os.environ.get("MUEBLES_LLM_MODEL", "openai/gpt-4o-mini")
-FICHEROS_CLAVE = (
-    "/root/.hermes/profiles/hermes2/.env",
-    "/root/.hermes/profiles/kavana/.env",
-)
+
+# Límites del asistente público: cada pregunta puede costar dinero en el proveedor.
+# Configurables por entorno; los valores por defecto son prudentes para una demo.
+POR_IP_POR_HORA = int(os.environ.get("MUEBLES_LLM_POR_IP_HORA", "10"))
+GLOBAL_POR_DIA = int(os.environ.get("MUEBLES_LLM_GLOBAL_DIA", "300"))
+CONCURRENTES = int(os.environ.get("MUEBLES_LLM_CONCURRENTES", "2"))
+MAX_CUERPO = 4096  # bytes que se aceptan en una petición a /api/preguntar
+
+
+class Limitador:
+    """Ventana deslizante por IP, tope global diario y tope de peticiones a la vez."""
+
+    def __init__(self, por_ip_hora: int, global_dia: int, concurrentes: int, reloj=None):
+        import threading
+        import time
+        self._reloj = reloj or time.time
+        self._por_ip_hora = por_ip_hora
+        self._global_dia = global_dia
+        self._ips: dict[str, list[float]] = {}
+        self._dia: list[float] = []
+        self._cerrojo = threading.Lock()
+        self._plazas = threading.BoundedSemaphore(max(1, concurrentes))
+
+    def pedir(self, ip: str) -> tuple[bool, str]:
+        """Reserva una plaza. Si devuelve (True, ''), hay que llamar a `soltar()`."""
+        ahora = self._reloj()
+        with self._cerrojo:
+            self._dia = [t for t in self._dia if ahora - t < 86400]
+            visitas = [t for t in self._ips.get(ip, []) if ahora - t < 3600]
+            if len(self._dia) >= self._global_dia:
+                return False, "El asistente ha llegado al límite de preguntas de hoy. Vuelve mañana."
+            if len(visitas) >= self._por_ip_hora:
+                return False, "Demasiadas preguntas seguidas. Prueba de nuevo dentro de un rato."
+            if not self._plazas.acquire(blocking=False):
+                return False, "El asistente está ocupado. Prueba de nuevo en unos segundos."
+            visitas.append(ahora)
+            self._ips[ip] = visitas
+            self._dia.append(ahora)
+            for clave in [k for k, v in self._ips.items() if not v or ahora - v[-1] >= 3600]:
+                del self._ips[clave]
+            return True, ""
+
+    def soltar(self) -> None:
+        self._plazas.release()
+
+
+LIMITADOR = Limitador(POR_IP_POR_HORA, GLOBAL_POR_DIA, CONCURRENTES)
 
 INSTRUCCIONES = (
     "Eres el asistente técnico del proyecto ODOO_CRM (laboratorio de empresa "
-    "ficticia de muebles sobre Odoo 17). Respondes en español, en 2 a 5 frases, "
+    "ficticia de muebles sobre Odoo 20). Respondes en español, en 2 a 5 frases, "
     "solo con lo que digan los fragmentos del repositorio que se te dan. Si la "
     "respuesta no está en los fragmentos, dilo claramente en vez de inventarla. "
     "Cita el fichero cuando uses algo concreto. No hables de temas ajenos al "
@@ -214,16 +257,6 @@ def _clave() -> str:
         valor = os.environ.get(variable, "").strip()
         if valor:
             return valor
-    for candidato in FICHEROS_CLAVE:
-        try:
-            contenido = Path(candidato).read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        for linea in contenido.splitlines():
-            if linea.startswith("OPENROUTER_API_KEY="):
-                valor = linea.split("=", 1)[1].strip().strip('"').strip("'")
-                if valor:
-                    return valor
     return ""
 
 
