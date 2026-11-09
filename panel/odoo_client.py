@@ -210,10 +210,14 @@ def recepciones_pendientes() -> int:
     return _albaranes("incoming", ESTADOS_PICKING_PENDIENTE)
 
 
-def _existencias_internas(solo_positivas: bool = True) -> list[dict]:
-    dominio = [("location_id.usage", "=", "internal")]
-    if solo_positivas:
-        dominio.append(("quantity", ">", 0))
+def _existencias_internas() -> list[dict]:
+    """Existencias reales: solo cantidades positivas en ubicaciones internas.
+
+    Una cantidad negativa es un error de datos, no stock. Todas las cifras de
+    almacén (referencias, unidades, valor y trazabilidad) usan esta misma
+    definición para que no se contradigan entre sí.
+    """
+    dominio = [("location_id.usage", "=", "internal"), ("quantity", ">", 0)]
     return _buscar("stock.quant", dominio, ["product_id", "quantity"])
 
 
@@ -233,7 +237,7 @@ def valor_almacen() -> float:
     del usuario de integración. Con una sola empresa, como en el laboratorio,
     es la misma cifra; con varias habría que fijar la empresa en el contexto.
     """
-    quants = _existencias_internas(solo_positivas=False)
+    quants = _existencias_internas()
     ids = sorted({q["product_id"][0] for q in quants if q.get("product_id")})
     if not ids:
         return 0.0
@@ -270,12 +274,16 @@ def traza_existencias_movimientos() -> dict:
 
 
 def lineas_fuera_catalogo() -> int:
-    """Líneas de venta con producto que no cuelga de «Muebles de Hogar».
+    """Líneas de venta con un producto físico que no cuelga de «Muebles de Hogar».
+
+    Los servicios (portes, instalación) no son del catálogo de muebles por
+    definición y no cuentan como línea ajena.
 
     La versión SQL comparaba con el id 127 escrito a mano; ahora se usa el
     campo is_furniture del módulo, que sigue a la categoría aunque cambie de id.
     """
     return _contar("sale.order.line", [("product_id", "!=", False),
+                                       ("product_id.type", "!=", "service"),
                                        ("product_id.is_furniture", "=", False)])
 
 

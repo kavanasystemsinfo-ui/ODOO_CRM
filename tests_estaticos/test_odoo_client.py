@@ -103,6 +103,29 @@ def test_valor_del_almacen_a_coste_estandar(cliente):
     assert cliente.valor_almacen() == 4 * 200.0 + 10 * 25.5
 
 
+def test_todas_las_cifras_de_almacen_ignoran_cantidades_negativas(cliente):
+    """Stock negativo es un error de datos: ni suma ni resta en ninguna cifra."""
+    falso = OdooFalso({("stock.quant", "search_read"): []})
+    cliente.usar(falso)
+    cliente.existencias_catalogo()
+    cliente.referencias_con_stock()
+    cliente.valor_almacen()
+    cliente.traza_existencias_movimientos()
+    quants = [ll for ll in falso.llamadas if ll[0] == "stock.quant"]
+    assert len(quants) == 4
+    for _, _, parametros in quants:
+        assert ("quantity", ">", 0) in parametros["domain"]
+
+
+def test_las_lineas_de_servicio_no_cuentan_como_fuera_de_catalogo(cliente):
+    falso = OdooFalso({("sale.order.line", "search_count"): 2})
+    cliente.usar(falso)
+    assert cliente.lineas_fuera_catalogo() == 2
+    dominio = falso.llamadas[0][2]["domain"]
+    assert ("product_id.type", "!=", "service") in dominio
+    assert ("product_id.is_furniture", "=", False) in dominio
+
+
 def test_presupuestos_viejos_a_partir_de_30_dias(cliente, monkeypatch):
     monkeypatch.setattr(cliente, "_hoy", lambda: date(2026, 11, 7))
     falso = OdooFalso({("sale.order", "search_read"): [
