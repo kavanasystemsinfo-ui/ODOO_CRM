@@ -169,3 +169,10 @@ def test_la_pagina_no_pinta_datos_de_odoo_como_html(raiz):
     """Los textos que vienen de Odoo (actividades, nombres) nunca van a innerHTML."""
     codigo = (raiz / "panel" / "panel_muebles.py").read_text(encoding="utf-8")
     assert "innerHTML" not in codigo
+
+
+def test_restaurar_exige_cabecera_anti_csrf(raiz):
+    codigo = (raiz / "panel" / "panel_muebles.py").read_text(encoding="utf-8")
+    posicion_cabecera = codigo.index("X-Kavana-Restaurar")
+    posicion_sesion = codigo.index("_sesion_es_admin(self.headers)")
+    assert posicion_cabecera < posicion_sesion, "la cabecera se exige antes de mirar la sesión"

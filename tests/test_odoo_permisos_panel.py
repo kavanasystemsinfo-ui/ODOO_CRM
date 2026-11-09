@@ -57,3 +57,27 @@ class TestUsuarioPanel(TransactionCase):
             env['crm.lead'].browse(self.lead.id).write({'name': 'Cambiado'})
         with self.assertRaises(AccessError):
             env['crm.lead'].browse(self.lead.id).unlink()
+
+    def test_no_puede_escribir_en_ningun_modelo_del_panel(self):
+        """La denegación vale para todos los modelos que el grupo lee, no solo crm.lead.
+
+        Los permisos de Odoo se suman entre grupos y «Usuario interno» ya escribe en
+        algunos modelos (actividades, líneas de movimiento de stock): por eso hay
+        reglas globales que cierran la escritura solo para el grupo del panel.
+        """
+        self.lead.activity_schedule(
+            act_type_xmlid='mail.mail_activity_data_todo', summary='Actividad de prueba')
+        env = self.env(user=self.usuario)
+        comprobados = 0
+        for modelo in MODELOS_DEL_PANEL:
+            existente = self.env[modelo].search([], limit=1)
+            if not existente:
+                continue
+            registro = env[modelo].browse(existente.id)
+            for operacion in ('create', 'write', 'unlink'):
+                with self.subTest(modelo=modelo, operacion=operacion):
+                    with self.assertRaises(AccessError):
+                        registro.check_access(operacion)
+            comprobados += 1
+        self.assertGreaterEqual(comprobados, 8, 'muy pocos modelos con datos para comprobar')
+        self.assertTrue(self.env['mail.activity'].search_count([]))
