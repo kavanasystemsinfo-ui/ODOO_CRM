@@ -1,0 +1,20 @@
+# /etc/systemd/system/muebles-panel.service
+[Unit]
+Description=Panel del dia del laboratorio de muebles (demo Kavana Systems)
+Documentation=https://muebles.kavanasystems.com/panel/
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/ODOO_CRM/panel
+EnvironmentFile=/etc/muebles/panel.env
+ExecStart=/usr/bin/python3 /root/ODOO_CRM/panel/panel_muebles.py --puerto 8081
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=muebles-panel
+
+[Install]
+WantedBy=multi-user.target

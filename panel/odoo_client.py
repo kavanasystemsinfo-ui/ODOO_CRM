@@ -413,7 +413,7 @@ CAMPOS_SENALES = {
 def oportunidades_crm() -> list[dict]:
     """Leads y oportunidades activos con el score y las señales del módulo."""
     campos = ["name", "x_score_kavana", "x_prioridad_sugerida", *CAMPOS_SENALES.values()]
-    return _buscar("crm.lead", [], campos)
+    return _buscar("crm.lead", [("type", "=", "opportunity")], campos)
 
 
 def mejor_oportunidad() -> dict | None:

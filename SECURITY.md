@@ -14,8 +14,8 @@ algo de aquí deja de ser cierto, es un fallo y se corrige el código o el texto
   panel lo dice y no lee nada (`panel/configuracion.py`).
 - `.env` está en `.gitignore`; `.env.example` lista las variables.
 - Hasta la versión 1 el README publicaba la contraseña del usuario de visita de
-  la demo. Se ha quitado, pero **sigue en el historial de git**: esa contraseña
-  debe rotarse en la demo pública.
+  la demo. Se ha quitado y sigue en el historial de git, así que se considera
+  pública. El despliegue de la v2 (7-nov-2026) la rotó en la demo.
 
 ## Usuario de integración del panel
 
@@ -63,12 +63,31 @@ aún**: `/demo` sigue abriendo la sesión del usuario `visita`. Clona una base p
 firmada HMAC-SHA256 (`MUEBLES_SECRETO`), caducidad y tope de bases simultáneas;
 los nombres de base se validan con `muebles_demo_[a-z0-9]{4,12}`.
 
+## Usuario de visita de la demo (comprobado en el servidor el 9-nov-2026)
+
+`/demo` abre sesión como `visita` sin contraseña. No es administrador del
+sistema: no está en *Settings* (`base.group_system`) ni en contabilidad. Sí es
+usuario interno con ventas (todos los leads), compras (usuario), inventario
+(responsable) y funciones técnicas (`base.group_no_one`). Puede crear y borrar
+datos de demostración; no puede instalar módulos, cambiar usuarios ni ajustes.
+Un temporizador (`scripts/systemd/muebles-restore.timer`) comprueba cada 30
+minutos el estado y restaura la instantánea si alguien lo ha tocado.
+Esto es aceptable solo con datos sintéticos: no conectar nunca datos reales.
+
+## Servidor
+
+- Los servicios están versionados en `scripts/systemd/` (`muebles-panel`,
+  `muebles-restore` y su temporizador). Se instalan copiándolos a
+  `/etc/systemd/system/` y ejecutando `systemctl daemon-reload`.
+- La demo corre sobre PostgreSQL 17 y Odoo arranca sin `--dev`.
+
 ## Pendiente
 
-- Rotar la contraseña del usuario de visita de la demo (ver arriba).
-- La demo pública devuelve trazas de Python en las respuestas de error de la
-  API (modo desarrollador o `--dev` en el servidor). Conviene desactivarlo.
-- La demo pública corre sobre PostgreSQL 15; Odoo 20 necesita 16 o superior.
+- Conectar `panel/sandbox.py` (una base por visitante) si la demo pasa a tener
+  datos que no deban compartirse.
+- El asistente del panel está sin clave de modelo en el servidor: responde con
+  los fragmentos del repositorio. Para activar la redacción por IA, poner
+  `MUEBLES_LLM_KEY` en `/etc/muebles/panel.env`.
 
 ## Si se filtra una credencial
 

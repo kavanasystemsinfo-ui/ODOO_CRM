@@ -1,0 +1,10 @@
+[Unit]
+Description=Ejecuta la restauración del laboratorio cada 30 minutos
+
+[Timer]
+OnCalendar=*:0/30
+Persistent=true
+Unit=muebles-restore.service
+
+[Install]
+WantedBy=timers.target
