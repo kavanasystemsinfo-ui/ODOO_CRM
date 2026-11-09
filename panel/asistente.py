@@ -45,7 +45,24 @@ MAX_FRAGMENTOS = 5
 _CACHE: dict[str, Any] = {"documentos": None, "frecuencias": None}
 
 URL_MODELO = "https://openrouter.ai/api/v1/chat/completions"
-MODELO_POR_DEFECTO = os.environ.get("MUEBLES_LLM_MODEL", "openai/gpt-4o-mini")
+# Solo modelos gratuitos de OpenRouter (sufijo ":free"): el asistente público no debe
+# costar dinero. Los gratuitos se saturan a menudo, así que hay una lista de respaldo:
+# se prueba cada uno en orden. `MUEBLES_LLM_MODEL` admite varios separados por comas.
+MODELOS_GRATIS = (
+    "cohere/north-mini-code:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+)
+MAX_MODELOS_POR_PREGUNTA = 3
+TIEMPO_POR_MODELO = 20
+
+
+def modelos() -> list[str]:
+    """Modelos a probar, en orden. Un modelo de pago configurado se rechaza."""
+    texto = os.environ.get("MUEBLES_LLM_MODEL", "")
+    lista = [m.strip() for m in texto.split(",") if m.strip()] or list(MODELOS_GRATIS)
+    return [m for m in lista if m.endswith(":free")][:MAX_MODELOS_POR_PREGUNTA]
+
 
 # Límites del asistente público: cada pregunta puede costar dinero en el proveedor.
 # Configurables por entorno; los valores por defecto son prudentes para una demo.
@@ -265,25 +282,26 @@ def _redactar(pregunta: str, fragmentos: list[dict]) -> tuple[str, str]:
     if not clave:
         return "", "sin-clave"
     contexto = "\n\n".join(f"[{f['fichero']}:{f['linea']}]\n{f['texto']}" for f in fragmentos)
-    cuerpo = json.dumps({
-        "model": MODELO_POR_DEFECTO,
-        "temperature": 0.2,
-        "max_tokens": 400,
-        "messages": [
-            {"role": "system", "content": INSTRUCCIONES},
-            {"role": "user", "content": f"Fragmentos del repositorio:\n\n{contexto}\n\nPregunta: {pregunta}"},
-        ],
-    }).encode("utf-8")
-    peticion = urllib.request.Request(
-        URL_MODELO, data=cuerpo,
-        headers={"Authorization": f"Bearer {clave}", "Content-Type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(peticion, timeout=45) as respuesta:
-            datos = json.loads(respuesta.read().decode("utf-8"))
-        return datos["choices"][0]["message"]["content"].strip(), "modelo"
-    except Exception:  # noqa: BLE001  (si el modelo falla, se dice; no se inventa)
-        return "", "modelo-fallo"
+    mensajes = [
+        {"role": "system", "content": INSTRUCCIONES},
+        {"role": "user", "content": f"Fragmentos del repositorio:\n\n{contexto}\n\nPregunta: {pregunta}"},
+    ]
+    for modelo in modelos():
+        cuerpo = json.dumps({"model": modelo, "temperature": 0.2, "max_tokens": 400,
+                             "messages": mensajes}).encode("utf-8")
+        peticion = urllib.request.Request(
+            URL_MODELO, data=cuerpo,
+            headers={"Authorization": f"Bearer {clave}", "Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(peticion, timeout=TIEMPO_POR_MODELO) as respuesta:
+                datos = json.loads(respuesta.read().decode("utf-8"))
+            texto = (datos["choices"][0]["message"]["content"] or "").strip()
+        except Exception:  # noqa: BLE001  (si este modelo falla, se prueba el siguiente)
+            continue
+        if texto:
+            return texto, "modelo"
+    return "", "modelo-fallo"  # nada se inventa: el llamador enseña los fragmentos
 
 
 def responder(pregunta: str) -> dict:

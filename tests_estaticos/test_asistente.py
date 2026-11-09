@@ -113,3 +113,36 @@ def test_limitador_tope_de_concurrencia(asistente):
     assert not lim.pedir("b")[0]  # la plaza sigue ocupada
     lim.soltar()
     assert lim.pedir("b")[0]
+
+
+# --- Solo modelos gratuitos, con respaldo ---
+
+def test_los_modelos_por_defecto_son_gratuitos(asistente, monkeypatch):
+    monkeypatch.delenv("MUEBLES_LLM_MODEL", raising=False)
+    lista = asistente.modelos()
+    assert lista and all(m.endswith(":free") for m in lista)
+
+
+def test_un_modelo_de_pago_configurado_se_descarta(asistente, monkeypatch):
+    monkeypatch.setenv("MUEBLES_LLM_MODEL", "openai/gpt-4o-mini, a/b:free")
+    assert asistente.modelos() == ["a/b:free"]
+
+
+def test_si_el_primer_modelo_falla_se_prueba_el_siguiente(asistente, monkeypatch):
+    import io
+    import json
+
+    monkeypatch.setenv("MUEBLES_LLM_MODEL", "uno:free,dos:free")
+    monkeypatch.setattr(asistente, "_clave", lambda: "k")
+    usados = []
+
+    def falso(peticion, timeout=None):
+        modelo = json.loads(peticion.data)["model"]
+        usados.append(modelo)
+        if modelo == "uno:free":
+            raise OSError("saturado")
+        return io.BytesIO(json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode())
+
+    monkeypatch.setattr(asistente.urllib.request, "urlopen", falso)
+    texto, origen = asistente._redactar("pregunta", [{"fichero": "f", "linea": 1, "texto": "t"}])
+    assert (texto, origen) == ("ok", "modelo") and usados == ["uno:free", "dos:free"]
