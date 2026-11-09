@@ -82,6 +82,11 @@ puede; `desplegar` hace copia de todas las bases, pasa PostgreSQL de la 15 a la
 nueva instantánea; `volver_atras` devuelve la v1 sobre el volumen original. El
 job `ensayo-despliegue` del CI lo ejecuta entero sobre una copia de la demo.
 
+## Caso de negocio
+
+[`docs/caso-de-negocio.md`](docs/caso-de-negocio.md): el proceso de la oportunidad a la
+entrega, con roles, excepciones, criterios de aceptación e indicadores.
+
 ## Decisiones
 
 - [ADR-002](docs/adr/ADR-002-modelo-nativo-y-api.md): por qué la v2 amplía
