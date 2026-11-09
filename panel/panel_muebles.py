@@ -401,6 +401,11 @@ footer{margin:20px 0;color:#9a8d80;font-size:12px}
 <footer>El panel solo lee el laboratorio. Las frases son reglas deterministas; la redacción por IA se precomputa aparte y aquí se declara.</footer>
 </main>
 <script>
+// Todo lo que viene de Odoo se pinta como texto (textContent), nunca como HTML.
+function span(clase,texto){const e=document.createElement('span');e.className=clase;e.textContent=texto;return e;}
+function caja(k,v){const q=document.createElement('div');q.className='caja';
+  const b=document.createElement('b');b.textContent=String(v);
+  q.appendChild(b);q.appendChild(document.createTextNode(k));return q;}
 fetch('api/dia').then(r=>r.json()).then(d=>{
   document.getElementById('estado').textContent = 'Leído por la API de Odoo (' + d.fuente_lectura + ')' + ' el ' + d.fecha + '. ' + d.banner;
   const f = document.getElementById('frases');
@@ -414,18 +419,19 @@ fetch('api/dia').then(r=>r.json()).then(d=>{
    ['Entregas hechas',d.entregas_hechas],['Entregas listas',d.entregas_pendientes],
    ['Recepciones hechas',d.recepciones_hechas],['Recepciones pendientes',d.recepciones_pendientes],
    ['Compras',d.compras],['Actividades',d.actividades],['Vencidas',d.vencidas]]
-   .forEach(([k,v])=>{const q=document.createElement('div');q.className='caja';
-     q.innerHTML='<b>'+v+'</b>'+k;c.appendChild(q);});
+   .forEach(([k,v])=>c.appendChild(caja(k,v)));
   const ev = document.getElementById('evolucion');
   const e = d.evolucion||{};
   [['Entregas hoy',e.entregas_hoy],['Entregas ayer',e.entregas_ayer],['Entregas 7 días',e.entregas_semana],
    ['Recepciones hoy',e.recepciones_hoy],['Recepciones ayer',e.recepciones_ayer],['Recepciones 7 días',e.recepciones_semana]]
-   .forEach(([k,v])=>{const q=document.createElement('div');q.className='caja';
-     q.innerHTML='<b>'+(v===undefined?'—':v)+'</b>'+k;ev.appendChild(q);});
+   .forEach(([k,v])=>ev.appendChild(caja(k,v===undefined?'—':v)));
   const b = document.getElementById('bandeja');
   if(!d.prioridades.length){const li=document.createElement('li');li.textContent='Nada pendiente en el tramo de atención.';b.appendChild(li);}
   d.prioridades.forEach(p=>{const li=document.createElement('li');
-    li.innerHTML='<span class="tag">'+p.tipo+'</span>'+p.texto+(p.urgente?' <span class="rojo">(vencida)</span>':'');b.appendChild(li);});
+    li.appendChild(span('tag',p.tipo));
+    li.appendChild(document.createTextNode(String(p.texto)));
+    if(p.urgente){li.appendChild(document.createTextNode(' '));li.appendChild(span('rojo','(vencida)'));}
+    b.appendChild(li);});
   const mcp = document.getElementById('mcp');
   if(d.mcp_lead){
     const li=document.createElement('li');
@@ -439,10 +445,12 @@ fetch('api/dia').then(r=>r.json()).then(d=>{
   d.salud_dato.forEach(x=>{
     const li=document.createElement('li');
     const ok = x.ok === true;
-    const nota = (x.no_aplica === true) ? ' <span class="nota">(demo: módulo no instalado)</span>' :
-                 (!ok && x.motivo && x.motivo.includes('demo')) ? ' <span class="nota">(demo: artefacto conocido)</span>' : '';
-    li.innerHTML=(ok?'':'<span class="rojo">✕ </span>')+x.campo+': '+x.valor+
-      (x.motivo?' <span class="nota">'+x.motivo+'</span>':'')+nota;
+    const nota = (x.no_aplica === true) ? '(demo: módulo no instalado)' :
+                 (!ok && x.motivo && x.motivo.includes('demo')) ? '(demo: artefacto conocido)' : '';
+    if(!ok){li.appendChild(span('rojo','✕ '));}
+    li.appendChild(document.createTextNode(x.campo+': '+x.valor));
+    if(x.motivo){li.appendChild(document.createTextNode(' '));li.appendChild(span('nota',String(x.motivo)));}
+    if(nota){li.appendChild(document.createTextNode(' '));li.appendChild(span('nota',nota));}
     s.appendChild(li);
   });
 }).catch(e=>{document.getElementById('estado').textContent='Sin conexión con el laboratorio: ' + e;});
@@ -458,6 +466,15 @@ def _carga_cache() -> dict | None:
 
 
 class PanelHandler(BaseHTTPRequestHandler):
+    def _ip_cliente(self) -> str:
+        """IP del visitante. Detrás del proxy local se usa la última de X-Forwarded-For."""
+        directa = self.client_address[0]
+        if directa in ("127.0.0.1", "::1"):
+            reenviada = self.headers.get("X-Forwarded-For", "")
+            if reenviada:
+                return reenviada.split(",")[-1].strip() or directa
+        return directa
+
     def _responder_json(self, codigo: int, datos: dict) -> None:
         cuerpo = json.dumps(datos, ensure_ascii=False).encode("utf-8")
         self.send_response(codigo)
@@ -492,15 +509,26 @@ class PanelHandler(BaseHTTPRequestHandler):
         if self.path == "/api/preguntar":
             try:
                 largo = int(self.headers.get("Content-Length", "0") or 0)
+                if largo < 0 or largo > asistente.MAX_CUERPO:
+                    self._responder_json(413, {"error": "petición demasiado grande"})
+                    return
                 cuerpo = json.loads(self.rfile.read(largo).decode("utf-8") or "{}")
+                if not isinstance(cuerpo, dict):
+                    raise ValueError("el cuerpo no es un objeto")
             except (ValueError, UnicodeDecodeError):
                 self._responder_json(400, {"error": "petición no válida"})
                 return
             pregunta = str(cuerpo.get("pregunta", "")).strip()[:400]
+            permitido, aviso = asistente.LIMITADOR.pedir(self._ip_cliente())
+            if not permitido:
+                self._responder_json(429, {"error": aviso})
+                return
             try:
                 self._responder_json(200, asistente.responder(pregunta))
-            except Exception as exc:  # noqa: BLE001
-                self._responder_json(500, {"error": f"el asistente falló: {exc}"})
+            except Exception:  # noqa: BLE001
+                self._responder_json(500, {"error": "el asistente falló"})
+            finally:
+                asistente.LIMITADOR.soltar()
             return
         self._responder_json(404, {"error": "ruta no encontrada"})
 

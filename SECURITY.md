@@ -45,9 +45,21 @@ algo de aquí deja de ser cierto, es un fallo y se corrige el código o el texto
   `MUEBLES_PANEL_HOST` diga otra cosa (en Docker, dentro del contenedor).
 - PostgreSQL no publica puerto en `docker-compose.yml`.
 
-## Sandbox por visitante
+## Panel y asistente públicos
 
-`panel/sandbox.py` clona una base por visitante desde una plantilla, con cookie
+- El panel pinta todo lo que viene de Odoo con `textContent` (nunca `innerHTML`);
+  un test lo vigila.
+- `/api/preguntar` tiene límite por IP (10/hora), tope global (300/día), tope de
+  peticiones simultáneas (2) y cuerpo máximo de 4 KB. Configurables con
+  `MUEBLES_LLM_POR_IP_HORA`, `MUEBLES_LLM_GLOBAL_DIA` y `MUEBLES_LLM_CONCURRENTES`.
+- La clave del modelo solo se lee de `MUEBLES_LLM_KEY` u `OPENROUTER_API_KEY`
+  (entorno); ya no se buscan ficheros del servidor.
+- `/api/dia` es público a propósito y solo es apto para datos sintéticos de la demo.
+
+## Sandbox por visitante (todavía no conectado)
+
+`panel/sandbox.py` está implementado y probado, pero **ningún controlador lo usa
+aún**: `/demo` sigue abriendo la sesión del usuario `visita`. Clona una base por visitante desde una plantilla, con cookie
 firmada HMAC-SHA256 (`MUEBLES_SECRETO`), caducidad y tope de bases simultáneas;
 los nombres de base se validan con `muebles_demo_[a-z0-9]{4,12}`.
 
