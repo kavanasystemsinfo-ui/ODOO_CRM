@@ -2,7 +2,7 @@
 """
 Devuelve el laboratorio de muebles (`furniture_db`) a su estado inicial.
 
-Para qué: quien visita la demo entra como administrador y puede tocar todo. Si
+Para qué: quien visita la demo entra como usuario interno con permisos amplios sobre los datos. Si
 deja la aplicación hecha un desastre, este script la devuelve al estado en que
 estaba al publicarla, sin depender de nadie.
 

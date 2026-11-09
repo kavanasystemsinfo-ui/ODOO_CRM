@@ -1,0 +1,12 @@
+# /etc/systemd/system/muebles-restore.service
+[Unit]
+Description=Restauración automática del laboratorio de demostración de muebles
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/ODOO_CRM/panel
+EnvironmentFile=/etc/muebles/panel.env
+ExecStart=/usr/bin/python3 -u /root/ODOO_CRM/panel/demo_restaurar_muebles.py --restaurar

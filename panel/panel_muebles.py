@@ -67,8 +67,8 @@ def _modulo_puro(nombre: str, fichero: str):
     return _MODULOS_PUROS[nombre]
 
 # ---------------------------------------------------------------------------
-# Reinicio del laboratorio: el visitante entra como administrador y puede
-# romper lo que quiera; el botón lo devuelve al estado inicial. Se exige la
+# Reinicio del laboratorio: el visitante entra como usuario interno con muchos
+# permisos de datos y puede romper lo que quiera; el botón lo devuelve al estado inicial. Se exige la
 # sesión del propio Odoo (y que sea administrador) para que un anónimo no
 # reinicie la demo mientras otro la usa, y hay espera mínima entre reinicios.
 # ---------------------------------------------------------------------------

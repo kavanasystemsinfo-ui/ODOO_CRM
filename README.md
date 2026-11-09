@@ -117,5 +117,6 @@ de referencia está en `data/catalogo_muebles.csv` y el orden de poblado en
 
 ## Licencia
 
-El manifiesto declara LGPL-3 (la habitual en módulos de Odoo). Falta añadir el
-fichero `LICENSE`.
+El código se publica bajo LGPL-3 (ver `LICENSE`), la habitual en módulos de Odoo.
+La licencia cubre el código; las imágenes y el catálogo son datos de demostración
+y no se ceden con ella.
