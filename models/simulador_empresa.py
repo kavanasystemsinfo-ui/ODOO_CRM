@@ -250,9 +250,10 @@ class SimuladorEmpresa(models.AbstractModel):
             return 0
         plantillas = self.env['product.template'].search(
             [('is_storable', '=', True), ('seller_ids', '=', False)], order='categ_id, id')
-        categorias = plantillas.categ_id.sorted('id')
+        # En Odoo 20 la categoría es opcional: las referencias sin ella van juntas.
+        posicion = {cid: i for i, cid in enumerate(sorted(set(plantillas.categ_id.ids)) + [False])}
         for plantilla in plantillas:
-            proveedor = proveedores[list(categorias).index(plantilla.categ_id) % len(proveedores)]
+            proveedor = proveedores[posicion[plantilla.categ_id.id] % len(proveedores)]
             self.env['product.supplierinfo'].create({
                 'partner_id': proveedor.id, 'product_tmpl_id': plantilla.id,
                 'price': plantilla.standard_price, 'min_qty': 1, 'delay': 5,
