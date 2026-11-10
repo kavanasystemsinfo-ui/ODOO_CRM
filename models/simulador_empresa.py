@@ -114,7 +114,7 @@ class SimuladorEmpresa(models.AbstractModel):
             # La base volvió al punto de guardado, pero la caché del ORM aún
             # recuerda lo que el paso hizo: se vacía para no arrastrarlo.
             self.env.invalidate_all()
-            _logger.warning('Simulador: el paso %s falló: %s', nombre, exc)
+            _logger.warning('Simulador: el paso %s falló: %s', nombre, exc, exc_info=True)
             resumen['incidencias'].append(f'{nombre}: {exc}')
             return 0
 
@@ -392,11 +392,23 @@ class SimuladorEmpresa(models.AbstractModel):
             pedido.opportunity_id.action_set_lost(lost_reason_id=motivo.id)
         return len(pedidos)
 
-    def _validar(self, albaran) -> bool:
-        for movimiento in albaran.move_ids:
-            movimiento.quantity = movimiento.product_uom_qty
+    def _validar(self, albaran, completar: bool = False) -> bool:
+        """Valida un albarán entero o no lo toca.
+
+        Salida: solo si todo está reservado (nunca se fuerza cantidad: eso deja
+        existencias negativas). Entrada (completar=True): llega lo pedido.
+        """
+        movimientos = albaran.move_ids.filtered(lambda m: m.state not in ('done', 'cancel'))
+        if not completar and any(m.quantity < m.product_uom_qty for m in movimientos):
+            return False
+        for movimiento in movimientos:
+            if completar:
+                movimiento.quantity = movimiento.product_uom_qty
             movimiento.picked = True
-        albaran.with_context(skip_backorder=True, skip_sms=True).button_validate()
+        # Sin seguimiento: el mensaje automático de «cantidad recibida» de compras
+        # falla al renderizar dentro de un tramo largo (MissingError del ORM).
+        albaran.with_context(skip_backorder=True, skip_sms=True,
+                             mail_notrack=True).button_validate()
         return albaran.state == 'done'
 
     def _entregar(self, cuantos: int) -> int:
@@ -465,7 +477,7 @@ class SimuladorEmpresa(models.AbstractModel):
         albaranes = self.env['stock.picking'].search(
             [('picking_type_code', '=', 'incoming'), ('state', '=', 'assigned'),
              ('create_date', '<', inicio_del_dia)], order='scheduled_date, id', limit=cuantos)
-        return sum(1 for albaran in albaranes if self._validar(albaran))
+        return sum(1 for albaran in albaranes if self._validar(albaran, completar=True))
 
     def _facturas_proveedor(self, cuantos: int, hoy) -> int:
         if not cuantos or not self.env['account.journal'].search(
