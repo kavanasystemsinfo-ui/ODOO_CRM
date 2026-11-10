@@ -47,6 +47,14 @@ class TestSimulador(TransactionCase):
         albaran.move_ids.quantity = 2
         albaran.move_ids.picked = True
         albaran.button_validate()
+        # Como en la demo: la salida hecha acabó en la vista del almacén, no en Clientes.
+        vista = almacen.view_location_id.id
+        cls.env.flush_all()
+        cls.env.cr.execute('UPDATE stock_move SET location_dest_id = %s WHERE picking_id = %s',
+                           (vista, albaran.id))
+        cls.env.cr.execute('UPDATE stock_move_line SET location_dest_id = %s WHERE picking_id = %s',
+                           (vista, albaran.id))
+        cls.env.invalidate_all()
         cls.pedido_heredado = heredado
         cls.lead_real = cls.env['crm.lead'].create({
             'name': 'Lead con correo de un dominio real', 'email_from': 'compras@reuters.com'})
