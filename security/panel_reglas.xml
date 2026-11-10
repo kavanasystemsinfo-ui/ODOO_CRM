@@ -107,4 +107,20 @@
         <field name="operation">cud</field>
         <field name="domain">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
     </record>
+    <!-- mail.message: el grupo del panel lo lee solo para calcular el score de los
+         leads (fecha del último contacto). Usuario interno ya concede en Mail permisos
+         condicionados sobre mensajes; estas dos restricciones dejan al panel leer
+         únicamente los mensajes de crm.lead y le cierran crear, modificar y borrar. -->
+    <record id="restriccion_panel_solo_lectura_mail_message" model="ir.access">
+        <field name="name">Panel del día: solo lectura en mail.message</field>
+        <field name="model_id" ref="mail.model_mail_message"/>
+        <field name="operation">cud</field>
+        <field name="domain">[(0, '=', 1)] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+    </record>
+    <record id="restriccion_panel_mail_message_solo_leads" model="ir.access">
+        <field name="name">Panel del día: solo mensajes de leads</field>
+        <field name="model_id" ref="mail.model_mail_message"/>
+        <field name="operation">r</field>
+        <field name="domain">[('model', '=', 'crm.lead')] if user.has_group('ODOO_CRM.group_panel_lectura') else [(1, '=', 1)]</field>
+    </record>
 </odoo>

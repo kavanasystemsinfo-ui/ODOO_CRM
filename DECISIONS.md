@@ -52,7 +52,7 @@ al leer) y todos declaran `@api.depends`.
 | `proyecto_referenciado` | 20 | Marcada por el comercial |
 | `muestra_pedida` | 30 | Marcada por el comercial |
 | `email_corporativo` | 10 | Dominio del email no gratuito |
-| `contacto_reciente` | 15 | Correo, mensaje al cliente o actividad **hecha** en los últimos 7 días |
+| `contacto_reciente` | 15 | Correo, mensaje al cliente o actividad **hecha** en los últimos 7 días (registrado en Odoo; no confirma que el cliente lo leyera) |
 
 **Por qué así el contacto:** en la v1 se usaba la fecha límite de las
 actividades, y una llamada planificada para mañana contaba como contacto hecho.

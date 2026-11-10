@@ -53,7 +53,7 @@
   <div class="tres-columnas">
     <div class="tarjeta">
       <h4>Almacén que nunca miente</h4>
-      <p>2.190 unidades en existencia, cada una trazada a un movimiento real — diferencia con el libro siempre 0.</p>
+      <p>2.190 unidades en existencia, todas en referencias con movimientos de almacén registrados.</p>
     </div>
     <div class="tarjeta">
       <h4>Decisiones claras cada mañana</h4>
@@ -80,7 +80,7 @@
       <ul>
         <li>Módulo propio <code>furniture.product</code> con 80 productos de ejemplo</li>
         <li>Tienda online publicada y coherente con el catálogo</li>
-        <li>Almacén con movimiento trazado que cuadra con el libro</li>
+        <li>Almacén con movimientos registrados en cada referencia con existencias</li>
         <li>Panel del día (servicio propio, solo lectura) que muestra qué necesita decisión hoy</li>
         <li>Asistente técnico IA que responde solo con lo que hay en el repositorio (README, tests, panel, scripts)</li>
         <li>Tests automatizados: 66 pytest + verificador de 14 recuentos</li>
@@ -92,7 +92,7 @@
       <h3>Por qué se ha hecho</h3>
       <p>Para demostrar <strong>capacidad real de montar un ERP de empresa</strong> —y no una maqueta— con criterio de ingeniería:</p>
       <ul>
-        <li><strong>Datos que cuadran:</strong> el almacén no se "ajusta" a ojo; cada unidad está respaldada por un movimiento trazado</li>
+        <li><strong>Datos que cuadran:</strong> el almacén no se "ajusta" a ojo; cada referencia con existencias tiene movimientos registrados</li>
         <li><strong>IA honesta:</strong> el asistente nunca inventa; si no hay datos o clave de modelo, lo dice explícitamente</li>
         <li><strong>Todo verificable:</strong> cada afirmación puede comprobarse en el laboratorio o ejecutando los tests</li>
         <li><strong>Entorno aislado y reseteable:</strong> puedes trastear sin miedo porque vuelve solo a su estado inicial</li>
@@ -147,7 +147,7 @@ respaldo movimientos . 2.190
   <div class="grid">
     <div class="ficha"><span class="etiqueta">MODELO</span><h4>Catálogo coherente</h4><p>80 productos con identificadores correlativos, precio, coste, categoría, material, estilo, garantía y descripción. Los tres catálogos (propio, estándar, tienda) muestran lo mismo.</p><span class="estado">VERIFICADO</span></div>
     <div class="ficha"><span class="etiqueta">TIENDA</span><h4>Escaparate publicable</h4><p>Tienda online en español, con nueve secciones propias, precios en euros y ficha de producto con su fotografía.</p><span class="estado">VERIFICADO</span></div>
-    <div class="ficha"><span class="etiqueta">ALMACÉN</span><h4>Existencias cuadradas</h4><p>2.190 unidades respaldadas al 100 % por movimientos trazados. Cuando hubo un descuadre, se buscó la causa y se cerró: no se ajustó a ojo.</p><span class="estado">VERIFICADO</span></div>
+    <div class="ficha"><span class="etiqueta">ALMACÉN</span><h4>Existencias con movimientos</h4><p>Las 80 referencias con existencias (2.190 unidades) tienen movimientos de almacén registrados. No es una conciliación unidad a unidad. Cuando hubo un descuadre, se buscó la causa y se cerró: no se ajustó a ojo.</p><span class="estado">VERIFICADO</span></div>
     <div class="ficha"><span class="etiqueta">VENTAS</span><h4>Pedidos y compras con historia</h4><p>56 pedidos de venta (37 confirmados y 19 presupuestos), 11 pedidos de compra, 48 albaranes y un almacén con entregas hechas, listas y recepciones pendientes.</p><span class="estado">VERIFICADO</span></div>
     <div class="ficha"><span class="etiqueta">ESPAÑOL</span><h4>Idioma, moneda e impuestos</h4><p>Español cargado y por defecto, euro como única moneda, IVA del 21 % aplicado a productos, pedidos y compras, y empresa con dirección y NIF de laboratorio.</p><span class="estado">VERIFICADO</span></div>
     <div class="ficha"><span class="etiqueta">LIMPIEZA</span><h4>Sin restos de la demo</h4><p>Retirado el catálogo genérico y sus facturas, renombrados los socios heredados, sustituidas las categorías de la demo y pasadas a español las oportunidades y actividades.</p><span class="estado">VERIFICADO</span></div>
@@ -268,7 +268,7 @@ respaldo movimientos . 2.190
 <pre>Oficina (Odoo 17)                Tienda pública
   │ ventas, compras, CRM            │ pedidos del escaparate
   ▼                                 ▼
-PostgreSQL 15  ──  furniture_db (contabilidad, almacén con movimiento trazado)
+PostgreSQL 15  ──  furniture_db (contabilidad, almacén con movimientos registrados)
   │
   ├──►  Panel del día (servicio propio, solo lee)  ──►  «qué toca hoy» y salud del dato
   │

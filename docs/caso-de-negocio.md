@@ -23,7 +23,7 @@ Problemas que el proceso intenta resolver:
 |---|---|---|---|---|
 | 1 | Entra una oportunidad | Se crea en CRM con cliente, email y las señales comerciales (contract, proyecto referenciado, muestra pedida) | Comercial | Pipeline de CRM |
 | 2 | Se puntúa | El módulo calcula un score de 0 a 100 al cambiar cualquier señal y sugiere prioridad | Odoo (automático) | Ficha del lead y panel del día |
-| 3 | Se actúa | El comercial sigue la sugerencia, registra correos y actividades; el contacto reciente solo cuenta con correos, mensajes al cliente y actividades hechas | Comercial | Chatter del lead |
+| 3 | Se actúa | El comercial sigue la sugerencia, registra correos y actividades; el contacto reciente solo cuenta con correos, mensajes al cliente y actividades hechas (comunicación registrada en Odoo, no entrega confirmada) | Comercial | Chatter del lead |
 | 4 | Presupuesto | Se crea el presupuesto con productos del catálogo nativo | Comercial | Ventas, presupuestos |
 | 5 | Pedido | El cliente acepta y el presupuesto se confirma como pedido de venta | Comercial | Ventas, pedidos |
 | 6 | Compra | Si falta stock, se pide al proveedor con un pedido de compra | Compras | Compras |

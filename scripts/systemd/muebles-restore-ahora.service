@@ -1,0 +1,16 @@
+# /etc/systemd/system/muebles-restore-ahora.service
+# Restauración incondicional, la que pide el botón «Reiniciar» del panel.
+# El panel no es root: la arranca con «sudo -n systemctl start» gracias a la
+# regla estrecha de muebles-panel.sudoers, y no puede pasarle argumentos.
+[Unit]
+Description=Restauración inmediata del laboratorio de muebles (botón del panel)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/ODOO_CRM/panel
+EnvironmentFile=/etc/muebles/panel.env
+Environment=MUEBLES_PANEL_CACHE=/var/cache/muebles-panel
+ExecStart=/usr/bin/python3 -u /root/ODOO_CRM/panel/demo_restaurar_muebles.py --restaurar --sin-refrescar-panel

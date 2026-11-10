@@ -77,9 +77,15 @@ Esto es aceptable solo con datos sintéticos: no conectar nunca datos reales.
 
 ## Servidor
 
-- Los servicios están versionados en `scripts/systemd/` (`muebles-panel`,
-  `muebles-restore` y su temporizador). Se instalan copiándolos a
-  `/etc/systemd/system/` y ejecutando `systemctl daemon-reload`.
+- Los servicios están versionados en `scripts/systemd/`; la instalación paso a
+  paso está en [`scripts/systemd/LEEME.md`](scripts/systemd/LEEME.md).
+- El panel, que es lo expuesto detrás del proxy, corre con el usuario de sistema
+  `muebles-panel`, sin shell: ve el código en solo lectura y solo escribe en su
+  caché. No toca Docker ni la base. Lo único privilegiado que puede hacer es
+  `sudo systemctl start muebles-restore-ahora.service` (regla de sudo de una
+  línea, sin argumentos libres); esa unidad, como root, es la que restaura.
+- El temporizador lanza `limpieza_automatica.sh`: primero verifica los recuentos
+  en solo lectura y solo restaura si no cuadran. Una demo intacta no se para.
 - La demo corre sobre PostgreSQL 17 y Odoo arranca sin `--dev`.
 
 ## Pendiente

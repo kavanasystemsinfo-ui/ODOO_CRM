@@ -1,4 +1,10 @@
 # /etc/systemd/system/muebles-panel.service
+# El panel es la parte expuesta a Internet (detrás del proxy), así que no corre
+# como root. Usuario de sistema sin shell; ve el checkout en solo lectura en
+# /opt/ODOO_CRM (bind mount; lee panel/, models/ y docs/) y solo escribe en
+# su caché (/var/cache/muebles-panel).
+# Para restaurar no toca Docker: arranca muebles-restore-ahora.service con la
+# regla de sudo de muebles-panel.sudoers. Instalación en scripts/systemd/LEEME.md.
 [Unit]
 Description=Panel del dia del laboratorio de muebles (demo Kavana Systems)
 Documentation=https://muebles.kavanasystems.com/panel/
@@ -7,11 +13,21 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/root/ODOO_CRM/panel
+User=muebles-panel
+Group=muebles-panel
+BindReadOnlyPaths=/root/ODOO_CRM:/opt/ODOO_CRM
+WorkingDirectory=/opt/ODOO_CRM/panel
 EnvironmentFile=/etc/muebles/panel.env
-ExecStart=/usr/bin/python3 /root/ODOO_CRM/panel/panel_muebles.py --puerto 8081
+Environment=MUEBLES_PANEL_CACHE=/var/cache/muebles-panel
+Environment=MUEBLES_RESTORE_UNIT=muebles-restore-ahora.service
+CacheDirectory=muebles-panel
+ExecStart=/usr/bin/python3 /opt/ODOO_CRM/panel/panel_muebles.py --puerto 8081
 Restart=always
 RestartSec=5
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=muebles-panel

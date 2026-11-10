@@ -1,0 +1,4 @@
+# /etc/sudoers.d/muebles-panel  (instalar con: visudo -cf este_fichero && install -m 0440)
+# Lo único que el panel puede hacer como root: arrancar la restauración inmediata.
+# Sin comodines ni argumentos libres; la unidad decide qué se ejecuta.
+muebles-panel ALL=(root) NOPASSWD: /usr/bin/systemctl start muebles-restore-ahora.service
