@@ -74,9 +74,10 @@ class TestEscaparate(TransactionCase):
         # Ajustes/Técnico queda fuera: el usuario de visita real no tiene
         # «Características técnicas» (_preparar_visita se las quita), y esos menús
         # fallan igual sin escaparate para cualquier usuario no administrador.
-        tecnico = self.env.ref('base.menu_custom')
+        tecnico = self.env['ir.ui.menu'].search(
+            [('id', 'child_of', self.env.ref('base.menu_custom').id)])
         menus = self.env['ir.ui.menu'].with_user(self.visita).search(
-            [('action', '!=', False), ('id', 'not child_of', tecnico.id)])
+            [('action', '!=', False), ('id', 'not in', tecnico.ids)])
         errores, recorridos = [], 0
         for menu in menus:
             accion = menu.sudo().action
