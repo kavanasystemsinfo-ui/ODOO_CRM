@@ -56,7 +56,8 @@ def _python_falso(carpeta: Path, verificar_sale: int) -> Path:
 
 def _limpiar(raiz: Path, tmp_path: Path, verificar_sale: int) -> tuple[int, list[str]]:
     registro = _python_falso(tmp_path, verificar_sale)
-    entorno = {**os.environ, "PY": (tmp_path / "python_falso").as_posix(), "LOG": ""}
+    entorno = {**os.environ, "PY": (tmp_path / "python_falso").as_posix(), "LOG": "",
+               "MUEBLES_CERROJO": (tmp_path / "cerrojo").as_posix()}
     proceso = subprocess.run([BASH, (raiz / "panel" / "limpieza_automatica.sh").as_posix()],
                              env=entorno, capture_output=True, text=True, timeout=30)
     ordenes = registro.read_text(encoding="utf-8").splitlines() if registro.exists() else []

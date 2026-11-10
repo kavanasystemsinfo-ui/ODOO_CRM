@@ -80,9 +80,11 @@ ejecuta el CI sobre Odoo 20 real:
 
 ## Indicadores
 
-Lo que el panel del día muestra hoy, leído por la API JSON-2:
+Estado de publicación (antes de que el simulador empezara a trabajar, ver
+[ADR-003](adr/ADR-003-empresa-viva.md)). Las cifras de hoy las da el panel
+del día, leídas por la API JSON-2:
 
-| Indicador | Valor canónico de la demo |
+| Indicador | Valor al publicar |
 |---|---|
 | Productos publicados | 80 |
 | Clientes / proveedores | 34 / 5 |

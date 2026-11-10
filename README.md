@@ -20,6 +20,7 @@ productiva.** Demo pública: <https://odoocrm.kavanasystems.com>.
 | Seguridad Odoo 20 | Grupo «Panel del día: solo lectura» con permisos `r` en el formato `ir.access` de Odoo 20 y claves API de 90 días como máximo. | `security/` |
 | Migración de datos | `migrations/20.0.2.0.0/`: pasa los datos del catálogo paralelo de la v1 a los productos nativos, guarda una copia de la tabla antigua y no duplica la categoría raíz. | `migrations/` |
 | Panel del día | Servidor HTTP (librería estándar) que resume el día en lenguaje de negocio. Lee **solo** por la API JSON-2 de Odoo con el usuario de integración: ni SQL ni contraseñas. | `panel/panel_muebles.py`, `panel/odoo_client.py` |
+| Empresa viva | Simulador por tramos (3 al día, L-V, y el sábado): leads, correos de clientes, llamadas, presupuestos, entregas, facturas, cobros, compras y recepciones, siempre con los métodos de negocio de Odoo y comprobando la coherencia al final. Reproducible, idempotente y sin correos reales posibles. Ver [ADR-003](docs/adr/ADR-003-empresa-viva.md). | `models/simulador_empresa.py`, `panel/jornada.sh` |
 | Sugerencias comerciales | Plantillas deterministas que proponen la siguiente acción según el score. Es una capa preparada para enchufar un modelo de IA; **no es un servidor MCP** (el nombre `mcp.py` es histórico). | `models/mcp.py` |
 
 ## Cómo se comprueba
@@ -98,9 +99,9 @@ entrega, con roles, excepciones, criterios de aceptación e indicadores.
 
 Para que nadie lo confunda con una implantación real:
 
-- No modela el ciclo completo: facturación y cobros, pagos parciales,
-  facturas rectificativas, devoluciones, entregas parciales o cancelaciones
-  con stock reservado.
+- El ciclo que simula es el feliz: factura de lo entregado y cobro completo.
+  No hay pagos parciales, facturas rectificativas, devoluciones, entregas
+  parciales ni cancelaciones con stock reservado.
 - Un solo almacén y una sola empresa; sin unidades de medida alternativas,
   lotes ni valoración de inventario.
 - No hay migración desde otro sistema (Excel, Holded, otro ERP) con datos
@@ -108,7 +109,8 @@ Para que nadie lo confunda con una implantación real:
 - Los campos del CRM usan el prefijo `x_`, que en Odoo se reserva a campos
   creados desde la interfaz. Renombrarlos es una migración de columnas que
   queda pendiente.
-- La demo pública se restaura cada media hora desde una instantánea SQL
+- La demo pública se comprueba cada media hora y, si un visitante la ha
+  cambiado, se restaura desde la instantánea del último tramo simulado
   (`panel/demo_restaurar_muebles.py`); es operación del servidor, no
   integración con Odoo.
 

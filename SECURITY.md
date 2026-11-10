@@ -84,6 +84,9 @@ Esto es aceptable solo con datos sintéticos: no conectar nunca datos reales.
   caché. No toca Docker ni la base. Lo único privilegiado que puede hacer es
   `sudo systemctl start muebles-restore-ahora.service` (regla de sudo de una
   línea, sin argumentos libres); esa unidad, como root, es la que restaura.
+- Todos los correos de la demo usan dominios reservados (`.example`): el
+  simulador sustituye en cada tramo cualquier dirección real, también la que
+  escriba un visitante, y borra sin enviar los correos que deje en cola.
 - El temporizador lanza `limpieza_automatica.sh`: primero verifica los recuentos
   en solo lectura y solo restaura si no cuadran. Una demo intacta no se para.
 - La demo corre sobre PostgreSQL 17 y Odoo arranca sin `--dev`.

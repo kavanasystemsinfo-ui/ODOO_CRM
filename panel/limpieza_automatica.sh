@@ -5,8 +5,8 @@
 # a su estado inicial SOLO si alguien la ha tocado de verdad, así que un
 # laboratorio intacto no se reinicia ni se interrumpe a quien la esté viendo.
 #
-# Cómo: primero comprueba los recuentos del estado inicial (solo lectura). Si
-# cuadran, no hace nada. Si no cuadran, restaura desde la instantánea canónica.
+# Cómo: primero comprueba los recuentos de la instantánea vigente (solo
+# lectura). Si cuadran, no hace nada. Si no, restaura desde esa instantánea.
 #
 # Lo ejecuta muebles-restore.service cada media hora (muebles-restore.timer).
 # Bajo systemd escribe en el journal; con LOG=/ruta escribe en ese fichero.
@@ -20,6 +20,12 @@ LOG="${LOG:-}"
 registrar() {
   if [ -n "$LOG" ]; then cat >>"$LOG"; else cat; fi
 }
+
+CERROJO="${MUEBLES_CERROJO:-/run/muebles-laboratorio.lock}"
+
+# Mismo cerrojo que jornada.sh: mientras se simula un tramo no se restaura.
+exec 9>"$CERROJO"
+flock -w 900 9 || { echo "$(date -Is) otra operación sigue en marcha; se deja para la próxima" | registrar; exit 0; }
 
 VERIFICACION="$(mktemp)"
 trap 'rm -f "$VERIFICACION"' EXIT

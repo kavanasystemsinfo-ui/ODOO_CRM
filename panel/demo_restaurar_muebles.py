@@ -15,12 +15,21 @@ Uso:
     python3 demo_restaurar_muebles.py --dry-run      # imprime los comandos, no ejecuta
     python3 demo_restaurar_muebles.py --restaurar    # restaura (para Odoo ~1 min)
     python3 demo_restaurar_muebles.py --verificar    # compara los recuentos reales
+    python3 demo_restaurar_muebles.py --fijar-instantanea  # el estado actual pasa a ser el canónico
+
+La empresa simulada crece cada tramo (models/simulador_empresa.py), así que el
+«estado inicial» se mueve: tras cada tramo se fija una instantánea nueva y sus
+recuentos se guardan al lado (<instantánea>.recuentos.json). El verificador
+compara contra esos recuentos; ESPERADO solo es el estado de publicación, el
+que vale si todavía no hay fichero de recuentos.
 """
 
 from __future__ import annotations
 
 import argparse
 import gzip
+import json
+import os
 import subprocess
 import sys
 import time
@@ -70,6 +79,61 @@ ESPERADO = {
     "actividades": 30,
     "unidades en almacén": 2190,
 }
+
+
+def ruta_recuentos() -> Path:
+    return Path(str(configuracion.snapshot()) + ".recuentos.json")
+
+
+def esperado() -> dict[str, int]:
+    """Recuentos de la instantánea vigente; si no hay fichero, los de publicación."""
+    try:
+        datos = json.loads(ruta_recuentos().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return dict(ESPERADO)
+    recuentos = datos.get("recuentos", {})
+    if set(recuentos) != set(MANIFIESTO) or not all(isinstance(v, int) for v in recuentos.values()):
+        return dict(ESPERADO)
+    return recuentos
+
+
+def medir() -> dict[str, int]:
+    return {nombre: _sql(consulta) for nombre, consulta in MANIFIESTO.items()}
+
+
+def fijar_instantanea() -> int:
+    """El estado actual pasa a ser el canónico: volcado nuevo y sus recuentos.
+
+    Se mide antes y después del volcado: si cambian, alguien escribió a la vez
+    y no se fija nada (la instantánea anterior sigue valiendo).
+    """
+    destino = configuracion.snapshot()
+    nueva = Path(str(destino) + ".nueva")
+    antes = medir()
+    volcado = _ejecutar([configuracion.docker(), "exec", configuracion.contenedor_bd(),
+                         "pg_dump", "-U", "odoo", "-d", configuracion.base_de_datos()])
+    if volcado.returncode != 0 or not volcado.stdout:
+        print(f"fallo en pg_dump: {volcado.stderr.decode()[:300]}")
+        return 1
+    despues = medir()
+    if antes != despues:
+        print("la base cambió durante el volcado; no se fija la instantánea")
+        return 1
+    with gzip.open(nueva, "wb") as f:
+        f.write(volcado.stdout)
+    with gzip.open(nueva, "rb") as f:
+        while f.read(1 << 20):
+            pass
+    if destino.exists():
+        os.replace(destino, Path(str(destino) + ".anterior"))
+    os.replace(nueva, destino)
+    temporal = Path(str(ruta_recuentos()) + ".nuevo")
+    temporal.write_text(json.dumps({"fijada": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                    "recuentos": despues}, ensure_ascii=False, indent=1),
+                        encoding="utf-8")
+    os.replace(temporal, ruta_recuentos())
+    print(f"instantánea fijada ({destino.stat().st_size / 1e6:.1f} MB): {despues}")
+    return 0
 
 
 def _ejecutar(comando: list[str], entrada: bytes | None = None) -> subprocess.CompletedProcess:
@@ -224,20 +288,21 @@ def restaurar(sin_refrescar_panel: bool = False) -> int:
 
 
 def verificar() -> int:
-    """Lee los recuentos reales por SQL y los compara con el manifiesto."""
+    """Lee los recuentos reales por SQL y los compara con la instantánea vigente."""
     fallos = []
+    referencia = esperado()
     for nombre, consulta in MANIFIESTO.items():
-        esperado = ESPERADO[nombre]
+        esperado_aqui = referencia[nombre]
         try:
             actual = _sql(consulta)
         except Exception as exc:  # noqa: BLE001
             fallos.append(f"{nombre}: no se puede contar ({exc})")
-            print(f"  {nombre:32s} {'?':>7} (esperado {esperado}) NO SE PUEDE LEER")
+            print(f"  {nombre:32s} {'?':>7} (esperado {esperado_aqui}) NO SE PUEDE LEER")
             continue
-        estado = "OK" if actual == esperado else "NO CUADRA"
-        print(f"  {nombre:32s} {actual:>7} (esperado {esperado}) {estado}")
-        if actual != esperado:
-            fallos.append(f"{nombre}: {actual} frente a {esperado}")
+        estado = "OK" if actual == esperado_aqui else "NO CUADRA"
+        print(f"  {nombre:32s} {actual:>7} (esperado {esperado_aqui}) {estado}")
+        if actual != esperado_aqui:
+            fallos.append(f"{nombre}: {actual} frente a {esperado_aqui}")
     if fallos:
         print("VERIFICACIÓN CON DIFERENCIAS:")
         for f in fallos:
@@ -270,6 +335,8 @@ def main() -> int:
     parser.add_argument("--sin-refrescar-panel", action="store_true",
                         help="no reinicia el servicio del panel (lo usa el propio panel)")
     parser.add_argument("--verificar", action="store_true")
+    parser.add_argument("--fijar-instantanea", action="store_true",
+                        help="el estado actual pasa a ser el canónico (tras simular un tramo)")
     args = parser.parse_args()
 
     if args.dry_run:
@@ -280,6 +347,8 @@ def main() -> int:
         return restaurar(sin_refrescar_panel=args.sin_refrescar_panel)
     if args.verificar:
         return verificar()
+    if args.fijar_instantanea:
+        return fijar_instantanea()
     if args.estado:
         return estado()
     parser.print_help()
