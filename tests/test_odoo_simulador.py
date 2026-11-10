@@ -58,6 +58,9 @@ class TestSimulador(TransactionCase):
         cls.pedido_heredado = heredado
         cls.lead_real = cls.env['crm.lead'].create({
             'name': 'Lead con correo de un dominio real', 'email_from': 'compras@reuters.com'})
+        cls.nota_real = cls.lead_real.message_post(
+            body='Escribir a ErikNFrench@armyspy.com o a info@hotelmorella.example',
+            message_type='comment', subtype_xmlid='mail.mt_note')
 
     def _tramos(self, desde: date, dias: int):
         for d in range(dias):
@@ -106,6 +109,8 @@ class TestSimulador(TransactionCase):
         self.assertFalse(self.env['stock.quant'].search_count(
             [('location_id.usage', '=', 'internal'), ('quantity', '<', 0)]))
         self.assertTrue(plan.es_email_ficticio(self.lead_real.email_from))
+        self.assertNotIn('armyspy', str(self.nota_real.body))
+        self.assertIn('info@hotelmorella.example', str(self.nota_real.body))
         self.assertFalse(self.env['mail.mail'].search_count([('state', '=', 'outgoing')]))
         # Lo facturado salió del almacén: ningún pedido facturado sin entrega hecha.
         facturados = self.env['sale.order'].search([('invoice_ids', '!=', False)])
