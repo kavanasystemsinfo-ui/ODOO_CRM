@@ -35,6 +35,7 @@ from psycopg2 import errors as pg_errors
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
+from . import simulador_datos as datos
 from . import simulador_plan as plan
 
 _logger = logging.getLogger(__name__)
@@ -82,6 +83,7 @@ class SimuladorEmpresa(models.AbstractModel):
         nuevos = {'leads': [], 'pedidos': []}
         pasos = (
             ('correos_saneados', self._correos_ficticios),
+            ('datos_coherentes', self._coherencia_datos),
             ('albaranes_reparados', self._reparar_albaranes),
             ('albaranes_vinculados', self._vincular_albaranes),
             ('entregas_corregidas', self._corregir_destino_entregas),
@@ -396,17 +398,30 @@ class SimuladorEmpresa(models.AbstractModel):
             [('type', '=', 'lead'), ('id', 'not in', nuevos['leads'])],
             order='create_date, id', limit=cuantos)
         for lead in leads:
-            socio = lead.partner_id or self.env['res.partner'].create({
-                'name': lead.partner_name or lead.contact_name or lead.name,
-                'is_company': bool(lead.partner_name),
-                'email': lead.email_from,
-                'phone': lead.phone,
-            })
+            socio = lead.partner_id or self._crear_cliente(lead)
             lead.write({'type': 'opportunity', 'partner_id': socio.id,
                         'stage_id': calificado.id, 'email_from': lead.email_from})
             lead.message_post(body=_('Cualificado: hay proyecto y presupuesto.'),
                               message_type='comment', subtype_xmlid='mail.mt_note')
         return len(leads)
+
+    def _crear_cliente(self, lead):
+        """Empresa con su persona de contacto, o un particular si no hay empresa."""
+        Socios = self.env['res.partner']
+        persona = lead.contact_name or plan.persona(plan.generador(f'crm.lead/{lead.id}'))
+        empresa_nombre = lead.partner_name or datos.empresa_del_titulo(lead.name)
+        if not empresa_nombre:
+            particular = Socios.create({'name': persona, 'email': lead.email_from,
+                                        'phone': lead.phone})
+            self._datos_contacto(particular)
+            return particular
+        dominio = plan.dominio_ficticio(empresa_nombre)
+        empresa = Socios.create({'name': empresa_nombre, 'is_company': True,
+                                 'email': plan.email_ficticio('info', dominio)})
+        self._datos_contacto(empresa)
+        return Socios.create({'name': persona, 'parent_id': empresa.id, 'type': 'contact',
+                              'email': lead.email_from or plan.email_ficticio(persona, dominio),
+                              'phone': lead.phone})
 
     def _productos_con_stock(self):
         return self.env['product.product'].search(
