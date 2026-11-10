@@ -71,7 +71,12 @@ class TestEscaparate(TransactionCase):
 
     def test_recorre_todos_los_menus_como_visitante(self):
         """Cada menú con acción de ventana: vistas y lista se cargan sin error."""
-        menus = self.env['ir.ui.menu'].with_user(self.visita).search([('action', '!=', False)])
+        # Ajustes/Técnico queda fuera: el usuario de visita real no tiene
+        # «Características técnicas» (_preparar_visita se las quita), y esos menús
+        # fallan igual sin escaparate para cualquier usuario no administrador.
+        tecnico = self.env.ref('base.menu_custom')
+        menus = self.env['ir.ui.menu'].with_user(self.visita).search(
+            [('action', '!=', False), ('id', 'not child_of', tecnico.id)])
         errores, recorridos = [], 0
         for menu in menus:
             accion = menu.sudo().action
