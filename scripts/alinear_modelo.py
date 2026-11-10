@@ -17,6 +17,8 @@ import csv
 import re
 import unicodedata
 
+from odoo.addons.ODOO_CRM.models import simulador_datos as datos  # noqa: E402
+
 SINGULAR = {
     'sofas': 'Sofá', 'mesas': 'Mesa', 'sillas': 'Silla', 'camas': 'Cama',
     'armarios': 'Armario', 'estanterias': 'Estantería', 'escritorios': 'Escritorio',
@@ -87,9 +89,12 @@ for indice, plantilla in enumerate(catalogo, start=1):
     material = clasificar(texto, MATERIALES, 'madera')
     estilo = clasificar(texto, ESTILOS, 'moderno')
     dimensiones = medidas(plantilla.description_sale or plantilla.description or '')
-    nombre = SINGULAR.get(clave_categoria, 'Mueble')
+    # El sustantivo sale del nombre del producto («Sillón…», no «Silla») y el
+    # participio concuerda («Mesa… fabricada»); si el nombre dice el material, manda.
+    nombre, genero = datos.sustantivo(plantilla.name)
+    material = datos.material_del_nombre(plantilla.name) or material
     garantia = 24
-    descripcion = '%s de estilo %s fabricado en %s.' % (nombre, estilo, material)
+    descripcion = '%s de estilo %s %s en %s.' % (nombre, estilo, datos.participio(genero), material)
     if dimensiones:
         descripcion += ' Dimensiones: %s cm.' % dimensiones
     descripcion += ' Garantía de %d meses.' % garantia

@@ -1,81 +1,81 @@
 id,name,category,list_price,standard_price,qty_available,material,dimensions,style,warranty_months,description
 furniture_product_001,Banco auxiliar Anna,bancos,727.1,436.26,27,Latón,,Moderno,24,Banco de estilo moderno fabricado en latón. Garantía de 24 meses.
-furniture_product_002,Sillón auxiliar Archie BRN,sillas,192.4,115.44,37,Ratán,,Minimalista,24,Silla de estilo minimalista fabricado en ratán. Garantía de 24 meses.
-furniture_product_003,Sillón auxiliar Kalani,sillas,499.4,299.64,12,Metal,,Moderno,24,Silla de estilo moderno fabricado en metal. Garantía de 24 meses.
-furniture_product_004,Mesa auxiliar Daxon,mesas,138.2,82.92,52,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_005,Mesa auxiliar Iva,mesas,115.5,69.3,23,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_006,Mesa auxiliar Norm,mesas,118.2,70.92,39,Acero,,Moderno,24,Mesa de estilo moderno fabricado en acero. Garantía de 24 meses.
-furniture_product_007,Sillón Rico,sillas,280.8,168.48,32,Madera,,Moderno,24,Silla de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_008,Taburete de barra Clayton (juego de 2) B,sillas,186.2,111.72,10,Metal,,Moderno,24,Silla de estilo moderno fabricado en metal. Garantía de 24 meses.
+furniture_product_002,Sillón auxiliar Archie BRN,sillas,192.4,115.44,37,Ratán,,Minimalista,24,Sillón de estilo minimalista fabricado en ratán. Garantía de 24 meses.
+furniture_product_003,Sillón auxiliar Kalani,sillas,499.4,299.64,12,Metal,,Moderno,24,Sillón de estilo moderno fabricado en metal. Garantía de 24 meses.
+furniture_product_004,Mesa auxiliar Daxon,mesas,138.2,82.92,52,Madera,,Moderno,24,Mesa de estilo moderno fabricada en madera. Garantía de 24 meses.
+furniture_product_005,Mesa auxiliar Iva,mesas,115.5,69.3,23,Madera,,Moderno,24,Mesa de estilo moderno fabricada en madera. Garantía de 24 meses.
+furniture_product_006,Mesa auxiliar Norm,mesas,118.2,70.92,39,Acero,,Moderno,24,Mesa de estilo moderno fabricada en acero. Garantía de 24 meses.
+furniture_product_007,Sillón Rico,sillas,280.8,168.48,32,Madera,,Moderno,24,Sillón de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_008,Taburete de barra Clayton (juego de 2) B,sillas,186.2,111.72,10,Metal,,Moderno,24,Taburete de estilo moderno fabricado en metal. Garantía de 24 meses.
 furniture_product_009,Banco Xavier BN,bancos,178.4,107.04,40,Lino,,Moderno,24,Banco de estilo moderno fabricado en lino. Garantía de 24 meses.
-furniture_product_010,Puf de lunares negros PoufDot,mesitas,32.7,19.62,29,Madera,,Moderno,24,Mesita de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_011,Consola de raíz de nogal Susan,otros,288.9,173.34,24,Raíz de nogal,,Vintage,24,Mueble de estilo vintage fabricado en raíz de nogal. Garantía de 24 meses.
+furniture_product_010,Puf de lunares negros PoufDot,mesitas,32.7,19.62,29,Madera,,Moderno,24,Puf de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_011,Consola de raíz de nogal Susan,otros,288.9,173.34,24,Raíz de nogal,,Vintage,24,Consola de estilo vintage fabricada en raíz de nogal. Garantía de 24 meses.
 furniture_product_012,Armario Joan BRN,armarios,462.2,277.32,30,Madera,,Moderno,24,Armario de estilo moderno fabricado en madera. Garantía de 24 meses.
 furniture_product_013,Armario Joan NAT,armarios,462.2,277.32,17,Madera,,Moderno,24,Armario de estilo moderno fabricado en madera. Garantía de 24 meses.
 furniture_product_014,Sofá Cirrus,sofas,570.6,342.36,23,Metal,,Clásico,24,Sofá de estilo clásico fabricado en metal. Garantía de 24 meses.
-furniture_product_015,Mesa de cóctel Dina,mesas,658.9,395.34,29,Vidrio,,Moderno,24,Mesa de estilo moderno fabricado en vidrio. Garantía de 24 meses.
-furniture_product_016,Mesa de cóctel Kai,mesas,716.7,430.02,19,Roble,,Moderno,24,Mesa de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_017,Mesa de centro Andrus CFT,mesas,232.7,139.62,52,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_018,Mesa de centro Danika,mesas,221.8,133.08,13,Madera,,Contemporáneo,24,Mesa de estilo contemporáneo fabricado en madera. Garantía de 24 meses.
-furniture_product_019,Mesa de centro Keiko CO,mesas,203.1,121.86,29,Roble,,Vintage,24,Mesa de estilo vintage fabricado en roble. Garantía de 24 meses.
-furniture_product_020,Mesa consola Amara BRZ,mesas,338.1,202.86,50,Latón,,Vintage,24,Mesa de estilo vintage fabricado en latón. Garantía de 24 meses.
-furniture_product_021,Mesa consola Umber,mesas,294.7,176.82,39,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_022,Mesa consola Vale,mesas,438.8,263.28,17,Travertino,,Moderno,24,Mesa de estilo moderno fabricado en travertino. Garantía de 24 meses.
-furniture_product_023,Taburete de barra Clayton (juego de 2),sillas,173.8,104.28,31,Metal,,Moderno,24,Silla de estilo moderno fabricado en metal. Garantía de 24 meses.
-furniture_product_024,Mesa cúbica Vanya,mesas,423.5,254.1,24,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_025,Mesa de comedor Eva,mesas,933.3,559.98,23,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_026,Mesa de recibidor Rhea,mesas,533.4,320.04,31,Mármol,,Clásico,24,Mesa de estilo clásico fabricado en mármol. Garantía de 24 meses.
+furniture_product_015,Mesa de cóctel Dina,mesas,658.9,395.34,29,Vidrio,,Moderno,24,Mesa de estilo moderno fabricada en vidrio. Garantía de 24 meses.
+furniture_product_016,Mesa de cóctel Kai,mesas,716.7,430.02,19,Roble,,Moderno,24,Mesa de estilo moderno fabricada en roble. Garantía de 24 meses.
+furniture_product_017,Mesa de centro Andrus CFT,mesas,232.7,139.62,52,Madera,,Moderno,24,Mesa de estilo moderno fabricada en madera. Garantía de 24 meses.
+furniture_product_018,Mesa de centro Danika,mesas,221.8,133.08,13,Madera,,Contemporáneo,24,Mesa de estilo contemporáneo fabricada en madera. Garantía de 24 meses.
+furniture_product_019,Mesa de centro Keiko CO,mesas,203.1,121.86,29,Roble,,Vintage,24,Mesa de estilo vintage fabricada en roble. Garantía de 24 meses.
+furniture_product_020,Mesa consola Amara BRZ,mesas,338.1,202.86,50,Latón,,Vintage,24,Mesa de estilo vintage fabricada en latón. Garantía de 24 meses.
+furniture_product_021,Mesa consola Umber,mesas,294.7,176.82,39,Madera,,Moderno,24,Mesa de estilo moderno fabricada en madera. Garantía de 24 meses.
+furniture_product_022,Mesa consola Vale,mesas,438.8,263.28,17,Travertino,,Moderno,24,Mesa de estilo moderno fabricada en travertino. Garantía de 24 meses.
+furniture_product_023,Taburete de barra Clayton (juego de 2),sillas,173.8,104.28,31,Metal,,Moderno,24,Taburete de estilo moderno fabricado en metal. Garantía de 24 meses.
+furniture_product_024,Mesa cúbica Vanya,mesas,423.5,254.1,24,Madera,,Moderno,24,Mesa de estilo moderno fabricada en madera. Garantía de 24 meses.
+furniture_product_025,Mesa de comedor Eva,mesas,933.3,559.98,23,Madera,,Moderno,24,Mesa de estilo moderno fabricada en madera. Garantía de 24 meses.
+furniture_product_026,Mesa de recibidor Rhea,mesas,533.4,320.04,31,Mármol,,Clásico,24,Mesa de estilo clásico fabricada en mármol. Garantía de 24 meses.
 furniture_product_027,Armario estriado Oakley BL,armarios,476.2,285.72,35,Roble,,Moderno,24,Armario de estilo moderno fabricado en roble. Garantía de 24 meses.
 furniture_product_028,Armario estriado Piper CO,armarios,369.2,221.52,31,Roble,,Vintage,24,Armario de estilo vintage fabricado en roble. Garantía de 24 meses.
-furniture_product_029,Mesa de centro con flecos Harlan,mesas,646.2,387.72,28,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_030,Vitrina dorada Kellen,otros,350.1,210.06,35,Vidrio,,Moderno,24,Mueble de estilo moderno fabricado en vidrio. Garantía de 24 meses.
+furniture_product_029,Mesa de centro con flecos Harlan,mesas,646.2,387.72,28,Madera,,Moderno,24,Mesa de estilo moderno fabricada en madera. Garantía de 24 meses.
+furniture_product_030,Vitrina dorada Kellen,otros,350.1,210.06,35,Vidrio,,Moderno,24,Vitrina de estilo moderno fabricada en vidrio. Garantía de 24 meses.
 furniture_product_031,Sofá de terciopelo añil Tristan,sofas,933.9,560.34,40,Terciopelo,,Moderno,24,Sofá de estilo moderno fabricado en terciopelo. Garantía de 24 meses.
-furniture_product_032,Sillón auxiliar Keystone,sillas,311,186.6,44,Madera,,Moderno,24,Silla de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_033,Taburete tapizado de lino Avery,sillas,138.5,83.1,16,Roble,,Moderno,24,Silla de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_034,Sillón de descanso Irina,sillas,403.2,241.92,24,Piel,,Moderno,24,Silla de estilo moderno fabricado en piel. Garantía de 24 meses.
-furniture_product_035,Taburete de madera de mango Aria,sillas,56.5,33.9,27,Madera,,Moderno,24,Silla de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_036,Mesita auxiliar de mármol Knox,mesas,284.8,170.88,12,Travertino,,Moderno,24,Mesa de estilo moderno fabricado en travertino. Garantía de 24 meses.
-furniture_product_037,Mesa de centro con tablero de mármol Hart CT,mesas,567.6,340.56,31,Mármol,,Moderno,24,Mesa de estilo moderno fabricado en mármol. Garantía de 24 meses.
-furniture_product_038,Mesa de centro con tablero de mármol London,mesas,308.7,185.22,23,Mármol,,Moderno,24,Mesa de estilo moderno fabricado en mármol. Garantía de 24 meses.
-furniture_product_039,Mesa de centro con tablero de mármol Quest,mesas,497.8,298.68,29,Mármol,,Moderno,24,Mesa de estilo moderno fabricado en mármol. Garantía de 24 meses.
-furniture_product_040,Espejo Dacia,otros,145.8,87.48,19,Latón,,Moderno,24,Mueble de estilo moderno fabricado en latón. Garantía de 24 meses.
-furniture_product_041,Espejo Gabby,otros,59,35.4,18,Madera,,Moderno,24,Mueble de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_042,Espejo Geneva S,otros,366,219.6,26,Madera,,Moderno,24,Mueble de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_043,Espejo Musa L,otros,519.5,311.7,37,Madera,,Moderno,24,Mueble de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_044,Espejo Musa S,otros,333.5,200.1,22,Madera,,Moderno,24,Mueble de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_045,Espejo Naive,otros,415.7,249.42,36,Madera,,Moderno,24,Mueble de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_046,Mesas nido Holden,mesas,535,321,23,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_047,Chaise longue de roble Moda,butacas,1034.6,620.76,40,Roble,,Moderno,24,Butaca de estilo moderno fabricado en roble. Garantía de 24 meses.
+furniture_product_032,Sillón auxiliar Keystone,sillas,311,186.6,44,Madera,,Moderno,24,Sillón de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_033,Taburete tapizado de lino Avery,sillas,138.5,83.1,16,Lino,,Moderno,24,Taburete de estilo moderno fabricado en lino. Garantía de 24 meses.
+furniture_product_034,Sillón de descanso Irina,sillas,403.2,241.92,24,Piel,,Moderno,24,Sillón de estilo moderno fabricado en piel. Garantía de 24 meses.
+furniture_product_035,Taburete de madera de mango Aria,sillas,56.5,33.9,27,Madera,,Moderno,24,Taburete de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_036,Mesita auxiliar de mármol Knox,mesas,284.8,170.88,12,Mármol,,Moderno,24,Mesita de estilo moderno fabricada en mármol. Garantía de 24 meses.
+furniture_product_037,Mesa de centro con tablero de mármol Hart CT,mesas,567.6,340.56,31,Mármol,,Moderno,24,Mesa de estilo moderno fabricada en mármol. Garantía de 24 meses.
+furniture_product_038,Mesa de centro con tablero de mármol London,mesas,308.7,185.22,23,Mármol,,Moderno,24,Mesa de estilo moderno fabricada en mármol. Garantía de 24 meses.
+furniture_product_039,Mesa de centro con tablero de mármol Quest,mesas,497.8,298.68,29,Mármol,,Moderno,24,Mesa de estilo moderno fabricada en mármol. Garantía de 24 meses.
+furniture_product_040,Espejo Dacia,otros,145.8,87.48,19,Latón,,Moderno,24,Espejo de estilo moderno fabricado en latón. Garantía de 24 meses.
+furniture_product_041,Espejo Gabby,otros,59,35.4,18,Madera,,Moderno,24,Espejo de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_042,Espejo Geneva S,otros,366,219.6,26,Madera,,Moderno,24,Espejo de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_043,Espejo Musa L,otros,519.5,311.7,37,Madera,,Moderno,24,Espejo de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_044,Espejo Musa S,otros,333.5,200.1,22,Madera,,Moderno,24,Espejo de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_045,Espejo Naive,otros,415.7,249.42,36,Madera,,Moderno,24,Espejo de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_046,Mesas nido Holden,mesas,535,321,23,Madera,,Moderno,24,Mesas nido de estilo moderno fabricadas en madera. Garantía de 24 meses.
+furniture_product_047,Chaise longue de roble Moda,butacas,1034.6,620.76,40,Roble,,Moderno,24,Chaise longue de estilo moderno fabricada en roble. Garantía de 24 meses.
 furniture_product_048,Armario de chapa de roble Haim,armarios,681.3,408.78,35,Roble,,Moderno,24,Armario de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_049,Mesa de comedor de chapa de roble María,mesas,622.7,373.62,25,Roble,,Moderno,24,Mesa de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_050,Mesa de centro de exterior Solaris LW,mesas,601.4,360.84,23,Vidrio,,Moderno,24,Mesa de estilo moderno fabricado en vidrio. Garantía de 24 meses.
-furniture_product_051,Mesa de centro de exterior Solaris SB,mesas,534.4,320.64,36,Vidrio,,Moderno,24,Mesa de estilo moderno fabricado en vidrio. Garantía de 24 meses.
-furniture_product_052,Mesa de centro de exterior Solaris SW,mesas,534.4,320.64,33,Vidrio,,Moderno,24,Mesa de estilo moderno fabricado en vidrio. Garantía de 24 meses.
-furniture_product_053,Mesa de comedor ovalada Jolie CO,mesas,500.8,300.48,25,Roble,,Minimalista,24,Mesa de estilo minimalista fabricado en roble. Garantía de 24 meses.
-furniture_product_054,Puf XL Soren OT,mesitas,212,127.2,25,Teca,,Moderno,24,Mesita de estilo moderno fabricado en teca. Garantía de 24 meses.
-furniture_product_055,Mesa de comedor rectangular Hudson SG,mesas,477.4,286.44,32,Roble,,Moderno,24,Mesa de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_056,Mesa de centro Río,mesas,108,64.8,27,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_057,Mesita auxiliar redonda Hays CS,mesas,98.5,59.1,16,Latón,,Antiguo,24,Mesa de estilo antiguo fabricado en latón. Garantía de 24 meses.
-furniture_product_058,Mesita auxiliar redonda Hays NVYS,mesas,98.5,59.1,36,Latón,,Antiguo,24,Mesa de estilo antiguo fabricado en latón. Garantía de 24 meses.
-furniture_product_059,Puf tapizado de fibra marina Xavier,mesitas,89,53.4,19,Lino,,Moderno,24,Mesita de estilo moderno fabricado en lino. Garantía de 24 meses.
-furniture_product_060,Mesita auxiliar Mai,mesas,277.3,166.38,34,Roble,,Moderno,24,Mesa de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_061,Mesita auxiliar Meyer,mesas,196.4,117.84,20,Madera,,Moderno,24,Mesa de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_062,Juego de mesitas auxiliares Hade G,mesas,612.6,367.56,19,Latón,,Moderno,24,Mesa de estilo moderno fabricado en latón. Garantía de 24 meses.
-furniture_product_063,Mesita auxiliar Thea alta,mesas,207.2,124.32,15,Latón,,Moderno,24,Mesa de estilo moderno fabricado en latón. Garantía de 24 meses.
-furniture_product_064,Mesa de centro pequeña Veda,mesas,499.4,299.64,30,Roble,,Moderno,24,Mesa de estilo moderno fabricado en roble. Garantía de 24 meses.
+furniture_product_049,Mesa de comedor de chapa de roble María,mesas,622.7,373.62,25,Roble,,Moderno,24,Mesa de estilo moderno fabricada en roble. Garantía de 24 meses.
+furniture_product_050,Mesa de centro de exterior Solaris LW,mesas,601.4,360.84,23,Vidrio,,Moderno,24,Mesa de estilo moderno fabricada en vidrio. Garantía de 24 meses.
+furniture_product_051,Mesa de centro de exterior Solaris SB,mesas,534.4,320.64,36,Vidrio,,Moderno,24,Mesa de estilo moderno fabricada en vidrio. Garantía de 24 meses.
+furniture_product_052,Mesa de centro de exterior Solaris SW,mesas,534.4,320.64,33,Vidrio,,Moderno,24,Mesa de estilo moderno fabricada en vidrio. Garantía de 24 meses.
+furniture_product_053,Mesa de comedor ovalada Jolie CO,mesas,500.8,300.48,25,Roble,,Minimalista,24,Mesa de estilo minimalista fabricada en roble. Garantía de 24 meses.
+furniture_product_054,Puf XL Soren OT,mesitas,212,127.2,25,Teca,,Moderno,24,Puf de estilo moderno fabricado en teca. Garantía de 24 meses.
+furniture_product_055,Mesa de comedor rectangular Hudson SG,mesas,477.4,286.44,32,Roble,,Moderno,24,Mesa de estilo moderno fabricada en roble. Garantía de 24 meses.
+furniture_product_056,Mesa de centro Río,mesas,108,64.8,27,Madera,,Moderno,24,Mesa de estilo moderno fabricada en madera. Garantía de 24 meses.
+furniture_product_057,Mesita auxiliar redonda Hays CS,mesas,98.5,59.1,16,Latón,,Antiguo,24,Mesita de estilo antiguo fabricada en latón. Garantía de 24 meses.
+furniture_product_058,Mesita auxiliar redonda Hays NVYS,mesas,98.5,59.1,36,Latón,,Antiguo,24,Mesita de estilo antiguo fabricada en latón. Garantía de 24 meses.
+furniture_product_059,Puf tapizado de fibra marina Xavier,mesitas,89,53.4,19,Lino,,Moderno,24,Puf de estilo moderno fabricado en lino. Garantía de 24 meses.
+furniture_product_060,Mesita auxiliar Mai,mesas,277.3,166.38,34,Roble,,Moderno,24,Mesita de estilo moderno fabricada en roble. Garantía de 24 meses.
+furniture_product_061,Mesita auxiliar Meyer,mesas,196.4,117.84,20,Madera,,Moderno,24,Mesita de estilo moderno fabricada en madera. Garantía de 24 meses.
+furniture_product_062,Juego de mesitas auxiliares Hade G,mesas,612.6,367.56,19,Latón,,Moderno,24,Juego de mesitas de estilo moderno fabricado en latón. Garantía de 24 meses.
+furniture_product_063,Mesita auxiliar Thea alta,mesas,207.2,124.32,15,Latón,,Moderno,24,Mesita de estilo moderno fabricada en latón. Garantía de 24 meses.
+furniture_product_064,Mesa de centro pequeña Veda,mesas,499.4,299.64,30,Roble,,Moderno,24,Mesa de estilo moderno fabricada en roble. Garantía de 24 meses.
 furniture_product_065,Sofá pequeño Teegan,sofas,637.4,382.44,39,Madera,,Moderno,24,Sofá de estilo moderno fabricado en madera. Garantía de 24 meses.
 furniture_product_066,Sofá Curve,sofas,1185,711,32,Terciopelo,,Clásico,24,Sofá de estilo clásico fabricado en terciopelo. Garantía de 24 meses.
 furniture_product_067,Banco capitoné Werner BR,bancos,279.2,167.52,23,Piel,,Moderno,24,Banco de estilo moderno fabricado en piel. Garantía de 24 meses.
 furniture_product_068,Banco tapizado Buffy,bancos,348.4,209.04,25,Lino,,Moderno,24,Banco de estilo moderno fabricado en lino. Garantía de 24 meses.
 furniture_product_069,Banco tapizado Halle,bancos,244.6,146.76,22,Lino,,Contemporáneo,24,Banco de estilo contemporáneo fabricado en lino. Garantía de 24 meses.
 furniture_product_070,Banco tapizado Keiko,bancos,203.1,121.86,36,Roble,,Moderno,24,Banco de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_071,Taburete de barra tapizado Bala,sillas,259.5,155.7,44,Madera,,Moderno,24,Silla de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_072,Taburete de barra tapizado Brennon,sillas,222.1,133.26,34,Madera,,Moderno,24,Silla de estilo moderno fabricado en madera. Garantía de 24 meses.
-furniture_product_073,Taburete de barra curvo tapizado Cybill,sillas,143.6,86.16,13,Roble,,Moderno,24,Silla de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_074,Silla de comedor curva tapizada Joel,sillas,99.4,59.64,35,Roble,,Moderno,24,Silla de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_075,Taburete tapizado Fiona BW,sillas,123.4,74.04,38,Raíz de nogal,,Moderno,24,Silla de estilo moderno fabricado en raíz de nogal. Garantía de 24 meses.
-furniture_product_076,Chaise longue de terciopelo con brazo izquierdo Tania,butacas,526.3,315.78,26,Terciopelo,,Moderno,24,Butaca de estilo moderno fabricado en terciopelo. Garantía de 24 meses.
-furniture_product_077,Mesita de noche de chapa Uma,camas,393,235.8,38,Latón,,Moderno,24,Cama de estilo moderno fabricado en latón. Garantía de 24 meses.
-furniture_product_078,Vinoteca Bliss,armarios,401.7,241.02,21,Vidrio,,Antiguo,24,Armario de estilo antiguo fabricado en vidrio. Garantía de 24 meses.
-furniture_product_079,Vinoteca Hamish,armarios,708.7,425.22,47,Roble,,Moderno,24,Armario de estilo moderno fabricado en roble. Garantía de 24 meses.
-furniture_product_080,Vinoteca Heidi CH,armarios,763,457.8,14,Roble,,Vintage,24,Armario de estilo vintage fabricado en roble. Garantía de 24 meses.
+furniture_product_071,Taburete de barra tapizado Bala,sillas,259.5,155.7,44,Madera,,Moderno,24,Taburete de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_072,Taburete de barra tapizado Brennon,sillas,222.1,133.26,34,Madera,,Moderno,24,Taburete de estilo moderno fabricado en madera. Garantía de 24 meses.
+furniture_product_073,Taburete de barra curvo tapizado Cybill,sillas,143.6,86.16,13,Roble,,Moderno,24,Taburete de estilo moderno fabricado en roble. Garantía de 24 meses.
+furniture_product_074,Silla de comedor curva tapizada Joel,sillas,99.4,59.64,35,Roble,,Moderno,24,Silla de estilo moderno fabricada en roble. Garantía de 24 meses.
+furniture_product_075,Taburete tapizado Fiona BW,sillas,123.4,74.04,38,Raíz de nogal,,Moderno,24,Taburete de estilo moderno fabricado en raíz de nogal. Garantía de 24 meses.
+furniture_product_076,Chaise longue de terciopelo con brazo izquierdo Tania,butacas,526.3,315.78,26,Terciopelo,,Moderno,24,Chaise longue de estilo moderno fabricada en terciopelo. Garantía de 24 meses.
+furniture_product_077,Mesita de noche de chapa Uma,camas,393,235.8,38,Latón,,Moderno,24,Mesita de noche de estilo moderno fabricada en latón. Garantía de 24 meses.
+furniture_product_078,Vinoteca Bliss,armarios,401.7,241.02,21,Vidrio,,Antiguo,24,Vinoteca de estilo antiguo fabricada en vidrio. Garantía de 24 meses.
+furniture_product_079,Vinoteca Hamish,armarios,708.7,425.22,47,Roble,,Moderno,24,Vinoteca de estilo moderno fabricada en roble. Garantía de 24 meses.
+furniture_product_080,Vinoteca Heidi CH,armarios,763,457.8,14,Roble,,Vintage,24,Vinoteca de estilo vintage fabricada en roble. Garantía de 24 meses.

@@ -23,7 +23,8 @@ class SimuladorCoherencia(models.AbstractModel):
     @api.model
     def _coherencia_datos(self) -> int:
         return (self._coherencia_parametros() + self._coherencia_contactos()
-                + self._coherencia_leads() + self._coherencia_lineas())
+                + self._coherencia_leads() + self._coherencia_catalogo()
+                + self._coherencia_lineas())
 
     # ------------------------------------------------------------ parámetros
 
@@ -143,16 +144,44 @@ class SimuladorCoherencia(models.AbstractModel):
             cambios += bool(valores) + self._escribir_si_cambia(lead, destino)
         return cambios
 
+    # ------------------------------------------------------------ catálogo
+
+    def _idioma(self) -> str:
+        espanol = self.env['res.lang'].with_context(active_test=True).search_count(
+            [('code', '=', 'es_ES')])
+        return 'es_ES' if espanol else (self.env.lang or 'en_US')
+
+    def _coherencia_catalogo(self) -> int:
+        """Descripciones con el sustantivo del producto y el participio concordado.
+
+        El texto está guardado en la clave en_US aunque sea español (es el
+        respaldo de Odoo): se corrige en ese idioma y en español si está activo.
+        """
+        cambios = 0
+        idiomas = sorted({'en_US', self._idioma()})
+        for plantilla in self.env['product.template'].search([('description_sale', '!=', False)]):
+            for idioma in idiomas:
+                en_idioma = plantilla.with_context(lang=idioma)
+                texto, material = datos.corregir_descripcion(en_idioma.name, en_idioma.description_sale)
+                if texto and texto != en_idioma.description_sale:
+                    en_idioma.description_sale = texto
+                    cambios += 1
+                if material and 'furniture_material' in plantilla._fields                         and (plantilla.furniture_material or '').lower() != material:
+                    plantilla.furniture_material = material.capitalize()
+                    cambios += 1
+        return cambios
+
     # ------------------------------------------------------------ pedidos
 
     def _coherencia_lineas(self) -> int:
         """Descripciones en inglés del catálogo antiguo -> las del producto en español."""
         cambios = 0
-        espanol = self.env['res.lang'].with_context(active_test=True).search_count(
-            [('code', '=', 'es_ES')])
-        idioma = 'es_ES' if espanol else (self.env.lang or 'en_US')
+        idioma = self._idioma()
         lineas_venta = self.env['sale.order.line'].search([('product_id', '!=', False)])
-        for linea in lineas_venta.filtered(lambda l: datos.parece_ingles(l.name)):
+        # Las del catálogo antiguo en inglés y las que copiaron una descripción
+        # que ya se ha corregido («de estilo …»).
+        for linea in lineas_venta.filtered(
+                lambda l: datos.parece_ingles(l.name) or ' de estilo ' in (l.name or '')):
             producto = linea.product_id.with_context(lang=idioma)
             texto = producto.get_product_multiline_description_sale()
             if texto != linea.name:

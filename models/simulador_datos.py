@@ -149,3 +149,60 @@ def parece_ingles(texto: str | None) -> bool:
     sin_referencia = re.sub(r'\[[^\]]*\]', '', texto or '')
     return bool(re.search(r'\b(the|with|and|this|chair|table|bench|stool|made|piece)\b',
                           sin_referencia, re.I))
+
+
+# ---------------------------------------------------------------- catálogo
+# Género y número del sustantivo con el que empieza el nombre del producto.
+SUSTANTIVOS = {
+    'chaise longue': 'fs', 'juego de mesitas': 'ms', 'mesas nido': 'fp', 'mesita de noche': 'fs',
+    'mesa': 'fs', 'mesita': 'fs', 'silla': 'fs', 'butaca': 'fs', 'cama': 'fs', 'consola': 'fs',
+    'vitrina': 'fs', 'vinoteca': 'fs', 'estantería': 'fs', 'cómoda': 'fs', 'lámpara': 'fs',
+    'alfombra': 'fs', 'banco': 'ms', 'taburete': 'ms', 'sillón': 'ms', 'armario': 'ms',
+    'sofá': 'ms', 'espejo': 'ms', 'puf': 'ms', 'aparador': 'ms', 'escritorio': 'ms',
+    'mueble': 'ms', 'recibidor': 'ms',
+}
+MATERIALES_EN_NOMBRE = ('raíz de nogal', 'mármol', 'travertino', 'roble', 'nogal', 'latón',
+                        'terciopelo', 'lino', 'teca', 'ratán', 'vidrio', 'piel', 'acero')
+DESCRIPCION_RE = re.compile(
+    r'^(?P<nombre>.+?) de estilo (?P<estilo>\S+) fabricad[oa]s? en (?P<material>[^.]+)\.(?P<resto>.*)$',
+    re.S)
+
+
+def sustantivo(nombre_producto: str) -> tuple[str, str]:
+    """(sustantivo, género+número) del producto: «Mesita de noche Uma» -> («Mesita de noche», «fs»)."""
+    texto = (nombre_producto or '').strip()
+    bajo = texto.lower()
+    for clave in sorted(SUSTANTIVOS, key=len, reverse=True):
+        if bajo == clave or bajo.startswith(clave + ' '):
+            return texto[:len(clave)], SUSTANTIVOS[clave]
+    primera = texto.split(' ', 1)[0] if texto else 'Mueble'
+    return primera, 'ms'
+
+
+def participio(genero_numero: str) -> str:
+    return {'ms': 'fabricado', 'fs': 'fabricada', 'mp': 'fabricados', 'fp': 'fabricadas'}[genero_numero]
+
+
+def material_del_nombre(nombre_producto: str) -> str | None:
+    bajo = (nombre_producto or '').lower()
+    for material in MATERIALES_EN_NOMBRE:
+        if re.search(rf'\bde {re.escape(material)}\b', bajo):
+            return material
+    return None
+
+
+def corregir_descripcion(nombre_producto: str, descripcion: str | None) -> tuple[str, str | None]:
+    """Descripción del catálogo con el sustantivo del producto y el participio concordado.
+
+    Devuelve (descripción, material) — material solo si el nombre lo dice y la
+    descripción decía otro; si el texto no sigue la plantilla, se deja tal cual.
+    """
+    m = DESCRIPCION_RE.match(descripcion or '')
+    if not m:
+        return descripcion or '', None
+    nombre, genero = sustantivo(nombre_producto)
+    material = material_del_nombre(nombre_producto)
+    cambia_material = material and material != m['material'].strip().lower()
+    texto = (f"{nombre} de estilo {m['estilo']} {participio(genero)} en "
+             f"{material if cambia_material else m['material']}.{m['resto']}")
+    return texto, (material if cambia_material else None)
