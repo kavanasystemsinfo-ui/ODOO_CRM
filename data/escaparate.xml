@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- En cada actualización: el usuario de visita queda en el escaparate de
+         solo lectura (si existe; en una base nueva no hay usuario de visita). -->
+    <function model="odoo_crm.escaparate" name="_preparar_visita"/>
+</odoo>

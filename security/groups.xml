@@ -11,4 +11,11 @@ actividades para el panel externo. No permite crear, modificar ni borrar.</field
              (1 día por defecto). La del panel se rota cada trimestre. -->
         <field name="api_key_duration">90</field>
     </record>
+    <!-- Escaparate público de la demo: el usuario de visita lo ve todo y no
+         puede crear, modificar ni borrar nada (models/escaparate.py). -->
+    <record id="group_escaparate" model="res.groups">
+        <field name="name">Escaparate: solo lectura</field>
+        <field name="comment">Cierra crear, modificar y borrar en todos los modelos para quien
+lo tenga, sin listar modelos. Solo para el usuario de visita de la demo pública.</field>
+    </record>
 </odoo>
