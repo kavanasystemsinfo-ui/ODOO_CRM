@@ -67,7 +67,6 @@ def test_empresa_y_textos(datos):
     assert not datos.parece_empresa("Laura Ferrer")
     assert datos.parece_ingles("[x] Tufted Gallery Bench Werner BR\nAdd a touch of sophistication with the")
     assert not datos.parece_ingles("[x] Banco capitoné Werner BR\nBanco de estilo clásico tapizado.")
-    assert not datos.parece_ingles("[console-table-umber] Consola Umber
-Consola de estilo art déco.")
+    assert not datos.parece_ingles("[console-table-umber] Consola Umber\nConsola de estilo art déco.")
     assert datos.telefono_de_relleno("+34 600 007 007")
     assert not datos.telefono_de_relleno("+34 964 213 884")
