@@ -155,6 +155,7 @@ class SimuladorEmpresa(models.AbstractModel):
         cambios = self._crear_comerciales()
         cambios += self._correos_ficticios()
         cambios += self._asignar_proveedores()
+        cambios += self._descartar_correos(0)  # la cola heredada tampoco puede salir
         return cambios
 
     def _crear_comerciales(self) -> int:
@@ -386,7 +387,8 @@ class SimuladorEmpresa(models.AbstractModel):
 
     def _cerrar_actividades(self, rng, cuantos: int, hoy) -> int:
         actividades = self.env['mail.activity'].search(
-            [('res_model', 'in', ('crm.lead', 'sale.order')), ('date_deadline', '<=', hoy)],
+            [('res_model', 'in', ('crm.lead', 'sale.order', 'purchase.order')),
+             ('date_deadline', '<=', hoy)],
             order='date_deadline, id', limit=cuantos)
         for actividad in actividades:
             actividad.action_feedback(feedback=plan.feedback_llamada(rng))
@@ -539,10 +541,12 @@ class SimuladorEmpresa(models.AbstractModel):
 
     # --------------------------------------------------------------- controles
 
-    def _descartar_correos(self, desde_id: int) -> None:
+    def _descartar_correos(self, desde_id: int) -> int:
         """No hay servidor de correo: lo que el tramo dejó en cola no sale nunca."""
-        self.env['mail.mail'].search(
-            [('id', '>', desde_id), ('state', 'in', ('outgoing', 'exception'))]).unlink()
+        cola = self.env['mail.mail'].search(
+            [('id', '>', desde_id), ('state', 'in', ('outgoing', 'exception'))])
+        cola.unlink()
+        return len(cola)
 
     def _comprobar_coherencia(self) -> list[str]:
         problemas = []
