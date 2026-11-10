@@ -17,6 +17,8 @@ services:
       - HOST=db
       - USER=${POSTGRES_USER:-odoo}
       - PASSWORD=${POSTGRES_PASSWORD:-odoo}
+      # Firma de la cookie de las copias de prueba (/probar). Sin él, no hay copias.
+      - MUEBLES_SECRETO=${MUEBLES_SECRETO:-}
     volumes:
       # Módulos extra del servidor, si los hay (la v1 ya montaba esta carpeta).
       - ./addons:/mnt/extra-addons
@@ -25,6 +27,31 @@ services:
       - ./config:/etc/odoo
       # Filestore de Odoo (imágenes y assets): NUNCA en la capa del contenedor
       - odoo_data:/var/lib/odoo
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  # Copias de prueba por visitante (ADR-005): otro proceso de Odoo, con la misma
+  # imagen, el mismo código y los mismos ficheros, que solo sirve las bases
+  # «muebles_demo_*» y no tiene tareas programadas. Caddy le manda a quien
+  # lleva la cookie «muebles_prueba». Memoria acotada para no ahogar la demo.
+  odoo_pruebas:
+    image: odoo:20
+    container_name: furniture_odoo_pruebas
+    ports:
+      - "127.0.0.1:8072:8069"
+    environment:
+      - HOST=db
+      - USER=${POSTGRES_USER:-odoo}
+      - PASSWORD=${POSTGRES_PASSWORD:-odoo}
+      - ODOO_RC=/etc/odoo/odoo_pruebas.conf
+      - MUEBLES_SECRETO=${MUEBLES_SECRETO:-}
+    volumes:
+      - ./addons:/mnt/extra-addons
+      - .:/mnt/extra-addons/ODOO_CRM:ro
+      - ./config:/etc/odoo
+      - odoo_data:/var/lib/odoo
+    mem_limit: 1200m
     depends_on:
       - db
     restart: unless-stopped

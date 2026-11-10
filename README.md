@@ -22,6 +22,7 @@ productiva.** Demo pública: <https://odoocrm.kavanasystems.com>.
 | Panel del día | Servidor HTTP (librería estándar) que resume el día en lenguaje de negocio. Lee **solo** por la API JSON-2 de Odoo con el usuario de integración: ni SQL ni contraseñas. | `panel/panel_muebles.py`, `panel/odoo_client.py` |
 | Empresa viva | Simulador por tramos (3 al día, L-V, y el sábado): leads, correos de clientes, llamadas, presupuestos, entregas, facturas, cobros, compras y recepciones, siempre con los métodos de negocio de Odoo y comprobando la coherencia al final. Reproducible, idempotente y sin correos reales posibles. Ver [ADR-003](docs/adr/ADR-003-empresa-viva.md). | `models/simulador_empresa.py`, `panel/jornada.sh` |
 | Escaparate de solo lectura | El visitante de la demo pública ve toda la empresa (también facturas y cobros) y no puede crear, modificar ni borrar nada. Un único punto en el sistema de permisos de Odoo 20 (`_access_domain`) lo cierra en todos los modelos, sin listarlos; la interfaz abre los formularios en lectura. | `models/escaparate.py` |
+| Copias de prueba | `/probar` da a cada visitante una copia privada de la empresa durante una hora (3 a la vez, lo que cabe en un VPS de 4 GB): puede vender, comprar, entregar y facturar sin tocar la demo. Un segundo proceso de Odoo, enrutado por una cookie firmada, y borrado automático. Ver [ADR-005](docs/adr/ADR-005-copias-por-visitante.md). | `controllers/pruebas.py`, `panel/limpiar_pruebas.py` |
 | Sugerencias comerciales | Plantillas deterministas que proponen la siguiente acción según el score. Es una capa preparada para enchufar un modelo de IA; **no es un servidor MCP** (el nombre `mcp.py` es histórico). | `models/mcp.py` |
 
 ## Cómo se comprueba
@@ -45,7 +46,7 @@ con PostgreSQL 17 en cada PR y:
 
 El workflow [`tests`](.github/workflows/tests.yml) pasa el linter oficial de la
 OCA y la suite sin Odoo (`tests_estaticos/`: catálogo, lógica del panel,
-cliente de la API con un Odoo simulado, asistente, sandbox).
+cliente de la API con un Odoo simulado, asistente, copias de prueba).
 
 ```bash
 pip install -r requirements-dev.txt

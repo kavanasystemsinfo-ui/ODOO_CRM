@@ -66,7 +66,9 @@ class EscaparateBase(models.AbstractModel):
             modelo = self.env['ir.model'].sudo()._get(self._name).name or self._description
             return AccessError(_(
                 'Estás en el escaparate de solo lectura de la demo: puedes ver todo, '
-                'pero no crear, modificar ni borrar (%(modelo)s).', modelo=modelo))
+                'pero no crear, modificar ni borrar (%(modelo)s). Para probar con '
+                'libertad, abre /probar: te preparamos una copia privada de una hora.',
+                modelo=modelo))
         return super()._make_access_error_message(operation, domain)
 
 

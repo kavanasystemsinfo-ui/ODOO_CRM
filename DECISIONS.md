@@ -104,7 +104,7 @@ cubriría es bajo, porque `visita` no es administrador del sistema y la demo se
 restaura sola cada 30 minutos desde la instantánea. Se reabre si la demo pasa a
 tener datos que no deban compartirse o a tener tráfico real.
 
-**Código y pruebas:** `panel/sandbox.py`, `tests_estaticos/test_sandbox.py`.
+**Código y pruebas:** sustituido por las copias de prueba de ADR-005 (`controllers/pruebas.py`, `tests_estaticos/test_pruebas.py`).
 
 ---
 

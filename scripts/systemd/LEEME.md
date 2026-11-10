@@ -6,6 +6,7 @@
 | `muebles-restore.timer` → `muebles-restore.service` | root | Cada 30 min ejecuta `panel/limpieza_automatica.sh`: verifica y restaura solo si alguien cambió la demo |
 | `muebles-restore-ahora.service` | root | Restauración inmediata, la del botón del panel |
 | `muebles-jornada.timer` → `muebles-jornada.service` | root | Un tramo de la empresa simulada (L-V 9, 13 y 17 h; sábado 11 h): verifica, simula y fija la instantánea |
+| `muebles-pruebas-limpieza.timer` → `.service` | root | Cada 5 min borra las copias de prueba caducadas y reinicia el Odoo de pruebas si así suelta memoria |
 | `muebles-panel.sudoers` | — | Permite al panel una sola orden: arrancar `muebles-restore-ahora.service` |
 
 ## Instalación (como root, con el checkout en `/root/ODOO_CRM`)
@@ -17,10 +18,11 @@ visudo -cf scripts/systemd/muebles-panel.sudoers \
 cp scripts/systemd/muebles-panel.service scripts/systemd/muebles-restore.service \
    scripts/systemd/muebles-restore-ahora.service scripts/systemd/muebles-restore.timer \
    scripts/systemd/muebles-jornada.service scripts/systemd/muebles-jornada.timer \
+   scripts/systemd/muebles-pruebas-limpieza.service scripts/systemd/muebles-pruebas-limpieza.timer \
    /etc/systemd/system/
 systemctl daemon-reload
 systemctl restart muebles-panel.service
-systemctl enable --now muebles-restore.timer muebles-jornada.timer
+systemctl enable --now muebles-restore.timer muebles-jornada.timer muebles-pruebas-limpieza.timer
 ```
 
 `/etc/muebles/panel.env` lo lee systemd como root antes de cambiar de usuario:

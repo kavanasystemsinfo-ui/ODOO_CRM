@@ -46,6 +46,11 @@ esac
 CACHE="${MUEBLES_PANEL_CACHE:-$CARPETA/cache_panel}"
 rm -f "$CACHE"/dia_*.json
 
+# Las copias de prueba nuevas salen de la empresa tal y como quedó este tramo.
+if "$DOCKER" inspect -f '{{.State.Running}}' "${MUEBLES_ODOO_PRUEBAS:-furniture_odoo_pruebas}" 2>/dev/null | grep -q true; then
+  bash "$CARPETA/plantilla_pruebas.sh" || echo "$(date -Is) la plantilla de pruebas no se renovó (sigue la anterior)"
+fi
+
 INCIDENCIAS="$(printf '%s\n' "$SALIDA" | sed -n 's/^SIMULADOR_INCIDENCIAS=//p')"
 if [ "${INCIDENCIAS:-0}" != "0" ]; then
   echo "$(date -Is) tramo con $INCIDENCIAS incidencias (ver resumen); el resto quedó guardado"

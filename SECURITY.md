@@ -57,12 +57,28 @@ algo de aquí deja de ser cierto, es un fallo y se corrige el código o el texto
   (entorno); ya no se buscan ficheros del servidor.
 - `/api/dia` es público a propósito y solo es apto para datos sintéticos de la demo.
 
-## Sandbox por visitante (todavía no conectado)
+## Copias de prueba por visitante
 
-`panel/sandbox.py` está implementado y probado, pero **ningún controlador lo usa
-aún**: `/demo` sigue abriendo la sesión del usuario `visita`. Clona una base por visitante desde una plantilla, con cookie
-firmada HMAC-SHA256 (`MUEBLES_SECRETO`), caducidad y tope de bases simultáneas;
-los nombres de base se validan con `muebles_demo_[a-z0-9]{4,12}`.
+`/probar` da a cada visitante una copia privada de la base durante una hora,
+con 3 copias a la vez como máximo (ver ADR-005):
+- La cookie que dice qué copia es tuya va firmada con HMAC-SHA256
+  (`MUEBLES_SECRETO`, solo en el entorno del servidor). Nadie puede apuntarla a
+  la copia de otro ni alargarla.
+- Crear exige POST con CSRF: los rastreadores no gastan plazas.
+- Las copias se sirven desde otro proceso de Odoo que solo ve `muebles_demo_*`,
+  sin tareas programadas y con la memoria limitada. Están neutralizadas: no
+  pueden enviar correo.
+- El usuario `probador` no tiene Ajustes, así que no puede instalar módulos ni
+  tocar la configuración del servidor.
+- Se borran solas a la hora, con sus ficheros.
+
+## Gestor de bases de datos cerrado (10-nov-2026)
+
+Hasta el 10-11-2026, la demo tenía `/web/database/manager` abierto al público y
+sin contraseña maestra propia (Odoo usa «admin» por defecto). Desde esa pantalla
+se puede descargar o borrar una base. Los registros disponibles (desde el 3 de
+noviembre) no muestran ningún acceso ajeno. Ahora `list_db = False` en los dos
+Odoo, y Odoo rechaza cualquier operación de bases antes de mirar la contraseña.
 
 ## Usuario de visita de la demo: escaparate de solo lectura
 
@@ -102,8 +118,6 @@ datos reales.
 
 ## Pendiente
 
-- Conectar `panel/sandbox.py` (una base por visitante) si la demo pasa a tener
-  datos que no deban compartirse.
 - El asistente del panel está sin clave de modelo en el servidor: responde con
   los fragmentos del repositorio. Para activar la redacción por IA, poner
   `MUEBLES_LLM_KEY` en `/etc/muebles/panel.env`.
