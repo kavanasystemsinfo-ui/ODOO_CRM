@@ -86,14 +86,14 @@ class SimuladorCoherencia(models.AbstractModel):
         es_empresa = socio.is_company or datos.parece_empresa(nombre)
         if es_empresa and not socio.is_company:
             valores['is_company'] = True
-        cambios = self._escribir_si_cambia(socio, valores) if valores else 0
-        cambios += self._escribir_si_cambia(socio, self._valores_direccion(socio, telefono=socio.phone))
+        valores.update(self._valores_direccion(socio, telefono=socio.phone))
+        # NIF y país van juntos: Odoo 20 valida el NIF contra el país al escribir.
         semilla = f'res.partner/{socio.id}'
-        vat = datos.cif(semilla) if es_empresa else datos.nif(semilla)
-        if (es_empresa and not datos.cif_valido(socio.vat)) or (not es_empresa and not socio.vat):
-            socio.vat = vat
-            cambios += 1
-        return cambios
+        if es_empresa and not datos.cif_valido(socio.vat):
+            valores['vat'] = datos.cif(semilla)
+        elif not es_empresa and not (socio.vat or '').startswith('ES'):
+            valores['vat'] = datos.nif(semilla)
+        return self._escribir_si_cambia(socio, valores)
 
     def _coherencia_contactos(self) -> int:
         con_lead = self.env['crm.lead'].with_context(active_test=False).search(

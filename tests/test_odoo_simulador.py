@@ -142,7 +142,7 @@ class TestSimulador(TransactionCase):
         self.assertTrue(proveedor.zip.startswith('460'))
         self.assertEqual(proveedor.state_id.code, 'V')
         self.assertTrue(proveedor.phone.startswith('+34 96'))
-        self.assertRegex(proveedor.vat, r'^B\d{8}$')
+        self.assertRegex(proveedor.vat, r'^ESB\d{8}$')
         lead = self.lead_demo
         self.assertEqual(lead.partner_name, 'Contract Habitat')
         self.assertTrue(lead.contact_name and lead.contact_name != lead.name)

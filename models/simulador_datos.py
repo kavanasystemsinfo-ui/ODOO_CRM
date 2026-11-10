@@ -96,13 +96,13 @@ def es_telefono_espanol(telefono: str | None) -> bool:
 
 
 def cif(semilla: str) -> str:
-    """CIF de sociedad limitada (B) con su dígito de control válido."""
+    """CIF de sociedad limitada (B) con su control válido, en el formato de Odoo 20 (ES…)."""
     cuerpo = str(_numero(semilla + '/cif', 7)).zfill(7)
-    return f'B{cuerpo}{_control_cif(cuerpo)}'
+    return f'ESB{cuerpo}{_control_cif(cuerpo)}'
 
 
 def cif_valido(valor: str | None) -> bool:
-    m = re.fullmatch(r'B(\d{7})(\d)', valor or '')
+    m = re.fullmatch(r'(?:ES)?B(\d{7})(\d)', valor or '')
     return bool(m) and _control_cif(m.group(1)) == int(m.group(2))
 
 
@@ -115,7 +115,7 @@ def _control_cif(cuerpo: str) -> int:
 def nif(semilla: str) -> str:
     """NIF de persona con su letra válida."""
     numero = _numero(semilla + '/nif', 8)
-    return f'{numero:08d}{LETRAS_NIF[numero % 23]}'
+    return f'ES{numero:08d}{LETRAS_NIF[numero % 23]}'
 
 
 def parece_empresa(nombre: str | None) -> bool:

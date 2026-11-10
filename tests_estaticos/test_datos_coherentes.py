@@ -43,8 +43,9 @@ def test_nif_y_cif_validos(datos):
     for semilla in ("a", "b", "res.partner/11", "res.partner/41"):
         cif = datos.cif(semilla)
         assert datos.cif_valido(cif), cif
+        assert cif.startswith("ESB")
         nif = datos.nif(semilla)
-        assert nif[-1] == datos.LETRAS_NIF[int(nif[:8]) % 23]
+        assert nif.startswith("ES") and nif[-1] == datos.LETRAS_NIF[int(nif[2:10]) % 23]
     assert datos.cif_valido("B12345674")       # CIF de ejemplo con control correcto
     assert not datos.cif_valido("B12345678")   # el de la empresa de ejemplo no lo es
     assert not datos.cif_valido("US12345673")
