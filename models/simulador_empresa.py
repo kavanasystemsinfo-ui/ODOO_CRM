@@ -112,7 +112,13 @@ class SimuladorEmpresa(models.AbstractModel):
         """Cada paso en su punto de guardado: si falla, se deshace solo ese paso."""
         try:
             with self.env.cr.savepoint():
-                return funcion() or 0
+                resultado = funcion() or 0
+                # Los recálculos pendientes se hacen aquí, con el entorno del
+                # simulador. Si se dejan para el cierre del punto de guardado,
+                # Odoo 20 los hace con otro entorno y el seguimiento de compras
+                # («cantidad recibida») no encuentra el producto (MissingError).
+                self.env.flush_all()
+                return resultado
         except (pg_errors.SerializationFailure, pg_errors.DeadlockDetected):
             # Otro proceso (las tareas programadas de Odoo) tocó lo mismo: el
             # tramo entero se repite con una transacción nueva (simular_tramo.py).
@@ -228,6 +234,7 @@ class SimuladorEmpresa(models.AbstractModel):
             try:
                 with self.env.cr.savepoint():
                     albaran.action_assign()
+                    self.env.flush_all()
             except UserError:
                 self.env.invalidate_all()
             albaran.message_post(body=_('Ubicaciones corregidas a las de «%s».', tipo.name),
@@ -442,12 +449,7 @@ class SimuladorEmpresa(models.AbstractModel):
             if completar:
                 movimiento.quantity = movimiento.product_uom_qty
             movimiento.picked = True
-        # Sin seguimiento: en la base de la demo, el mensaje automático de
-        # «cantidad recibida» de compras (plantilla track_po_line_qty_received)
-        # falla con MissingError dentro del tramo aunque el producto exista;
-        # fuera del tramo valida bien. Se pierde ese mensaje, no el dato.
-        albaran.with_context(skip_backorder=True, skip_sms=True,
-                             mail_notrack=completar).button_validate()
+        albaran.with_context(skip_backorder=True, skip_sms=True).button_validate()
         return albaran.state == 'done'
 
     def _entregar(self, cuantos: int) -> int:
@@ -457,6 +459,7 @@ class SimuladorEmpresa(models.AbstractModel):
             try:
                 with self.env.cr.savepoint():
                     albaran.action_assign()
+                    self.env.flush_all()
             except UserError:
                 self.env.invalidate_all()
         albaranes = self.env['stock.picking'].search(
