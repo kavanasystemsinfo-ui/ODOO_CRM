@@ -76,6 +76,7 @@ class SimuladorEmpresa(models.AbstractModel):
         nuevos = {'leads': [], 'pedidos': []}
         pasos = (
             ('correos_saneados', self._correos_ficticios),
+            ('albaranes_reparados', self._reparar_albaranes),
             ('leads_nuevos', lambda: self._leads_nuevos(rng, cuantos['leads_nuevos'], nuevos)),
             ('cualificaciones', lambda: self._cualificar(cuantos['cualificaciones'], nuevos)),
             ('propuestas', lambda: self._proponer(rng, cuantos['propuestas'], nuevos)),
@@ -197,6 +198,36 @@ class SimuladorEmpresa(models.AbstractModel):
                     plan.dominio_ficticio(lead.partner_name or lead.name))
             cambios += 1
         return cambios
+
+    def _reparar_albaranes(self) -> int:
+        """Albaranes pendientes con ubicaciones que su operación ya no usa.
+
+        La demo heredó de una configuración en tres pasos recepciones que iban a
+        «Control de calidad» (archivada) y entregas que salían de ahí: al
+        validarlas dejaban existencias negativas. Se devuelven a las ubicaciones
+        de su tipo de operación y se vuelven a reservar.
+        """
+        reparados = 0
+        for albaran in self.env['stock.picking'].search(
+                [('state', 'in', ('waiting', 'confirmed', 'assigned'))]):
+            tipo = albaran.picking_type_id
+            origen, destino = tipo.default_location_src_id, tipo.default_location_dest_id
+            if not origen or not destino or (
+                    albaran.location_id == origen and albaran.location_dest_id == destino):
+                continue
+            albaran.do_unreserve()
+            valores = {'location_id': origen.id, 'location_dest_id': destino.id}
+            albaran.write(valores)
+            albaran.move_ids.filtered(lambda m: m.state not in ('done', 'cancel')).write(valores)
+            try:
+                with self.env.cr.savepoint():
+                    albaran.action_assign()
+            except UserError:
+                self.env.invalidate_all()
+            albaran.message_post(body=_('Ubicaciones corregidas a las de «%s».', tipo.name),
+                                 message_type='comment', subtype_xmlid='mail.mt_note')
+            reparados += 1
+        return reparados
 
     def _asignar_proveedores(self) -> int:
         """Cada referencia sin proveedor recibe uno, repartido por categoría."""
@@ -405,10 +436,7 @@ class SimuladorEmpresa(models.AbstractModel):
             if completar:
                 movimiento.quantity = movimiento.product_uom_qty
             movimiento.picked = True
-        # Sin seguimiento: el mensaje automático de «cantidad recibida» de compras
-        # falla al renderizar dentro de un tramo largo (MissingError del ORM).
-        albaran.with_context(skip_backorder=True, skip_sms=True,
-                             mail_notrack=True).button_validate()
+        albaran.with_context(skip_backorder=True, skip_sms=True).button_validate()
         return albaran.state == 'done'
 
     def _entregar(self, cuantos: int) -> int:
@@ -508,6 +536,11 @@ class SimuladorEmpresa(models.AbstractModel):
             [('location_id.usage', '=', 'internal'), ('quantity', '<', 0)])
         if negativos:
             problemas.append(f'{negativos} existencias negativas')
+        ubicacion_archivada = self.env['stock.move'].search_count(
+            [('state', 'not in', ('done', 'cancel')), '|',
+             ('location_id.active', '=', False), ('location_dest_id.active', '=', False)])
+        if ubicacion_archivada:
+            problemas.append(f'{ubicacion_archivada} movimientos pendientes en ubicaciones archivadas')
         reales = [s.email for s in self.env['res.partner'].with_context(active_test=False).search(
             [('email', '!=', False)]) if not plan.es_email_ficticio(s.email)]
         reales += [lead.email_from for lead in self.env['crm.lead'].with_context(
