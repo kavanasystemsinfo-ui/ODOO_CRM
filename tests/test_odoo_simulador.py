@@ -34,6 +34,20 @@ class TestSimulador(TransactionCase):
             'order_line': [(0, 0, {'product_id': cls.productos[0].id, 'product_uom_qty': 1})],
         })
         pedido.action_confirm()
+        # Entrega heredada: hecha, pero vinculada al pedido solo por el texto «origen».
+        heredado = cls.env['sale.order'].create({
+            'partner_id': cliente.id,
+            'order_line': [(0, 0, {'product_id': cls.productos[1].id, 'product_uom_qty': 2})],
+        })
+        heredado.action_confirm()
+        albaran = heredado.picking_ids
+        albaran.move_ids.sale_line_id = False
+        albaran.sale_id = False
+        albaran.origin = heredado.name
+        albaran.move_ids.quantity = 2
+        albaran.move_ids.picked = True
+        albaran.button_validate()
+        cls.pedido_heredado = heredado
         cls.lead_real = cls.env['crm.lead'].create({
             'name': 'Lead con correo de un dominio real', 'email_from': 'compras@reuters.com'})
 
@@ -54,6 +68,15 @@ class TestSimulador(TransactionCase):
         self.assertEqual(primero['tramo'], '2026-11-09#09')
         self.assertIn('omitido', self.Sim._simular_tramo(datetime(2026, 11, 9, 9, 40)))
         self.assertIn('omitido', self.Sim._simular_tramo(datetime(2026, 11, 15, 12, 0)))
+
+    def test_vincula_la_entrega_heredada_y_se_factura(self):
+        self.assertEqual(self.pedido_heredado.order_line.qty_delivered, 0)
+        self.Sim._simular_tramo(datetime(2026, 11, 9, 9, 5))
+        self.assertEqual(self.pedido_heredado.order_line.qty_delivered, 2)
+        if self.env['account.journal'].search([('type', '=', 'sale')], limit=1):
+            for momento in self._tramos(date(2026, 11, 9), 3):
+                self.Sim._simular_tramo(momento)
+            self.assertTrue(self.pedido_heredado.invoice_ids)
 
     def test_una_quincena_de_trabajo_coherente(self):
         totales, incidencias = {}, []
