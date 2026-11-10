@@ -9,3 +9,4 @@ else:
     from . import test_odoo_producto
     from . import test_odoo_scoring
     from . import test_odoo_permisos_panel
+    from . import test_odoo_simulador

@@ -1,0 +1,18 @@
+# /etc/systemd/system/muebles-jornada.service
+# Un tramo de la empresa simulada: verificar, simular, fijar instantánea.
+[Unit]
+Description=Jornada simulada de Muebles del Hogar (un tramo)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/ODOO_CRM/panel
+EnvironmentFile=/etc/muebles/panel.env
+Environment=MUEBLES_PANEL_CACHE=/var/cache/muebles-panel
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/bin/bash /root/ODOO_CRM/panel/jornada.sh
+# 2 = tramo guardado con alguna incidencia: se ve en el journal, no es un fallo del servicio.
+SuccessExitStatus=2
+TimeoutStartSec=20min

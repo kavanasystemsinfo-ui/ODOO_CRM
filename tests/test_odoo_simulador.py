@@ -1,0 +1,86 @@
+"""Simulador de la empresa viva: una quincena de trabajo debe dejar la base coherente."""
+from datetime import date, datetime, timedelta
+
+from odoo.exceptions import AccessError
+from odoo.tests import TransactionCase, new_test_user, tagged
+
+from ..models import simulador_plan as plan
+
+
+@tagged('post_install', '-at_install', 'odoo_crm')
+class TestSimulador(TransactionCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.Sim = cls.env['odoo_crm.simulador'].sudo()
+        cls.env['res.partner'].create({'name': 'Maderas Turia S.L.', 'is_company': True,
+                                       'supplier_rank': 1, 'email': 'info@maderasturia.example'})
+        cliente = cls.env['res.partner'].create({
+            'name': 'Hotel Morella', 'is_company': True, 'email': 'compras@hotelmorella.example'})
+        almacen = cls.env['stock.warehouse'].search([('company_id', '=', cls.env.company.id)],
+                                                    limit=1)
+        cls.productos = cls.env['product.product']
+        for i in range(6):
+            producto = cls.env['product.product'].create({
+                'name': f'Silla de prueba {i}', 'type': 'consu', 'is_storable': True,
+                'list_price': 120 + i, 'standard_price': 60 + i,
+            })
+            cls.env['stock.quant']._update_available_quantity(
+                producto, almacen.lot_stock_id, 6 + i)
+            cls.productos |= producto
+        pedido = cls.env['sale.order'].create({
+            'partner_id': cliente.id,
+            'order_line': [(0, 0, {'product_id': cls.productos[0].id, 'product_uom_qty': 1})],
+        })
+        pedido.action_confirm()
+        cls.lead_real = cls.env['crm.lead'].create({
+            'name': 'Lead con correo de un dominio real', 'email_from': 'compras@reuters.com'})
+
+    def _tramos(self, desde: date, dias: int):
+        for d in range(dias):
+            dia = desde + timedelta(days=d)
+            for hora in plan.TRAMOS[dia.weekday()]:
+                yield datetime(dia.year, dia.month, dia.day, hora, 5)
+
+    def test_solo_lo_lanza_el_sistema(self):
+        usuario = new_test_user(self.env, login='comercial_sim', groups='base.group_user')
+        with self.assertRaises(AccessError):
+            self.env['odoo_crm.simulador'].with_user(usuario)._simular_tramo(
+                datetime(2026, 11, 9, 9, 5))
+
+    def test_un_tramo_no_se_repite_y_el_domingo_no_se_trabaja(self):
+        primero = self.Sim._simular_tramo(datetime(2026, 11, 9, 9, 5))
+        self.assertEqual(primero['tramo'], '2026-11-09#09')
+        self.assertIn('omitido', self.Sim._simular_tramo(datetime(2026, 11, 9, 9, 40)))
+        self.assertIn('omitido', self.Sim._simular_tramo(datetime(2026, 11, 15, 12, 0)))
+
+    def test_una_quincena_de_trabajo_coherente(self):
+        totales, incidencias = {}, []
+        for momento in self._tramos(date(2026, 11, 9), 14):
+            resumen = self.Sim._simular_tramo(momento)
+            self.assertNotIn('omitido', resumen, momento)
+            incidencias += resumen['incidencias']
+            for clave, valor in resumen.items():
+                if isinstance(valor, int):
+                    totales[clave] = totales.get(clave, 0) + valor
+        self.assertEqual(incidencias, [], totales)
+        for clave in ('leads_nuevos', 'cualificaciones', 'propuestas', 'correos_cliente',
+                      'confirmaciones', 'entregas', 'compras'):
+            with self.subTest(clave=clave):
+                self.assertGreater(totales.get(clave, 0), 0, totales)
+        if self.env['account.journal'].search([('type', '=', 'sale')], limit=1):
+            self.assertGreater(totales.get('facturas', 0), 0, totales)
+
+        self.assertFalse(self.env['stock.quant'].search_count(
+            [('location_id.usage', '=', 'internal'), ('quantity', '<', 0)]))
+        self.assertTrue(plan.es_email_ficticio(self.lead_real.email_from))
+        self.assertFalse(self.env['mail.mail'].search_count([('state', '=', 'outgoing')]))
+        # Lo facturado salió del almacén: ningún pedido facturado sin entrega hecha.
+        facturados = self.env['sale.order'].search([('invoice_ids', '!=', False)])
+        for pedido in facturados:
+            self.assertTrue(all(p.state in ('done', 'cancel') for p in pedido.picking_ids),
+                            pedido.name)
+        # La señal de contacto se alimenta: hay oportunidades con contacto reciente.
+        ganadas_o_vivas = self.env['crm.lead'].search([('type', '=', 'opportunity')])
+        self.assertTrue(any(lead.x_fecha_ultimo_contacto for lead in ganadas_o_vivas))
