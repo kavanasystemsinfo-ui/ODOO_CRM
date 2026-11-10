@@ -111,6 +111,9 @@ class SimuladorEmpresa(models.AbstractModel):
             with self.env.cr.savepoint():
                 return funcion() or 0
         except Exception as exc:  # noqa: BLE001 - se informa y se sigue
+            # La base volvió al punto de guardado, pero la caché del ORM aún
+            # recuerda lo que el paso hizo: se vacía para no arrastrarlo.
+            self.env.invalidate_all()
             _logger.warning('Simulador: el paso %s falló: %s', nombre, exc)
             resumen['incidencias'].append(f'{nombre}: {exc}')
             return 0
@@ -399,7 +402,12 @@ class SimuladorEmpresa(models.AbstractModel):
     def _entregar(self, cuantos: int) -> int:
         pendientes = self.env['stock.picking'].search(
             [('picking_type_code', '=', 'outgoing'), ('state', 'in', ('confirmed', 'waiting'))])
-        pendientes.action_assign()
+        for albaran in pendientes:  # uno a uno: «nada que reservar» no para a los demás
+            try:
+                with self.env.cr.savepoint():
+                    albaran.action_assign()
+            except UserError:
+                self.env.invalidate_all()
         albaranes = self.env['stock.picking'].search(
             [('picking_type_code', '=', 'outgoing'), ('state', '=', 'assigned')],
             order='scheduled_date, id', limit=cuantos)
