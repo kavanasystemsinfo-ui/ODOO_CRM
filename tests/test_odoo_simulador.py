@@ -150,5 +150,7 @@ class TestSimulador(TransactionCase):
         self.assertEqual(lead.country_id.code, 'ES')
         self.assertNotIn('Tufted', self.linea_ingles.name)
         self.assertTrue(self.env['ir.config_parameter'].sudo().get_str('web.base.url').startswith('https://'))
-        # Una segunda pasada no cambia nada (idempotente).
+        # Idempotente: una pasada completa lo que el propio tramo creó después del
+        # paso de coherencia (leads nuevos); la siguiente ya no cambia nada.
+        self.Sim._coherencia_datos()
         self.assertEqual(self.Sim._coherencia_datos(), 0)
