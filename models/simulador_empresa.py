@@ -80,6 +80,7 @@ class SimuladorEmpresa(models.AbstractModel):
             ('correos_saneados', self._correos_ficticios),
             ('albaranes_reparados', self._reparar_albaranes),
             ('albaranes_vinculados', self._vincular_albaranes),
+            ('entregas_corregidas', self._corregir_destino_entregas),
             ('leads_nuevos', lambda: self._leads_nuevos(rng, cuantos['leads_nuevos'], nuevos)),
             ('cualificaciones', lambda: self._cualificar(cuantos['cualificaciones'], nuevos)),
             ('propuestas', lambda: self._proponer(rng, cuantos['propuestas'], nuevos)),
@@ -276,6 +277,39 @@ class SimuladorEmpresa(models.AbstractModel):
                 movimiento.sale_line_id = linea
             vinculados += 1
         return vinculados
+
+    def _corregir_destino_entregas(self) -> int:
+        """Entregas heredadas hechas que acabaron en una ubicación de tipo vista.
+
+        La antigua configuración en tres pasos dejó salidas hechas con destino
+        «WH» (vista) en lugar de «Clientes»: para Odoo la mercancía no salió y la
+        línea del pedido marca 0 entregado. Cambiar el destino de vista a cliente
+        no mueve existencias (ninguna de las dos es interna y una vista no tiene
+        stock), así que es la única corrección de historia que se hace. El ORM no
+        deja reescribir movimientos hechos: se hace por SQL acotado a ese caso y
+        después se recalcula lo entregado.
+        """
+        movimientos = self.env['stock.move'].search(
+            [('state', '=', 'done'), ('picking_code', '=', 'outgoing'),
+             ('location_dest_id.usage', '=', 'view'),
+             ('picking_type_id.default_location_dest_id.usage', '=', 'customer')])
+        if not movimientos:
+            return 0
+        for tipo in movimientos.picking_type_id:
+            ids = tuple(movimientos.filtered(lambda m: m.picking_type_id == tipo).ids)
+            destino = tipo.default_location_dest_id.id
+            self.env.cr.execute(
+                'UPDATE stock_move SET location_dest_id = %s WHERE id IN %s', (destino, ids))
+            self.env.cr.execute(
+                'UPDATE stock_move_line SET location_dest_id = %s WHERE move_id IN %s',
+                (destino, ids))
+            self.env.cr.execute(
+                'UPDATE stock_picking SET location_dest_id = %s WHERE id IN '
+                '(SELECT DISTINCT picking_id FROM stock_move WHERE id IN %s)', (destino, ids))
+        self.env.invalidate_all()
+        lineas = movimientos.sale_line_id
+        self.env.add_to_compute(lineas._fields['qty_delivered'], lineas)
+        return len(movimientos)
 
     def _asignar_proveedores(self) -> int:
         """Cada referencia sin proveedor recibe uno, repartido por categoría."""
