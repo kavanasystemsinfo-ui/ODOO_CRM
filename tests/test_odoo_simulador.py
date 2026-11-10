@@ -67,8 +67,7 @@ class TestSimulador(TransactionCase):
             'name': 'Presupuesto de 25 mesas de comedor — Contract Habitat',
             'phone': '+32 10 588 558', 'type': 'lead'})
         cls.linea_ingles = pedido.order_line[0]
-        cls.linea_ingles.name = 'Tufted Gallery Bench
-Add a touch of sophistication with the bench'
+        cls.linea_ingles.name = 'Tufted Gallery Bench\nAdd a touch of sophistication with the bench'
         cls.lead_real = cls.env['crm.lead'].create({
             'name': 'Lead con correo de un dominio real', 'email_from': 'compras@reuters.com'})
         cls.nota_real = cls.lead_real.message_post(
