@@ -13,6 +13,12 @@ recalcula. Sin ellas el formulario y el código veían el score viejo.
 tarea apuntada: cuenta el último correo, el último mensaje enviado desde el
 chatter y la última actividad marcada como hecha. Una llamada planificada para
 mañana o una nota interna no son contacto.
+
+Límite conocido: es comunicación *registrada en Odoo*, no entrega confirmada.
+Un mensaje del chatter sale por correo a los seguidores, pero Odoo no sabe si
+el cliente lo leyó, y una actividad hecha la marca el propio comercial. Para
+una señal verificable habría que mirar respuestas entrantes del cliente
+(mensajes con author_id = partner del lead); se deja como mejora.
 """
 from __future__ import annotations
 
@@ -49,7 +55,8 @@ class CrmLeadScoring(models.Model):
     x_contacto_reciente = fields.Boolean(
         string=f'Contacto en {DIAS_CONTACTO_RECIENTE} días',
         compute='_compute_x_contacto_reciente',
-        help=f'Hubo contacto real con el cliente en los últimos {DIAS_CONTACTO_RECIENTE} días.',
+        help=f'Hay comunicación con el cliente registrada en Odoo (correo, mensaje enviado '
+             f'o actividad hecha) en los últimos {DIAS_CONTACTO_RECIENTE} días.',
     )
     x_email_corporativo = fields.Boolean(
         string='Email corporativo',
@@ -85,7 +92,7 @@ class CrmLeadScoring(models.Model):
 
     @api.model
     def _es_contacto_real(self, mensaje) -> bool:
-        """Un mensaje cuenta como contacto si llegó o salió hacia el cliente."""
+        """Cuenta como contacto la comunicación registrada con el cliente (no su entrega)."""
         if mensaje.mail_activity_type_id:  # actividad marcada como hecha
             return True
         if mensaje.message_type == 'email':

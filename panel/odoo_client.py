@@ -248,7 +248,10 @@ def valor_almacen() -> float:
 
 
 def traza_existencias_movimientos() -> dict:
-    """Unidades en almacén respaldadas por al menos un movimiento hecho.
+    """Unidades en referencias que tienen al menos un movimiento hecho.
+
+    Es una comprobación de presencia, no de trazabilidad ni conciliación:
+    no reparte las unidades entre movimientos ni suma cantidades.
 
     No se compara la suma de movimientos con el stock (en esta demo no cuadra:
     el almacén se sembró con un ajuste y hay transferencias internas); se mira

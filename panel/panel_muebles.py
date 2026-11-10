@@ -105,20 +105,36 @@ def _reinicio_estado() -> str:
     return REINICIO["resultado"] or "libre"
 
 
+def _orden_reinicio() -> list[str]:
+    """Qué se ejecuta para restaurar.
+
+    En el servidor el panel no es root: arranca la unidad privilegiada con sudo
+    (regla estrecha, sin argumentos libres) y espera a que termine, porque
+    «systemctl start» de una unidad oneshot no vuelve hasta que acaba. En local
+    lanza el script directamente.
+    """
+    unidad = configuracion.unidad_restauracion()
+    if unidad:
+        return ["/usr/bin/sudo", "-n", "/usr/bin/systemctl", "start", unidad]
+    script = Path(__file__).resolve().parent / "demo_restaurar_muebles.py"
+    return [sys.executable, str(script), "--restaurar", "--sin-refrescar-panel"]
+
+
 def _lanzar_reinicio() -> None:
     """Ejecuta el motor de restauración en segundo plano (no bloquea el panel)."""
-    script = Path(__file__).resolve().parent / "demo_restaurar_muebles.py"
     with _CANDADO:
         REINICIO.update(en_curso=True, iniciado=time.time(), resultado=None,
                         detalle="Reiniciando el laboratorio (parar, recargar y arrancar).")
-    proceso = subprocess.run([sys.executable, str(script), "--restaurar",
-                              "--sin-refrescar-panel"],
-                             capture_output=True, text=True)
+    try:
+        proceso = subprocess.run(_orden_reinicio(), capture_output=True, text=True)
+        codigo, salida = proceso.returncode, (proceso.stdout or proceso.stderr or "")
+    except OSError as exc:  # sudo o systemctl no disponibles
+        codigo, salida = 1, f"no se pudo lanzar la restauración: {exc}"
     with _CANDADO:
         REINICIO.update(en_curso=False,
-                        resultado="hecho" if proceso.returncode == 0 else "error",
-                        detalle=(proceso.stdout or proceso.stderr or "").strip()[-400:])
-    if proceso.returncode == 0:  # la caché describe datos que ya no existen
+                        resultado="hecho" if codigo == 0 else "error",
+                        detalle=salida.strip()[-400:])
+    if codigo == 0:  # la caché describe datos que ya no existen
         for fichero in configuracion.carpeta_cache().glob("dia_*.json"):
             fichero.unlink(missing_ok=True)
 

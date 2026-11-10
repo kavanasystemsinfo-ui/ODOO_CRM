@@ -1,6 +1,8 @@
 # /etc/systemd/system/muebles-restore.service
+# Lo lanza muebles-restore.timer cada 30 minutos. Primero comprueba el estado
+# (solo lectura) y restaura únicamente si un visitante cambió los datos.
 [Unit]
-Description=Restauración automática del laboratorio de demostración de muebles
+Description=Limpieza condicional del laboratorio de demostración de muebles
 After=network-online.target docker.service
 Wants=network-online.target
 
@@ -9,4 +11,6 @@ Type=oneshot
 User=root
 WorkingDirectory=/root/ODOO_CRM/panel
 EnvironmentFile=/etc/muebles/panel.env
-ExecStart=/usr/bin/python3 -u /root/ODOO_CRM/panel/demo_restaurar_muebles.py --restaurar
+Environment=MUEBLES_PANEL_CACHE=/var/cache/muebles-panel
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/bin/bash /root/ODOO_CRM/panel/limpieza_automatica.sh

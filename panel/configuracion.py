@@ -90,4 +90,16 @@ def odoo_api_key() -> str:
 
 
 def carpeta_cache() -> Path:
-    return CARPETA / "cache_panel"
+    """Caché del día. En el servidor, /var/cache/muebles-panel (la del usuario sin
+    privilegios del panel); en local, junto al código."""
+    return Path(_texto("MUEBLES_PANEL_CACHE", str(CARPETA / "cache_panel")))
+
+
+def unidad_restauracion() -> str:
+    """Unidad systemd que restaura el laboratorio cuando el panel no es root.
+
+    Vacía (desarrollo local): el panel lanza el script directamente. En el
+    servidor vale «muebles-restore-ahora.service» y el panel solo puede
+    arrancarla con la regla de sudo de scripts/systemd/muebles-panel.sudoers.
+    """
+    return os.environ.get("MUEBLES_RESTORE_UNIT", "").strip()

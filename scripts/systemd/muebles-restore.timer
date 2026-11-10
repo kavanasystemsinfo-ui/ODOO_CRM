@@ -1,5 +1,5 @@
 [Unit]
-Description=Ejecuta la restauración del laboratorio cada 30 minutos
+Description=Comprueba el laboratorio cada 30 minutos y lo restaura solo si cambió
 
 [Timer]
 OnCalendar=*:0/30

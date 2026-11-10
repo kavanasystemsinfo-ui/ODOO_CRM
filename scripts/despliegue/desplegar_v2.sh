@@ -150,9 +150,12 @@ desplegar() {
     # El temporizador salta a :00 y :30: si hay una restauración en marcha, se espera.
     # Es un servicio oneshot: mientras corre está en "activating", no en
     # "active", así que se mira el estado exacto (fallo visto el 07-11).
-    while [ "$(systemctl show -p ActiveState --value muebles-restore.service)" != "inactive" ] \
-          && [ "$(systemctl show -p ActiveState --value muebles-restore.service)" != "failed" ]; do
-      echo "  restauración automática en curso: esperando"; sleep 10
+    # También la del botón del panel (muebles-restore-ahora), si la hay.
+    for unidad in muebles-restore.service muebles-restore-ahora.service; do
+      while [ "$(systemctl show -p ActiveState --value "$unidad")" != "inactive" ] \
+            && [ "$(systemctl show -p ActiveState --value "$unidad")" != "failed" ]; do
+        echo "  restauración en curso ($unidad): esperando"; sleep 10
+      done
     done
   fi
   systemd stop muebles-panel.service || true

@@ -15,6 +15,7 @@ MODELOS_DEL_PANEL = [
     'sale.order', 'sale.order.line', 'purchase.order', 'purchase.order.line',
     'stock.picking', 'stock.picking.type', 'stock.quant', 'stock.location',
     'stock.move', 'stock.move.line', 'account.move', 'crm.lead', 'mail.activity',
+    'mail.message',
 ]
 
 
@@ -81,3 +82,39 @@ class TestUsuarioPanel(TransactionCase):
             comprobados += 1
         self.assertGreaterEqual(comprobados, 8, 'muy pocos modelos con datos para comprobar')
         self.assertTrue(self.env['mail.activity'].search_count([]))
+
+    def test_mail_message_solo_lee_mensajes_de_leads(self):
+        """El score lee el chatter de los leads; el resto de mensajes no le incumbe.
+
+        Usuario interno recibe de Mail permisos condicionados sobre mensajes. Sin
+        restricción propia, el panel podría leer el chatter de clientes, pedidos o
+        facturas y publicar mensajes. Aquí se prueban las cuatro operaciones.
+        """
+        del_lead = self.lead.message_post(body='Le adjunto la propuesta', message_type='comment',
+                                          subtype_xmlid='mail.mt_comment')
+        cliente = self.env['res.partner'].create({'name': 'Cliente de prueba'})
+        del_cliente = cliente.message_post(body='Nota sobre el cliente', message_type='comment',
+                                           subtype_xmlid='mail.mt_note')
+        env = self.env(user=self.usuario)
+        Mensajes = env['mail.message']
+
+        visibles = Mensajes.search([('id', 'in', (del_lead.id, del_cliente.id))])
+        self.assertEqual(visibles.ids, [del_lead.id])
+        self.assertEqual(Mensajes.browse(del_lead.id).body, del_lead.body)
+        with self.assertRaises(AccessError):
+            Mensajes.browse(del_cliente.id).check_access('read')
+
+        with self.assertRaises(AccessError):
+            Mensajes.create({'model': 'crm.lead', 'res_id': self.lead.id,
+                             'body': 'No debería poder', 'message_type': 'comment'})
+        for operacion in ('write', 'unlink'):
+            with self.subTest(operacion=operacion), self.assertRaises(AccessError):
+                Mensajes.browse(del_lead.id).check_access(operacion)
+
+    def test_el_score_se_calcula_con_el_usuario_del_panel(self):
+        """La restricción de mail.message no rompe el cálculo que el panel necesita."""
+        self.lead.message_post(body='Le adjunto la propuesta', message_type='comment',
+                               subtype_xmlid='mail.mt_comment')
+        self.env.invalidate_all()
+        lead = self.env(user=self.usuario)['crm.lead'].browse(self.lead.id)
+        self.assertTrue(lead.x_contacto_reciente)
