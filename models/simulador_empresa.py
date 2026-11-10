@@ -27,6 +27,8 @@ from __future__ import annotations
 import logging
 from datetime import datetime, time, timedelta
 
+from psycopg2 import errors as pg_errors
+
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
@@ -111,6 +113,10 @@ class SimuladorEmpresa(models.AbstractModel):
         try:
             with self.env.cr.savepoint():
                 return funcion() or 0
+        except (pg_errors.SerializationFailure, pg_errors.DeadlockDetected):
+            # Otro proceso (las tareas programadas de Odoo) tocó lo mismo: el
+            # tramo entero se repite con una transacción nueva (simular_tramo.py).
+            raise
         except Exception as exc:  # noqa: BLE001 - se informa y se sigue
             # La base volvió al punto de guardado, pero la caché del ORM aún
             # recuerda lo que el paso hizo: se vacía para no arrastrarlo.
@@ -436,7 +442,12 @@ class SimuladorEmpresa(models.AbstractModel):
             if completar:
                 movimiento.quantity = movimiento.product_uom_qty
             movimiento.picked = True
-        albaran.with_context(skip_backorder=True, skip_sms=True).button_validate()
+        # Sin seguimiento: en la base de la demo, el mensaje automático de
+        # «cantidad recibida» de compras (plantilla track_po_line_qty_received)
+        # falla con MissingError dentro del tramo aunque el producto exista;
+        # fuera del tramo valida bien. Se pierde ese mensaje, no el dato.
+        albaran.with_context(skip_backorder=True, skip_sms=True,
+                             mail_notrack=completar).button_validate()
         return albaran.state == 'done'
 
     def _entregar(self, cuantos: int) -> int:
