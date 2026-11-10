@@ -47,6 +47,5 @@ simulador sigue trabajando.
 ## Consecuencias
 
 - La demo enseña la empresa entera, contabilidad incluida, y nadie la ensucia.
-- Quien quiera probar a crear cosas no puede hacerlo en la demo pública. Las
-  copias por visitante (`panel/sandbox.py`) siguen preparadas por si algún día
-  hay servidor para ellas.
+- Quien quiera probar a crear cosas tiene `/probar`: una copia privada de una
+  hora en el mismo servidor (ADR-005).
