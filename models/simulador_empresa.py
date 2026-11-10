@@ -27,6 +27,9 @@ from __future__ import annotations
 import logging
 from datetime import datetime, time, timedelta
 
+import re
+
+from markupsafe import Markup
 from psycopg2 import errors as pg_errors
 
 from odoo import _, api, fields, models
@@ -42,6 +45,7 @@ STOCK_MINIMO = 4      # por debajo de esto (previsto) se pide al proveedor
 STOCK_OBJETIVO = 12   # hasta dónde se repone
 DIAS_PARA_COBRO = 3
 DIAS_PRESUPUESTO_PERDIDO = 30
+CORREO_EN_TEXTO = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+')
 COMERCIALES = (('laura.ferrer', 'Laura Ferrer'), ('pau.marti', 'Pau Martí'))
 
 
@@ -212,7 +216,26 @@ class SimuladorEmpresa(models.AbstractModel):
                     lead.contact_name or 'contacto',
                     plan.dominio_ficticio(lead.partner_name or lead.name))
             cambios += 1
-        return cambios
+        return cambios + self._limpiar_historial()
+
+    def _mensajes_con_correo_real(self):
+        mensajes = self.env['mail.message'].search([('body', 'ilike', '@')])
+        return mensajes.filtered(lambda m: any(
+            not plan.es_email_ficticio(c) for c in CORREO_EN_TEXTO.findall(str(m.body or ''))))
+
+    def _limpiar_historial(self) -> int:
+        """El historial del chatter guarda el valor anterior de cada cambio.
+
+        En Odoo 20 va como HTML dentro del mensaje («antiguo@dominio → nuevo»):
+        al sustituir los correos reales, el antiguo seguía a la vista. Se retira
+        del texto sin tocar el resto del mensaje.
+        """
+        mensajes = self._mensajes_con_correo_real()
+        for mensaje in mensajes:
+            mensaje.body = Markup(CORREO_EN_TEXTO.sub(
+                lambda c: c.group(0) if plan.es_email_ficticio(c.group(0))
+                else '(correo retirado)', str(mensaje.body)))
+        return len(mensajes)
 
     def _reparar_albaranes(self) -> int:
         """Albaranes pendientes con ubicaciones que su operación ya no usa.
@@ -635,4 +658,7 @@ class SimuladorEmpresa(models.AbstractModel):
             if not plan.es_email_ficticio(lead.email_from)]
         if reales:
             problemas.append(f'{len(reales)} correos con dominio real (p. ej. {reales[0]})')
+        en_historial = len(self._mensajes_con_correo_real())
+        if en_historial:
+            problemas.append(f'{en_historial} mensajes con correos reales en el historial')
         return problemas

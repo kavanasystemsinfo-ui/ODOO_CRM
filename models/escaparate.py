@@ -26,6 +26,13 @@ from odoo.fields import Domain
 
 GRUPO = 'ODOO_CRM.group_escaparate'
 USUARIO_VISITA = 'visita'
+FILTRO_TODO = 'Toda la empresa'
+# Acciones que abren con «Mis oportunidades» o «Mis presupuestos». El visitante
+# no es comercial: sin un favorito por defecto vería el embudo vacío.
+ACCIONES_TODA_LA_EMPRESA = (
+    'crm.crm_lead_action_pipeline', 'crm.crm_lead_action_forecast',
+    'sale.action_quotations_with_onboarding', 'sale.action_quotations',
+)
 
 # Modelos técnicos que la interfaz escribe al navegar. Nada de negocio.
 EXCEPCIONES = frozenset({
@@ -56,9 +63,10 @@ class EscaparateBase(models.AbstractModel):
 
     def _make_access_error_message(self, operation: str, domain: Domain) -> AccessError:
         if self._escaparate_cerrado(operation):
+            modelo = self.env['ir.model'].sudo()._get(self._name).name or self._description
             return AccessError(_(
                 'Estás en el escaparate de solo lectura de la demo: puedes ver todo, '
-                'pero no crear, modificar ni borrar (%(modelo)s).', modelo=self._description))
+                'pero no crear, modificar ni borrar (%(modelo)s).', modelo=modelo))
         return super()._make_access_error_message(operation, domain)
 
 
@@ -90,3 +98,19 @@ class Escaparate(models.AbstractModel):
         if tecnico:
             cambios.append((3, tecnico.id))
         visita.sudo().write({campo: cambios})
+        self._filtros_toda_la_empresa(visita)
+
+    @api.model
+    def _filtros_toda_la_empresa(self, visita) -> None:
+        Filtros = self.env['ir.filters'].sudo().with_context(active_test=False)
+        for xmlid in ACCIONES_TODA_LA_EMPRESA:
+            accion = self.env.ref(xmlid, raise_if_not_found=False)
+            if not accion or Filtros.search_count([
+                    ('action_id', '=', accion.id), ('user_ids', 'in', visita.id),
+                    ('name', '=', FILTRO_TODO)]):
+                continue
+            Filtros.create({
+                'name': FILTRO_TODO, 'model_id': accion.res_model, 'action_id': accion.id,
+                'domain': '[]', 'context': '{}', 'is_default': True,
+                'user_ids': [(6, 0, visita.ids)],
+            })

@@ -44,8 +44,10 @@ class TestEscaparate(TransactionCase):
             with self.subTest(modelo=registro._name):
                 for operacion in ('create', 'write', 'unlink'):
                     self.assertFalse(visto.has_access(operacion), operacion)
-                with self.assertRaisesRegex(AccessError, 'solo lectura'):
+                with self.assertRaisesRegex(AccessError, 'solo lectura') as error:
                     visto.write(valores)
+                nombre = self.env['ir.model']._get(registro._name).name
+                self.assertIn(nombre, str(error.exception))
                 with self.assertRaises(AccessError):
                     visto.unlink()
                 with self.assertRaises(AccessError):
@@ -101,3 +103,11 @@ class TestEscaparate(TransactionCase):
         self.assertTrue(visita.has_group('ODOO_CRM.group_escaparate'))
         self.assertTrue(visita.has_group('account.group_account_readonly'))
         self.assertFalse(visita.has_group('base.group_no_one'))
+        embudo = self.env.ref('crm.crm_lead_action_pipeline')
+        filtro = self.env['ir.filters'].search([('action_id', '=', embudo.id),
+                                                ('user_ids', 'in', visita.id)])
+        self.assertTrue(filtro.is_default)
+        self.assertEqual(filtro.domain, '[]')
+        self.env['odoo_crm.escaparate']._preparar_visita()  # idempotente
+        self.assertEqual(len(self.env['ir.filters'].search([('action_id', '=', embudo.id),
+                                                            ('user_ids', 'in', visita.id)])), 1)
