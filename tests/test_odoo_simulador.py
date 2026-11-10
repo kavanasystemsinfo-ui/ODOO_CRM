@@ -56,6 +56,18 @@ class TestSimulador(TransactionCase):
                            (vista, albaran.id))
         cls.env.invalidate_all()
         cls.pedido_heredado = heredado
+        # Restos de los datos de ejemplo: proveedor en California, lead con teléfono
+        # belga y la empresa en el título, línea de pedido en inglés.
+        cls.proveedor_us = cls.env['res.partner'].create({
+            'name': 'Fusteria Industrial Turia S.L.', 'is_company': True, 'supplier_rank': 1,
+            'street': '1839 Arbor Way', 'city': 'Turlock', 'zip': '95380',
+            'country_id': cls.env.ref('base.us').id, 'vat': 'US12345672',
+            'phone': '(623)-853-7197'})
+        cls.lead_demo = cls.env['crm.lead'].create({
+            'name': 'Presupuesto de 25 mesas de comedor — Contract Habitat',
+            'phone': '+32 10 588 558', 'type': 'lead'})
+        cls.linea_ingles = pedido.order_line[0]
+        cls.linea_ingles.name = 'Tufted Gallery Bench\nAdd a touch of sophistication with the bench'
         cls.lead_real = cls.env['crm.lead'].create({
             'name': 'Lead con correo de un dominio real', 'email_from': 'compras@reuters.com'})
         cls.nota_real = cls.lead_real.message_post(
@@ -120,3 +132,25 @@ class TestSimulador(TransactionCase):
         # La señal de contacto se alimenta: hay oportunidades con contacto reciente.
         ganadas_o_vivas = self.env['crm.lead'].search([('type', '=', 'opportunity')])
         self.assertTrue(any(lead.x_fecha_ultimo_contacto for lead in ganadas_o_vivas))
+
+    def test_los_datos_quedan_coherentes(self):
+        resumen = self.Sim._simular_tramo(datetime(2026, 11, 9, 9, 5))
+        self.assertEqual(resumen['incidencias'], [])
+        proveedor = self.proveedor_us
+        self.assertEqual(proveedor.country_id.code, 'ES')
+        self.assertEqual(proveedor.city, 'València')       # «Turia» -> València
+        self.assertTrue(proveedor.zip.startswith('460'))
+        self.assertEqual(proveedor.state_id.code, 'V')
+        self.assertTrue(proveedor.phone.startswith('+34 96'))
+        self.assertRegex(proveedor.vat, r'^ESB\d{8}$')
+        lead = self.lead_demo
+        self.assertEqual(lead.partner_name, 'Contract Habitat')
+        self.assertTrue(lead.contact_name and lead.contact_name != lead.name)
+        self.assertTrue(lead.phone.startswith('+34 6'))
+        self.assertEqual(lead.country_id.code, 'ES')
+        self.assertNotIn('Tufted', self.linea_ingles.name)
+        self.assertTrue(self.env['ir.config_parameter'].sudo().get_str('web.base.url').startswith('https://'))
+        # Idempotente: una pasada completa lo que el propio tramo creó después del
+        # paso de coherencia (leads nuevos); la siguiente ya no cambia nada.
+        self.Sim._coherencia_datos()
+        self.assertEqual(self.Sim._coherencia_datos(), 0)
