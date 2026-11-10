@@ -42,6 +42,28 @@ instantánea con sus recuentos (`<instantánea>.recuentos.json`). La limpieza de
 cada media hora compara contra esos recuentos y comparte cerrojo con la
 jornada, así que nunca restaura mientras se simula.
 
+## Reparaciones de la base heredada
+
+Al ponerlo en marcha sobre la base real aparecieron restos de una antigua
+configuración del almacén en tres pasos. Se reparan en cada tramo, de forma
+idempotente:
+
+- **7 albaranes pendientes** con ubicaciones archivadas («Tránsito», «Control
+  de calidad»): se devuelven a las ubicaciones de su tipo de operación. Al
+  validarlos así, dejaban existencias negativas.
+- **37 entregas hechas sin vínculo con su pedido** (solo el texto «origen»): se
+  vinculan si casan sin ambigüedad (pedido confirmado con ese nombre y una sola
+  línea por producto). Casaron las 37 y sus 68 movimientos.
+- **61 movimientos hechos con destino «WH» (vista)** en lugar de «Clientes»: se
+  corrige el destino por SQL acotado (el ORM no deja tocar movimientos hechos).
+  No mueve existencias: 2.184 unidades antes y después. Lo entregado pasó de 6
+  a 254 de 314 unidades (el resto son entregas pendientes de verdad).
+
+Un detalle de Odoo 20 que costó encontrar: si los recálculos se dejan para el
+cierre de un punto de guardado, Odoo los hace con otro entorno y el mensaje de
+seguimiento de compras («cantidad recibida») falla con MissingError. Cada paso
+vacía sus recálculos dentro de su punto de guardado.
+
 ## Consecuencias
 
 - Las cifras de la demo cambian cada tramo. Las de `ESPERADO` y las de
@@ -49,6 +71,9 @@ jornada, así que nunca restaura mientras se simula.
   hoy lo da el panel.
 - La base crece unos pocos pedidos al día: en un año, del orden de un millar.
   No hace falta podarla.
+- La cola heredada se absorbe a ritmo de empresa: tres facturas y una o dos
+  actividades por tramo. Las 38 facturas pendientes y las 29 actividades
+  vencidas de la base de partida tardan en torno a una semana.
 - Si el simulador falla, la jornada no fija instantánea y la demo se queda como
   estaba. El fallo se ve en `journalctl -u muebles-jornada`.
 - Pendiente: el visitante sigue entrando a una base compartida. El escaparate de
