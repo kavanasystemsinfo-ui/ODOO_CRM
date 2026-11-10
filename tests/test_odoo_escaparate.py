@@ -90,7 +90,8 @@ class TestEscaparate(TransactionCase):
         self.assertGreater(recorridos, 20)
 
     def test_preparar_visita_pone_el_grupo(self):
-        visita = new_test_user(self.env, login='visita', groups='base.group_user')
+        visita = new_test_user(self.env, login='visita', groups='base.group_user,base.group_no_one')
         self.env['odoo_crm.escaparate']._preparar_visita()
         self.assertTrue(visita.has_group('ODOO_CRM.group_escaparate'))
         self.assertTrue(visita.has_group('account.group_account_readonly'))
+        self.assertFalse(visita.has_group('base.group_no_one'))

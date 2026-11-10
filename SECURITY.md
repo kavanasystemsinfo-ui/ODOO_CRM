@@ -64,16 +64,25 @@ aún**: `/demo` sigue abriendo la sesión del usuario `visita`. Clona una base p
 firmada HMAC-SHA256 (`MUEBLES_SECRETO`), caducidad y tope de bases simultáneas;
 los nombres de base se validan con `muebles_demo_[a-z0-9]{4,12}`.
 
-## Usuario de visita de la demo (comprobado en el servidor el 9-nov-2026)
+## Usuario de visita de la demo: escaparate de solo lectura
 
-`/demo` abre sesión como `visita` sin contraseña. No es administrador del
-sistema: no está en *Settings* (`base.group_system`) ni en contabilidad. Sí es
-usuario interno con ventas (todos los leads), compras (usuario), inventario
-(responsable) y funciones técnicas (`base.group_no_one`). Puede crear y borrar
-datos de demostración; no puede instalar módulos, cambiar usuarios ni ajustes.
-Un temporizador (`scripts/systemd/muebles-restore.timer`) comprueba cada 30
-minutos el estado y restaura la instantánea si alguien lo ha tocado.
-Esto es aceptable solo con datos sintéticos: no conectar nunca datos reales.
+`/demo` abre sesión como `visita` sin contraseña. Desde el 10-11-2026 está en el
+grupo «Escaparate: solo lectura» (`models/escaparate.py`): ve ventas, CRM,
+compras, inventario y contabilidad (grupo de Odoo de solo lectura contable),
+pero **no puede crear, modificar ni borrar nada en ningún modelo**, tampoco
+publicar en el chatter ni confirmar o validar documentos. El cierre no lista
+modelos: se aplica en `_access_domain`, el punto por el que pasan todos los
+permisos de Odoo 20, así que también cubre módulos futuros, y la interfaz abre
+los formularios en lectura. Solo quedan abiertos los asistentes (lo que intenten
+escribir en un modelo real vuelve a estar cerrado) y las preferencias y la
+presencia de la propia sesión. No tiene «Características técnicas» ni es
+administrador.
+
+La limpieza de cada media hora sigue activa como segunda barrera. Límite
+conocido: las preferencias del usuario (idioma, zona horaria) son de un usuario
+compartido; si alguien las cambia, las ven los siguientes visitantes hasta que
+se restauren. Esto es aceptable solo con datos sintéticos: no conectar nunca
+datos reales.
 
 ## Servidor
 

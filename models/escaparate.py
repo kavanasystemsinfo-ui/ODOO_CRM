@@ -72,7 +72,9 @@ class Escaparate(models.AbstractModel):
 
         Pone al usuario de visita en el escaparate y le da lectura de
         contabilidad (grupo de Odoo «solo lectura»), para que vea facturas y
-        cobros de la empresa simulada.
+        cobros de la empresa simulada. Le quita «Características técnicas»: sin
+        ser administrador, esos menús de Ajustes/Técnico fallan al abrirse y no
+        enseñan nada del negocio.
         """
         visita = self.env['res.users'].with_context(active_test=False).search(
             [('login', '=', USUARIO_VISITA)], limit=1)
@@ -83,4 +85,8 @@ class Escaparate(models.AbstractModel):
         if lectura_contable:
             grupos |= lectura_contable
         campo = 'group_ids' if 'group_ids' in visita._fields else 'groups_id'
-        visita.sudo().write({campo: [(4, grupo.id) for grupo in grupos]})
+        cambios = [(4, grupo.id) for grupo in grupos]
+        tecnico = self.env.ref('base.group_no_one', raise_if_not_found=False)
+        if tecnico:
+            cambios.append((3, tecnico.id))
+        visita.sudo().write({campo: cambios})
