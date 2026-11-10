@@ -58,16 +58,15 @@ class SimuladorEmpresa(models.AbstractModel):
         clave = plan.clave_tramo(momento)
         if clave is None:
             return {'omitido': 'fuera de horario', 'momento': momento.isoformat()}
-        parametros = self.env['ir.config_parameter']
-        ultimo = parametros.get_param(PARAM_ULTIMO) or ''
+        ultimo = self._param(PARAM_ULTIMO)
         if clave <= ultimo:
             return {'omitido': f'tramo ya simulado ({ultimo})', 'tramo': clave}
 
         primer_correo = self.env['mail.mail'].search([], order='id desc', limit=1).id or 0
         resumen = {'tramo': clave, 'incidencias': []}
-        if not parametros.get_param(PARAM_SANEADO):
+        if not self._param(PARAM_SANEADO):
             resumen['saneamiento'] = self._paso(resumen, 'saneamiento', self._sanear)
-            parametros.set_param(PARAM_SANEADO, clave)
+            self._param(PARAM_SANEADO, clave)
 
         rng = plan.generador(clave)
         cuantos = plan.plan_tramo(clave)
@@ -102,7 +101,7 @@ class SimuladorEmpresa(models.AbstractModel):
         if problemas:
             raise UserError(_('El tramo %(tramo)s deja la base incoherente: %(p)s',
                               tramo=clave, p='; '.join(problemas)))
-        parametros.set_param(PARAM_ULTIMO, clave)
+        self._param(PARAM_ULTIMO, clave)
         _logger.info('Simulador: tramo %s %s', clave, resumen)
         return resumen
 
@@ -115,6 +114,19 @@ class SimuladorEmpresa(models.AbstractModel):
             _logger.warning('Simulador: el paso %s falló: %s', nombre, exc)
             resumen['incidencias'].append(f'{nombre}: {exc}')
             return 0
+
+    def _param(self, clave: str, valor: str | None = None) -> str:
+        """Lee o escribe un parámetro del sistema (Odoo 20: get_str/set_str)."""
+        parametros = self.env['ir.config_parameter'].sudo()
+        if valor is None:
+            if hasattr(parametros, 'get_str'):
+                return parametros.get_str(clave) or ''
+            return parametros.get_param(clave) or ''
+        if hasattr(parametros, 'set_str'):
+            parametros.set_str(clave, valor)
+        else:
+            parametros.set_param(clave, valor)
+        return valor
 
     def _ahora_local(self) -> datetime:
         from zoneinfo import ZoneInfo
