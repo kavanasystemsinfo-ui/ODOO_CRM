@@ -148,16 +148,19 @@ class SimuladorCoherencia(models.AbstractModel):
     def _coherencia_lineas(self) -> int:
         """Descripciones en inglés del catálogo antiguo -> las del producto en español."""
         cambios = 0
+        espanol = self.env['res.lang'].with_context(active_test=True).search_count(
+            [('code', '=', 'es_ES')])
+        idioma = 'es_ES' if espanol else (self.env.lang or 'en_US')
         lineas_venta = self.env['sale.order.line'].search([('product_id', '!=', False)])
         for linea in lineas_venta.filtered(lambda l: datos.parece_ingles(l.name)):
-            producto = linea.product_id.with_context(lang='es_ES')
+            producto = linea.product_id.with_context(lang=idioma)
             texto = producto.get_product_multiline_description_sale()
             if texto != linea.name:
                 linea.name = texto
                 cambios += 1
         lineas_compra = self.env['purchase.order.line'].search([('product_id', '!=', False)])
         for linea in lineas_compra.filtered(lambda l: datos.parece_ingles(l.name)):
-            producto = linea.product_id.with_context(lang='es_ES')
+            producto = linea.product_id.with_context(lang=idioma)
             texto = producto.display_name
             if producto.description_purchase:
                 texto += '\n' + producto.description_purchase
