@@ -95,6 +95,11 @@ def es_telefono_espanol(telefono: str | None) -> bool:
     return not telefono or telefono.replace(' ', '').startswith('+34')
 
 
+def telefono_de_relleno(telefono: str | None) -> bool:
+    """Los de la carga inicial: «+34 600 007 007», a la vista que son de mentira."""
+    return bool(re.fullmatch(r'\+34 600 0(\d\d) 0\1', (telefono or '').strip()))
+
+
 def cif(semilla: str) -> str:
     """CIF de sociedad limitada (B) con su control válido, en el formato de Odoo 20 (ES…)."""
     cuerpo = str(_numero(semilla + '/cif', 7)).zfill(7)
@@ -136,6 +141,11 @@ def renombrar(texto: str | None) -> str:
 
 
 def parece_ingles(texto: str | None) -> bool:
-    """Descripciones heredadas del catálogo en inglés («Tufted Gallery Bench…»)."""
+    """Descripciones heredadas del catálogo en inglés («Tufted Gallery Bench…»).
+
+    La referencia interna entre corchetes («[console-table-umber]») se ignora:
+    es un código, y está en inglés también en las líneas ya traducidas.
+    """
+    sin_referencia = re.sub(r'\[[^\]]*\]', '', texto or '')
     return bool(re.search(r'\b(the|with|and|this|chair|table|bench|stool|made|piece)\b',
-                          texto or '', re.I))
+                          sin_referencia, re.I))
