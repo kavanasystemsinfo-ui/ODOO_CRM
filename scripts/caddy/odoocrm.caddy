@@ -1,0 +1,39 @@
+# Bloque de /etc/caddy/Caddyfile para la demo (referencia versionada; el fichero
+# real vive en el servidor). El orden importa: va dentro de «route».
+odoocrm.kavanasystems.com {
+	encode gzip
+	log {
+		output stdout
+		format console
+	}
+
+	header X-Forwarded-Proto {scheme}
+
+	route {
+		handle / {
+			header Location /panel/
+			respond "" 302
+		}
+
+		handle /muebles* {
+			redir * https://www.kavanasystems.com/odoo_intelligence 308
+		}
+
+		handle /panel* {
+			uri strip_prefix /panel
+			reverse_proxy localhost:8081
+		}
+
+		# Copias de prueba por visitante (ADR-005): quien lleva la cookie firmada
+		# «muebles_prueba» va entero al Odoo de pruebas. La cookie la pone
+		# /probar/crear y la valida Odoo; Caddy solo mira que exista.
+		@prueba header_regexp prueba Cookie (^|;\s*)muebles_prueba=
+		handle @prueba {
+			reverse_proxy localhost:8072
+		}
+
+		handle {
+			reverse_proxy localhost:8070
+		}
+	}
+}

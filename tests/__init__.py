@@ -11,3 +11,4 @@ else:
     from . import test_odoo_permisos_panel
     from . import test_odoo_simulador
     from . import test_odoo_escaparate
+    from . import test_odoo_pruebas

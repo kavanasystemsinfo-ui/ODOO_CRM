@@ -1,0 +1,11 @@
+# /etc/systemd/system/muebles-pruebas-limpieza.service
+# Borra las copias de prueba caducadas y suelta su memoria (panel/limpiar_pruebas.py).
+[Unit]
+Description=Limpieza de las copias de prueba por visitante
+After=docker.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/ODOO_CRM/panel
+ExecStart=/usr/bin/python3 -u /root/ODOO_CRM/panel/limpiar_pruebas.py
