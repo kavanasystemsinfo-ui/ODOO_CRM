@@ -79,6 +79,7 @@ class SimuladorEmpresa(models.AbstractModel):
         pasos = (
             ('correos_saneados', self._correos_ficticios),
             ('albaranes_reparados', self._reparar_albaranes),
+            ('albaranes_vinculados', self._vincular_albaranes),
             ('leads_nuevos', lambda: self._leads_nuevos(rng, cuantos['leads_nuevos'], nuevos)),
             ('cualificaciones', lambda: self._cualificar(cuantos['cualificaciones'], nuevos)),
             ('propuestas', lambda: self._proponer(rng, cuantos['propuestas'], nuevos)),
@@ -242,6 +243,39 @@ class SimuladorEmpresa(models.AbstractModel):
                                  message_type='comment', subtype_xmlid='mail.mt_note')
             reparados += 1
         return reparados
+
+    def _vincular_albaranes(self) -> int:
+        """Entregas heredadas sin vínculo con su pedido.
+
+        Los guiones de carga crearon albaranes de salida con el pedido solo en el
+        texto «origen». Odoo no los cuenta como entregados (qty_delivered = 0) y
+        el pedido no se factura nunca. Se vinculan únicamente si casan sin
+        ambigüedad: un pedido confirmado con ese nombre y, para cada movimiento,
+        una sola línea del pedido con el mismo producto.
+        """
+        vinculados = 0
+        huerfanos = self.env['stock.picking'].search(
+            [('picking_type_code', '=', 'outgoing'), ('sale_id', '=', False),
+             ('origin', '!=', False)])
+        for albaran in huerfanos:
+            pedido = self.env['sale.order'].search(
+                [('name', '=', albaran.origin), ('state', '=', 'sale')])
+            if len(pedido) != 1:
+                continue
+            emparejado = {}
+            for movimiento in albaran.move_ids:
+                lineas = pedido.order_line.filtered(lambda l: l.product_id == movimiento.product_id)
+                if len(lineas) != 1:
+                    emparejado = None
+                    break
+                emparejado[movimiento] = lineas
+            if not emparejado:
+                continue
+            albaran.sale_id = pedido
+            for movimiento, linea in emparejado.items():
+                movimiento.sale_line_id = linea
+            vinculados += 1
+        return vinculados
 
     def _asignar_proveedores(self) -> int:
         """Cada referencia sin proveedor recibe uno, repartido por categoría."""
