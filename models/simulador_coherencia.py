@@ -39,6 +39,10 @@ class SimuladorCoherencia(models.AbstractModel):
         sin_zona = self.env['res.users'].search([('share', '=', False), ('tz', '=', False)])
         sin_zona.tz = datos.ZONA_HORARIA
         cambios += len(sin_zona)
+        sin_pais = self.env['res.users'].search([('share', '=', False)]).partner_id.filtered(
+            lambda p: not p.country_id)
+        sin_pais.country_id = self.env.ref('base.es')
+        cambios += len(sin_pais)
         empresa = self.env.company.partner_id
         cambios += self._escribir_si_cambia(empresa, self._valores_direccion(
             empresa, ciudad='Castelló de la Plana', telefono=empresa.phone))
@@ -62,8 +66,8 @@ class SimuladorCoherencia(models.AbstractModel):
             'street': direccion['street'], 'city': direccion['city'], 'zip': direccion['zip'],
             'state_id': self._provincia(direccion['provincia']).id,
             'country_id': self.env.ref('base.es').id,
-            'phone': telefono if datos.es_telefono_espanol(telefono) and telefono
-            else direccion['phone'],
+            'phone': telefono if telefono and datos.es_telefono_espanol(telefono)
+            and not datos.telefono_de_relleno(telefono) else direccion['phone'],
         }
 
     def _escribir_si_cambia(self, registro, valores: dict) -> int:
@@ -147,16 +151,19 @@ class SimuladorCoherencia(models.AbstractModel):
         lineas_venta = self.env['sale.order.line'].search([('product_id', '!=', False)])
         for linea in lineas_venta.filtered(lambda l: datos.parece_ingles(l.name)):
             producto = linea.product_id.with_context(lang='es_ES')
-            linea.name = producto.get_product_multiline_description_sale()
-            cambios += 1
+            texto = producto.get_product_multiline_description_sale()
+            if texto != linea.name:
+                linea.name = texto
+                cambios += 1
         lineas_compra = self.env['purchase.order.line'].search([('product_id', '!=', False)])
         for linea in lineas_compra.filtered(lambda l: datos.parece_ingles(l.name)):
             producto = linea.product_id.with_context(lang='es_ES')
             texto = producto.display_name
             if producto.description_purchase:
                 texto += '\n' + producto.description_purchase
-            linea.name = texto
-            cambios += 1
+            if texto != linea.name:
+                linea.name = texto
+                cambios += 1
         return cambios
 
     # ------------------------------------------------------------ control
