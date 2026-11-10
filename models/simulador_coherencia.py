@@ -23,7 +23,8 @@ class SimuladorCoherencia(models.AbstractModel):
     @api.model
     def _coherencia_datos(self) -> int:
         return (self._coherencia_parametros() + self._coherencia_contactos()
-                + self._coherencia_leads() + self._coherencia_lineas())
+                + self._coherencia_leads() + self._coherencia_catalogo()
+                + self._coherencia_lineas())
 
     # ------------------------------------------------------------ parámetros
 
@@ -143,30 +144,86 @@ class SimuladorCoherencia(models.AbstractModel):
             cambios += bool(valores) + self._escribir_si_cambia(lead, destino)
         return cambios
 
+    # ------------------------------------------------------------ catálogo
+    #
+    # Los nombres y descripciones del catálogo están guardados solo en una
+    # clave de idioma (es_ES o en_US, según cómo se cargaron). Cualquier lectura
+    # que acabe en la otra devuelve False: el producto sale sin nombre. Por eso
+    # este paso lee y escribe el JSON de traducciones directamente: los dos
+    # idiomas llevan el mismo texto en español (la empresa solo trabaja en
+    # español) y la lectura no depende del idioma del contexto.
+
+    def _textos_catalogo(self) -> dict[int, tuple[str, str, str]]:
+        """product.product id -> (referencia, nombre, descripción de venta) en español."""
+        self.env.flush_all()
+        self.env.cr.execute("""
+            SELECT pp.id, coalesce(pp.default_code, ''),
+                   coalesce(pt.name->>'es_ES', pt.name->>'en_US', ''),
+                   coalesce(pt.description_sale->>'es_ES', pt.description_sale->>'en_US', '')
+              FROM product_product pp JOIN product_template pt ON pt.id = pp.product_tmpl_id
+        """)
+        return {fila[0]: fila[1:] for fila in self.env.cr.fetchall()}
+
+    def _coherencia_catalogo(self) -> int:
+        cr = self.env.cr
+        self.env.flush_all()
+        cambios = 0
+        for columna in ('name', 'description_sale'):
+            cr.execute(f"""
+                UPDATE product_template
+                   SET {columna} = {columna}
+                       || jsonb_build_object('es_ES', coalesce({columna}->>'es_ES', {columna}->>'en_US'),
+                                             'en_US', coalesce({columna}->>'es_ES', {columna}->>'en_US'))
+                 WHERE {columna} IS NOT NULL
+                   AND ({columna}->>'es_ES' IS DISTINCT FROM {columna}->>'en_US')
+            """)
+            cambios += cr.rowcount
+        cr.execute("""
+            SELECT id, name->>'es_ES', description_sale->>'es_ES', furniture_material
+              FROM product_template WHERE description_sale IS NOT NULL
+        """)
+        for plantilla_id, nombre, descripcion, material_actual in cr.fetchall():
+            texto, material = datos.corregir_descripcion(nombre, descripcion)
+            if texto and texto != descripcion:
+                cr.execute("""
+                    UPDATE product_template
+                       SET description_sale = jsonb_build_object('es_ES', %s::text, 'en_US', %s::text)
+                     WHERE id = %s
+                """, (texto, texto, plantilla_id))
+                cambios += 1
+            if material and (material_actual or '').lower() != material:
+                cr.execute('UPDATE product_template SET furniture_material = %s WHERE id = %s',
+                           (material.capitalize(), plantilla_id))
+                cambios += 1
+        if cambios:
+            self.env.invalidate_all()
+        return cambios
+
     # ------------------------------------------------------------ pedidos
 
     def _coherencia_lineas(self) -> int:
-        """Descripciones en inglés del catálogo antiguo -> las del producto en español."""
+        """Líneas con el texto del catálogo antiguo (inglés) o una descripción ya corregida."""
         cambios = 0
-        espanol = self.env['res.lang'].with_context(active_test=True).search_count(
-            [('code', '=', 'es_ES')])
-        idioma = 'es_ES' if espanol else (self.env.lang or 'en_US')
-        lineas_venta = self.env['sale.order.line'].search([('product_id', '!=', False)])
-        for linea in lineas_venta.filtered(lambda l: datos.parece_ingles(l.name)):
-            producto = linea.product_id.with_context(lang=idioma)
-            texto = producto.get_product_multiline_description_sale()
-            if texto != linea.name:
-                linea.name = texto
-                cambios += 1
-        lineas_compra = self.env['purchase.order.line'].search([('product_id', '!=', False)])
-        for linea in lineas_compra.filtered(lambda l: datos.parece_ingles(l.name)):
-            producto = linea.product_id.with_context(lang=idioma)
-            texto = producto.display_name
-            if producto.description_purchase:
-                texto += '\n' + producto.description_purchase
-            if texto != linea.name:
-                linea.name = texto
-                cambios += 1
+        textos = self._textos_catalogo()
+
+        def esperado_venta(producto_id: int) -> str:
+            referencia, nombre, descripcion = textos[producto_id]
+            texto = f'[{referencia}] {nombre}' if referencia else nombre
+            return f'{texto}\n{descripcion}' if descripcion else texto
+
+        def esperado_compra(producto_id: int) -> str:
+            referencia, nombre, _descripcion = textos[producto_id]
+            return f'[{referencia}] {nombre}' if referencia else nombre
+
+        for modelo, esperado, criterio in (
+                ('sale.order.line', esperado_venta,
+                 lambda l: datos.parece_ingles(l.name) or ' de estilo ' in (l.name or '')),
+                ('purchase.order.line', esperado_compra, lambda l: datos.parece_ingles(l.name))):
+            for linea in self.env[modelo].search([('product_id', '!=', False)]).filtered(criterio):
+                texto = esperado(linea.product_id.id)
+                if texto and texto != linea.name:
+                    linea.name = texto
+                    cambios += 1
         return cambios
 
     # ------------------------------------------------------------ control

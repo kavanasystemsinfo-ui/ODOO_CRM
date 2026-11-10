@@ -66,6 +66,10 @@ class TestSimulador(TransactionCase):
         cls.lead_demo = cls.env['crm.lead'].create({
             'name': 'Presupuesto de 25 mesas de comedor — Contract Habitat',
             'phone': '+32 10 588 558', 'type': 'lead'})
+        cls.producto_mal = cls.productos[2].product_tmpl_id
+        cls.producto_mal.write({'name': 'Mesa auxiliar Daxon',
+                                'description_sale': 'Silla de estilo moderno fabricado en madera. '
+                                                    'Garantía de 24 meses.'})
         cls.linea_ingles = pedido.order_line[0]
         cls.linea_ingles.name = 'Tufted Gallery Bench\nAdd a touch of sophistication with the bench'
         cls.lead_real = cls.env['crm.lead'].create({
@@ -149,6 +153,8 @@ class TestSimulador(TransactionCase):
         self.assertTrue(lead.phone.startswith('+34 6'))
         self.assertEqual(lead.country_id.code, 'ES')
         self.assertNotIn('Tufted', self.linea_ingles.name)
+        self.assertEqual(self.producto_mal.description_sale,
+                         'Mesa de estilo moderno fabricada en madera. Garantía de 24 meses.')
         self.assertTrue(self.env['ir.config_parameter'].sudo().get_str('web.base.url').startswith('https://'))
         # Idempotente: una pasada completa lo que el propio tramo creó después del
         # paso de coherencia (leads nuevos); la siguiente ya no cambia nada.

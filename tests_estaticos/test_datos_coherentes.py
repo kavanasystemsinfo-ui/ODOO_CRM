@@ -70,3 +70,32 @@ def test_empresa_y_textos(datos):
     assert not datos.parece_ingles("[console-table-umber] Consola Umber\nConsola de estilo art déco.")
     assert datos.telefono_de_relleno("+34 600 007 007")
     assert not datos.telefono_de_relleno("+34 964 213 884")
+
+
+@pytest.mark.parametrize("nombre, sustantivo, participio", [
+    ("Mesa auxiliar Daxon", "Mesa", "fabricada"), ("Sillón auxiliar Kalani", "Sillón", "fabricado"),
+    ("Taburete de barra tapizado Bala", "Taburete", "fabricado"),
+    ("Mesas nido Holden", "Mesas nido", "fabricadas"),
+    ("Mesita de noche de chapa Uma", "Mesita de noche", "fabricada"),
+    ("Chaise longue Moda", "Chaise longue", "fabricada"),
+    ("Juego de mesitas auxiliares Hade G", "Juego de mesitas", "fabricado"),
+    ("Vinoteca Bliss", "Vinoteca", "fabricada"), ("Espejo Musa L", "Espejo", "fabricado"),
+])
+def test_sustantivo_y_concordancia(datos, nombre, sustantivo, participio):
+    texto, _ = datos.corregir_descripcion(
+        nombre, "Silla de estilo moderno fabricado en madera. Garantía de 24 meses.")
+    assert texto == f"{sustantivo} de estilo moderno {participio} en madera. Garantía de 24 meses."
+
+
+def test_el_material_del_nombre_manda(datos):
+    texto, material = datos.corregir_descripcion(
+        "Mesita auxiliar de mármol Knox", "Mesa de estilo moderno fabricado en travertino. Garantía de 24 meses.")
+    assert material == "mármol" and "fabricada en mármol" in texto
+    assert datos.corregir_descripcion("Banco Anna", "Texto libre sin plantilla.") == ("Texto libre sin plantilla.", None)
+
+
+def test_todo_el_catalogo_concuerda(datos, catalogo):
+    for fila in catalogo:
+        texto, material = datos.corregir_descripcion(fila["name"], fila["description"])
+        assert texto == fila["description"], fila["name"]
+        assert material is None, fila["name"]
