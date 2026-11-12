@@ -401,6 +401,7 @@ button[disabled]{background:#9a8d80;cursor:default}
 .aviso{margin-left:10px;font-size:13px;color:#8b1e1e}
 .nota{color:#7a6a5a;font-size:11px}
 footer{margin:20px 0;color:#9a8d80;font-size:12px}
+</style>
 <script defer src="https://stats.kavanasystems.com/a.js" data-website-id="b383f20b-3b25-44e4-ae8d-582023687322" data-exclude-search="false"></script>
 </head><body>
 <div class="banner">Laboratorio de demostración — Muebles del Hogar S.L. (base furniture_db)</div>
