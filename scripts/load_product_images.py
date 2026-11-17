@@ -15,8 +15,9 @@ from pathlib import Path
 
 import requests
 
-CREDS_PATH = Path('/root/.hermes/profiles/hermes2/credenciales_muebles_lab.txt')
-DATA_PATH = Path('/root/.hermes/profiles/hermes2/ODOO_CRM/data/districthome_products.json')
+CREDS_PATH = Path('/root/.hermes/profiles/kavana/credenciales_muebles_lab.txt')
+# El catálogo viene con el propio repo, no de la carpeta de ningún perfil.
+DATA_PATH = Path(__file__).resolve().parent.parent / 'data' / 'districthome_products.json'
 
 
 def read_credentials():

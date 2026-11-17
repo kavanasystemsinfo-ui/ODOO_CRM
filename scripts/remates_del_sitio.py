@@ -365,7 +365,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-CREDS = Path('/root/.hermes/profiles/hermes2/credenciales_muebles_lab.txt')
+CREDS = Path('/root/.hermes/profiles/kavana/credenciales_muebles_lab.txt')
 
 texto = CREDS.read_text(encoding='utf-8')
 url = re.search(r'URL:\s*(\S+)', texto).group(1)

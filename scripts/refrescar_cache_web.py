@@ -12,7 +12,7 @@ Las credenciales se leen del fichero del perfil y no se imprimen nunca.
 import re
 import xmlrpc.client
 
-FICHERO = "/root/.hermes/profiles/hermes2/credenciales_muebles_lab.txt"
+FICHERO = "/root/.hermes/profiles/kavana/credenciales_muebles_lab.txt"
 
 datos = {}
 for linea in open(FICHERO, encoding="utf-8"):

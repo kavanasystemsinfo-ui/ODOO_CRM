@@ -21,10 +21,17 @@ CONTENEDOR_ODOO_POR_DEFECTO = "furniture_odoo"
 PUERTO_ODOO_HOST_POR_DEFECTO = 8070  # 8070 en el host -> 8069 dentro del contenedor
 PUERTO_PANEL_POR_DEFECTO = 8081
 ESPERA_MINIMA_REINICIO_POR_DEFECTO = 180  # segundos entre reinicios
-SNAPSHOT_POR_DEFECTO = (
-    "/root/.hermes/profiles/hermes2/trabajo/muebles-demo/"
-    "snapshot_muebles_demo_canonico.sql.gz"
+# La instantánea canónica vive en la carpeta de trabajo de un perfil de Hermes. Ese perfil
+# se llamó "hermes2" hasta el 13/11/2026 y ahora es "kavana": al cambiar de nombre, la
+# simulación diaria y la limpieza automática dejaron de encontrarla y fallaron en silencio.
+# Se prueba cada carpeta por orden y se usa la primera que existe; la variable de entorno
+# MUEBLES_SNAPSHOT manda sobre todo esto.
+NOMBRE_SNAPSHOT = "snapshot_muebles_demo_canonico.sql.gz"
+CARPETAS_SNAPSHOT = (
+    "/root/.hermes/profiles/kavana/trabajo/muebles-demo/",
+    "/root/.hermes/profiles/hermes2/trabajo/muebles-demo/",  # nombre antiguo del perfil
 )
+SNAPSHOT_POR_DEFECTO = CARPETAS_SNAPSHOT[0] + NOMBRE_SNAPSHOT
 
 # API externa de Odoo (JSON-2). La API key del usuario de integración NO tiene
 # valor por defecto: sin MUEBLES_ODOO_API_KEY el panel no arranca la lectura.
@@ -64,7 +71,15 @@ def espera_minima_reinicio() -> int:
 
 
 def snapshot() -> Path:
-    return Path(_texto("MUEBLES_SNAPSHOT", SNAPSHOT_POR_DEFECTO))
+    explicita = os.environ.get("MUEBLES_SNAPSHOT", "").strip()
+    if explicita:
+        return Path(explicita)
+    for carpeta in CARPETAS_SNAPSHOT:
+        candidata = Path(carpeta) / NOMBRE_SNAPSHOT
+        if candidata.exists():
+            return candidata
+    # Ninguna existe: se devuelve la primera para que el error enseñe la ruta actual.
+    return Path(SNAPSHOT_POR_DEFECTO)
 
 
 def panel_host() -> str:
