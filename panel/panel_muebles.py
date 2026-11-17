@@ -401,11 +401,31 @@ button[disabled]{background:#9a8d80;cursor:default}
 .aviso{margin-left:10px;font-size:13px;color:#8b1e1e}
 .nota{color:#7a6a5a;font-size:11px}
 footer{margin:20px 0;color:#9a8d80;font-size:12px}
+.tour-boton{display:inline-block;margin:10px 0 0;background:#fff;color:#3d2712;border:2px solid #3d2712;border-radius:999px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer}
+.tour-boton:hover{background:#f1e8dc}
+.tour-velo{position:fixed;inset:0;background:rgba(30,18,6,.6);z-index:9998}
+.tour-recuadro{position:fixed;border-radius:8px;box-shadow:0 0 0 9999px rgba(30,18,6,.6),0 0 0 3px #e0a458;z-index:9999;pointer-events:none;transition:all .25s ease}
+.tour-tooltip{box-sizing:border-box;position:fixed;z-index:10000;width:380px;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);overflow:auto;background:#fff;color:#2b1d10;border-radius:12px;padding:18px 20px;box-shadow:0 20px 25px -5px rgba(0,0,0,.3),0 10px 10px -5px rgba(0,0,0,.15)}
+.tour-tooltip h3{margin:0 0 2px;font-size:18px}
+.tour-contador{margin:0 0 10px;font-size:12px;color:#7a6a5a}
+.tour-tooltip p{margin:0 0 8px;font-size:14px;line-height:1.5}
+.tour-enlaces{margin:6px 0 10px;padding:0;list-style:none}
+.tour-enlaces li{margin:4px 0}
+.tour-enlaces a{color:#3d2712;font-weight:700}
+.tour-botones{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.tour-botones div{display:flex;gap:8px}
+.tour-botones button{min-height:38px;padding:7px 14px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer}
+.tour-sec{background:#fff;color:#3d2712;border:1px solid #c9bba9}
+.tour-omitir{background:none!important;border:0!important;color:#7a6a5a!important;text-decoration:underline;font-weight:600!important;padding:0!important}
+.tour-botones button:focus-visible,.tour-boton:focus-visible{outline:3px solid #e0a458;outline-offset:2px}
+@media print{.tour-boton,.tour-velo,.tour-recuadro,.tour-tooltip{display:none!important}}
+@media (prefers-reduced-motion:reduce){.tour-recuadro{transition:none}}
 </style>
 <script defer src="https://stats.kavanasystems.com/a.js" data-website-id="b383f20b-3b25-44e4-ae8d-582023687322" data-exclude-search="false"></script>
 </head><body>
 <div class="banner">Laboratorio de demostración — Muebles del Hogar S.L. (base furniture_db)</div>
 <main><h1>Panel del día</h1><div class="sub" id="estado">Cargando...</div>
+<button type="button" class="tour-boton" id="tour-abrir">Hacer el recorrido guiado</button>
 <div id="frases"></div>
 <h2>Cifras del día</h2><div class="cifras" id="cifras"></div>
 <h2>Comparado con otros días</h2><div class="cifras" id="evolucion"></div>
@@ -472,6 +492,138 @@ fetch('api/dia').then(r=>r.json()).then(d=>{
     s.appendChild(li);
   });
 }).catch(e=>{document.getElementById('estado').textContent='Sin conexión con el laboratorio: ' + e;});
+
+// ---------- Recorrido guiado ----------
+// Se abre solo la primera vez y se repite con el botón. Todo se pinta con textContent.
+(function(){
+  var CLAVE='muebles-panel-tour-visto';
+  var PASOS=[
+    {t:'Bienvenido al Panel del día',
+     p:['Así ve su empresa cada mañana la dueña de Muebles del Hogar S.L., una empresa de muebles inventada.',
+        'Todo lo que ves se lee de un Odoo de verdad, solo por su API oficial. En un minuto te enseño qué hay. Sal cuando quieras con Esc.']},
+    {s:'#frases', t:'Las frases del día',
+     p:['El resumen en lenguaje de negocio.','Cada frase sale de reglas fijas (recuentos y umbrales), no de una IA: por eso se puede comprobar de dónde sale cada una.']},
+    {s:'#cifras', t:'Las cifras del día',
+     p:['Muebles publicados, existencias y su valor, clientes, proveedores, pedidos, presupuestos, entregas, recepciones, compras y actividades.']},
+    {s:'#evolucion', t:'Comparado con otros días',
+     p:['Las entregas y las recepciones de hoy, de ayer y de los últimos 7 días, para saber si el día va normal o no.']},
+    {s:'#bandeja', t:'Lo que pide atención',
+     p:['Las actividades vencidas y las entregas previstas que todavía no han salido. Es la lista de lo que alguien tiene que decidir hoy.']},
+    {s:'#mcp', t:'La siguiente acción comercial',
+     p:['Elige la oportunidad de venta con más puntuación (de 0 a 100) y propone qué hacer con ella.',
+        'Son plantillas con reglas fijas, preparadas para enchufar una IA más adelante.']},
+    {s:'#salud', t:'Salud del dato',
+     p:['Comprobaciones para poder fiarte de las cifras. Si algo no cuadra sale con una cruz roja y su motivo.']},
+    {t:'Y ahora, Odoo por dentro',
+     p:['Este panel solo lee. Para ver el Odoo que hay detrás tienes dos caminos:'],
+     e:[['Ver la empresa en Odoo, en solo lectura','/demo'],['Probar con una copia privada durante una hora','/probar']]}
+  ];
+  var activo=null;
+  function leerVisto(){try{return localStorage.getItem(CLAVE)==='visto';}catch(e){return false;}}
+  function marcarVisto(){try{localStorage.setItem(CLAVE,'visto');}catch(e){}}
+  function el(tag,clase,texto){var x=document.createElement(tag);if(clase)x.className=clase;if(texto!==undefined)x.textContent=texto;return x;}
+  function visible(x){if(!x)return false;var r=x.getBoundingClientRect();return r.width>0&&r.height>0;}
+  function boton(texto,clase,fn){var b=el('button',clase,texto);b.type='button';b.addEventListener('click',fn);return b;}
+
+  function poner(){
+    if(!activo)return;
+    var paso=PASOS[activo.i];
+    var objetivo=paso.s?document.querySelector(paso.s):null;
+    var vh=window.innerHeight, vw=window.innerWidth;
+    var th=activo.tarjeta.offsetHeight, tw=activo.tarjeta.offsetWidth;
+    var top, left;
+    if(visible(objetivo)){
+      var r=objetivo.getBoundingClientRect();
+      var arriba=Math.max(r.top,8), abajo=Math.min(r.bottom,vh-8), izq=Math.max(r.left,8), der=Math.min(r.right,vw-8);
+      var rec=activo.recuadro;
+      rec.style.display='block';
+      rec.style.top=(arriba-6)+'px'; rec.style.left=(izq-6)+'px';
+      rec.style.width=Math.max(der-izq+12,20)+'px'; rec.style.height=Math.max(abajo-arriba+12,20)+'px';
+      activo.velo.style.display='none';
+      var centro=(arriba+abajo)/2;
+      top=centro<vh/2?Math.min(abajo+18,vh-th-8):Math.max(arriba-18-th,8);
+      left=(izq+der)/2-tw/2;
+    }else{
+      activo.recuadro.style.display='none';
+      activo.velo.style.display='block';
+      top=vh/2-th/2; left=vw/2-tw/2;
+    }
+    activo.tarjeta.style.top=Math.max(8,top)+'px';
+    activo.tarjeta.style.left=Math.max(8,Math.min(left,vw-tw-8))+'px';
+  }
+
+  function pintar(){
+    var paso=PASOS[activo.i], ultimo=activo.i===PASOS.length-1;
+    var t=activo.tarjeta;
+    while(t.firstChild)t.removeChild(t.firstChild);
+    t.setAttribute('aria-label',paso.t);
+    t.appendChild(el('h3','',paso.t));
+    t.appendChild(el('p','tour-contador','Paso '+(activo.i+1)+' de '+PASOS.length));
+    paso.p.forEach(function(x){t.appendChild(el('p','',x));});
+    if(paso.e){
+      var ul=el('ul','tour-enlaces');
+      paso.e.forEach(function(x){var li=el('li');var a=el('a','',x[0]);a.href=x[1];li.appendChild(a);ul.appendChild(li);});
+      t.appendChild(ul);
+    }
+    var fila=el('div','tour-botones');
+    fila.appendChild(ultimo?el('span'):boton('Omitir recorrido','tour-omitir',function(){cerrar();}));
+    var der=el('div');
+    if(activo.i>0)der.appendChild(boton('Anterior','tour-sec',function(){activo.i--;pintar();}));
+    var sig=boton(ultimo?'Terminar':'Siguiente','tour-prim',function(){if(ultimo)cerrar();else{activo.i++;pintar();}});
+    sig.style.cssText='background:#3d2712;color:#fff;border:0';
+    der.appendChild(sig);
+    fila.appendChild(der);
+    t.appendChild(fila);
+    var objetivo=paso.s?document.querySelector(paso.s):null;
+    if(visible(objetivo)){
+      var alto=objetivo.getBoundingClientRect().height>window.innerHeight*0.6;
+      objetivo.scrollIntoView({block:alto?'start':'center'});
+    }
+    poner(); setTimeout(poner,250); setTimeout(poner,600);
+    sig.focus({preventScroll:true});
+  }
+
+  function teclas(ev){
+    if(!activo)return;
+    if(ev.key==='Escape'){ev.preventDefault();cerrar();}
+    else if(ev.key==='ArrowRight'&&activo.i<PASOS.length-1){ev.preventDefault();activo.i++;pintar();}
+    else if(ev.key==='ArrowLeft'&&activo.i>0){ev.preventDefault();activo.i--;pintar();}
+  }
+  function cerrar(){
+    if(!activo)return;
+    marcarVisto();
+    var previo=activo.previo;
+    [activo.velo,activo.recuadro,activo.tarjeta].forEach(function(x){if(x.parentNode)x.parentNode.removeChild(x);});
+    activo=null;
+    window.removeEventListener('resize',poner);
+    window.removeEventListener('scroll',poner,true);
+    window.removeEventListener('keydown',teclas,true);
+    if(previo&&previo.focus)previo.focus({preventScroll:true});
+  }
+  function empezar(){
+    if(activo)return;
+    var velo=el('div','tour-velo'); velo.setAttribute('aria-hidden','true'); velo.addEventListener('click',cerrar);
+    var recuadro=el('div','tour-recuadro'); recuadro.setAttribute('aria-hidden','true'); recuadro.style.display='none';
+    var tarjeta=el('div','tour-tooltip'); tarjeta.setAttribute('role','dialog');
+    document.body.appendChild(velo); document.body.appendChild(recuadro); document.body.appendChild(tarjeta);
+    activo={i:0,velo:velo,recuadro:recuadro,tarjeta:tarjeta,previo:document.activeElement};
+    window.addEventListener('resize',poner);
+    window.addEventListener('scroll',poner,true);
+    window.addEventListener('keydown',teclas,true);
+    pintar();
+  }
+
+  document.getElementById('tour-abrir').addEventListener('click',empezar);
+  // La primera vez se abre solo, cuando ya han llegado los datos (o a los 15 s, pase lo que pase).
+  if(!leerVisto()){
+    var intentos=0;
+    var espera=setInterval(function(){
+      intentos++;
+      var listo=document.getElementById('cifras').children.length>0;
+      if(listo||intentos>60){clearInterval(espera);if(listo&&!leerVisto())setTimeout(empezar,500);}
+    },250);
+  }
+})();
 </script></body></html>
 """
 

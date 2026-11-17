@@ -176,3 +176,37 @@ def test_restaurar_exige_cabecera_anti_csrf(raiz):
     posicion_cabecera = codigo.index("X-Kavana-Restaurar")
     posicion_sesion = codigo.index("_sesion_es_admin(self.headers)")
     assert posicion_cabecera < posicion_sesion, "la cabecera se exige antes de mirar la sesión"
+
+
+def test_la_pagina_tiene_recorrido_guiado_anclado_a_elementos_que_existen(panel):
+    """Cada paso del recorrido apunta a un id que está en la página."""
+    import re
+
+    html = panel.HTML
+    assert 'id="tour-abrir"' in html
+    anclas = re.findall(r"s:'#([a-z]+)'", html)
+    assert anclas, "el recorrido no tiene pasos anclados"
+    for ancla in anclas:
+        assert f'id="{ancla}"' in html, f"el paso apunta a #{ancla}, que no existe"
+
+
+def test_el_html_no_lleva_barras_invertidas(panel):
+    """El HTML es un string de Python: una barra invertida (por ejemplo, \n dentro del JS) cambiaría el código."""
+    assert chr(92) not in panel.HTML
+
+
+def test_el_javascript_de_la_pagina_es_valido(panel, tmp_path):
+    """Comprueba la sintaxis del script con node, si está disponible (en CI lo está)."""
+    import re
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node no está instalado")
+    scripts = re.findall(r"<script>(.*?)</script>", panel.HTML, flags=re.S)
+    assert scripts
+    fichero = tmp_path / "panel.js"
+    fichero.write_text(scripts[-1], encoding="utf-8")
+    resultado = subprocess.run([node, "--check", str(fichero)], capture_output=True, text=True)
+    assert resultado.returncode == 0, resultado.stderr
