@@ -52,6 +52,17 @@ def test_si_no_existe_ninguna_devuelve_la_ruta_actual(configuracion, monkeypatch
     assert "hermes2" not in configuracion.SNAPSHOT_POR_DEFECTO
 
 
+def test_sin_permiso_para_mirar_la_carpeta_no_falla(configuracion, monkeypatch, tmp_path):
+    """El usuario del panel no puede entrar en /root: snapshot() no debe lanzar PermissionError."""
+    _preparar(configuracion, monkeypatch, tmp_path, [])
+
+    def sin_permiso(self, *args, **kwargs):
+        raise PermissionError(13, "Permission denied", str(self))
+
+    monkeypatch.setattr(Path, "exists", sin_permiso)
+    assert configuracion.snapshot() == Path(configuracion.SNAPSHOT_POR_DEFECTO)
+
+
 def test_ningun_otro_fichero_da_por_fijo_el_nombre_del_perfil(raiz):
     """Solo configuracion.py puede nombrar el perfil antiguo (como respaldo y comentado)."""
     ofensores = []

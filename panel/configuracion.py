@@ -70,13 +70,25 @@ def espera_minima_reinicio() -> int:
     return int(_texto("MUEBLES_ESPERA_REINICIO", str(ESPERA_MINIMA_REINICIO_POR_DEFECTO)))
 
 
+def _existe(ruta: Path) -> bool:
+    """Como Path.exists(), pero sin error si no hay permiso para mirar la carpeta.
+
+    El panel corre con un usuario sin acceso a /root: ahí la instantánea "no se ve" y no
+    debe romper nada (solo la leen la simulación y la limpieza, que corren como root).
+    """
+    try:
+        return ruta.exists()
+    except OSError:
+        return False
+
+
 def snapshot() -> Path:
     explicita = os.environ.get("MUEBLES_SNAPSHOT", "").strip()
     if explicita:
         return Path(explicita)
     for carpeta in CARPETAS_SNAPSHOT:
         candidata = Path(carpeta) / NOMBRE_SNAPSHOT
-        if candidata.exists():
+        if _existe(candidata):
             return candidata
     # Ninguna existe: se devuelve la primera para que el error enseñe la ruta actual.
     return Path(SNAPSHOT_POR_DEFECTO)
