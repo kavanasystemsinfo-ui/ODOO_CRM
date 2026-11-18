@@ -30,6 +30,11 @@ Laboratorio de una empresa de muebles de hogar sobre Odoo 20.
         'views/panel_template.xml',
         'views/umami_layout.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'ODOO_CRM/static/src/js/tour_demo.js',
+        ],
+    },
     # Catálogo de referencia que siembra scripts/create_lab_data.py; Odoo no lo
     # carga (convención del linter OCA para ficheros cargados a mano).
     'oca_data_manual': ['data/catalogo_muebles.csv'],
